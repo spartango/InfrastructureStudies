@@ -1,9 +1,30 @@
 package com.spartango.infra.geom;
 
+import com.spartango.infra.osm.NodeStub;
+import org.geotools.referencing.GeodeticCalculator;
+
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * Author: spartango
  * Date: 9/1/15
  * Time: 22:21.
  */
 public class ShapeUtils {
+    public static double calculateLength(List<NodeStub> path) {
+        final Iterator<NodeStub> iterator = path.iterator();
+        double sum = 0;
+        NodeStub current = iterator.hasNext() ? iterator.next() : null;
+        while (current != null && iterator.hasNext()) {
+            NodeStub next = iterator.next();
+            GeodeticCalculator calculator = new GeodeticCalculator();
+            calculator.setStartingGeographicPoint(current.getLongitude(), current.getLatitude());
+            calculator.setDestinationGeographicPoint(next.getLongitude(), next.getLatitude());
+            double distance = calculator.getOrthodromicDistance();
+            sum += distance;
+            current = next;
+        }
+        return sum;
+    }
 }
