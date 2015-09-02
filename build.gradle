@@ -1,0 +1,37 @@
+// Project: Infrastructure mapping
+version = '0.1'
+
+// Java components
+apply plugin: 'java'
+
+// Run support
+apply plugin: 'application'
+
+// Language support
+sourceCompatibility = 1.8
+
+// Repositories
+repositories {
+    mavenCentral()
+}
+
+// External dependencies
+dependencies {
+    compile group: 'com.google.guava', name: 'guava', version: '18.0'
+
+    compile group: 'org.mapdb', name: 'mapdb', version: '1.0.8'
+
+    compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.44.1'
+    compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf2', version: '0.44.1'
+
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.3'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.2'
+
+    // Logging
+    compile fileTree(dir: 'lib/geotools-13.2', include: '*.jar')
+}
+
+// Location of main (for running)
+mainClassName = ""
+
+defaultTasks 'build'
