@@ -4,13 +4,15 @@ import com.irislabs.sheet.SheetEntry;
 import com.irislabs.sheet.SheetWriter;
 import com.spartango.infra.framework.WaySeeker;
 import com.spartango.infra.geom.ShapeUtils;
-import com.spartango.infra.osm.NodeStub;
+import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.osm.TagUtils;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
+import org.geotools.factory.Hints;
 import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.geometry.jts.JTSFactoryFinder;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 import java.io.File;
@@ -18,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
  * Date: 9/1/15
  * Time: 14:27.
  */
-public class Main {
+public class BridgeMain {
 
     private static final String TARGET_PATH = "data/china-latest.osm.pbf";
     private static final String DB_PATH     = "data/nodes.db";
@@ -39,7 +40,7 @@ public class Main {
                                                    ",",
                                                    Arrays.asList("id",
                                                                  "name",
-                                                                 "english name",
+                                                                 "name:en",
                                                                  "start Latitude",
                                                                  "start Longitude",
                                                                  "end Latitude",
@@ -66,10 +67,6 @@ public class Main {
             @Override protected void onWayFound(Way entity, List<NodeStub> path) {
                 SheetEntry entry = new SheetEntry();
                 entry.put("id", entity.getId());
-                Optional<String> name = TagUtils.getTag(entity, "name");
-                entry.put("name", name.orElse("Unnamed"));
-                Optional<String> nameEn = TagUtils.getTag(entity, "name:en");
-                entry.put("english name", nameEn.orElse("Unnamed"));
 
                 // Build the geometry
                 final List<Coordinate> coordinateList = path.stream()
@@ -116,7 +113,8 @@ public class Main {
                 try {
                     writer.close();
                     geometryJSON.write(new GeometryCollection(geometries.toArray(new Geometry[geometries.size()]),
-                                                              JTSFactoryFinder.getGeometryFactory()),
+                                                              JTSFactoryFinder.getGeometryFactory(new Hints(Hints.CRS,
+                                                                                                            DefaultGeographicCRS.WGS84))),
                                        new File(GEO_PATH));
                 } catch (IOException e) {
                     e.printStackTrace();

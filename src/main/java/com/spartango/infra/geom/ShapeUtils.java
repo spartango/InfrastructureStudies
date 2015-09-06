@@ -1,6 +1,6 @@
 package com.spartango.infra.geom;
 
-import com.spartango.infra.osm.NodeStub;
+import com.spartango.infra.osm.type.NodeStub;
 import org.geotools.referencing.GeodeticCalculator;
 
 import java.util.Iterator;

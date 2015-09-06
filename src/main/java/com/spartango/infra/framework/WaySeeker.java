@@ -1,7 +1,7 @@
 package com.spartango.infra.framework;
 
-import com.spartango.infra.osm.NodeStub;
 import com.spartango.infra.osm.OSMIndex;
+import com.spartango.infra.osm.type.NodeStub;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
@@ -20,7 +20,7 @@ import java.util.Map;
  * Date: 9/1/15
  * Time: 23:03.
  */
-public abstract class WaySeeker {
+public abstract class WaySeeker implements Runnable {
     private static final int WORKERS = 1;
 
     private final String dbPath;
@@ -48,7 +48,7 @@ public abstract class WaySeeker {
                 if (entity instanceof Way && isTarget((Way) entity)) {
                     // Capture the waynodes it wants
                     ((Way) entity).getWayNodes().forEach(node -> index.addDesiredNode(node.getNodeId()));
-                    System.out.print("Desired Nodes: " + index.getDesired().size() + "\r");
+                    System.out.print("Desired Nodes: " + index.getDesiredNodes().size() + "\r");
                 }
             }
 
@@ -73,7 +73,7 @@ public abstract class WaySeeker {
                 if (entity instanceof Node && index.isDesired((Node) entity)) {
                     // Capture the node data
                     index.addNode((Node) entity);
-                    System.out.print("Remaining Nodes: " + index.getDesired().size() + "\r");
+                    System.out.print("Remaining Nodes: " + index.getDesiredNodes().size() + "\r");
                 }
             }
 
