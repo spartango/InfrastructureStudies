@@ -117,7 +117,7 @@ public abstract class TieredSeeker {
 
         // Populate the relations with their nodes and ways
         System.out.println("Populating relations");
-        index.getRelations().values().forEach(index::populateRelation);
+        index.populateRelations();
 
         // Third Pass: Find the second order dependencies (nodes for ways)
         PbfReader secondIndexReader = new PbfReader(new File(pbfPath), WORKERS);
@@ -131,7 +131,8 @@ public abstract class TieredSeeker {
                                      + index.getDesiredNodes().size()
                                      + " nodes and "
                                      + index.getDesiredWays().size()
-                                     + " ways \r");                }
+                                     + " ways \r");
+                }
 
             }
 
@@ -150,7 +151,7 @@ public abstract class TieredSeeker {
 
         // Populate the ways with their nodes
         System.out.println("Populating ways");
-        index.getWays().values().forEach(index::populateWay);
+        index.populateWays();
 
         System.out.println("Seeking complete: "
                            + getNodes().size()
@@ -173,5 +174,9 @@ public abstract class TieredSeeker {
 
     public Collection<NodeStub> getNodes() {
         return index.getNodes().values();
+    }
+
+    public OSMIndex getIndex() {
+        return index;
     }
 }

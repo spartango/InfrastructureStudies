@@ -14,8 +14,8 @@ import java.util.Map;
  */
 public class NodeStub extends EntityStub implements Serializable {
 
-    private final double longitude;
-    private final double latitude;
+    protected final double longitude;
+    protected final double latitude;
 
     public NodeStub(Node target) {
         this(target.getId(),
@@ -74,47 +74,12 @@ public class NodeStub extends EntityStub implements Serializable {
         tags.putAll(m);
     }
 
-    @Override public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final NodeStub nodeStub = (NodeStub) o;
-
-        if (id != nodeStub.id) {
-            return false;
-        }
-        if (Double.compare(nodeStub.longitude, longitude) != 0) {
-            return false;
-        }
-        if (Double.compare(nodeStub.latitude, latitude) != 0) {
-            return false;
-        }
-        return tags.equals(nodeStub.tags);
-
-    }
-
-    @Override public int hashCode() {
-        int result;
-        long temp;
-        result = (int) (id ^ (id >>> 32));
-        temp = Double.doubleToLongBits(longitude);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(latitude);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + tags.hashCode();
-        return result;
-    }
-
     @Override public String toString() {
         return "NodeStub{" +
                "id=" + id +
+               "tags=" + tags +
+               "latitude=" + latitude +
                ", longitude=" + longitude +
-               ", latitude=" + latitude +
-               ", tags=" + tags +
                '}';
     }
 }

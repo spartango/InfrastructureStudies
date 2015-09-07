@@ -1,10 +1,12 @@
 package com.spartango.infra.osm.type;
 
+import com.spartango.infra.osm.OSMIndex;
 import org.openstreetmap.osmosis.core.domain.v0_6.EntityType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.RelationMember;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -17,11 +19,11 @@ import java.util.stream.Collectors;
  */
 public class RelationStub extends EntityStub implements Serializable {
 
-    private final List<Long> nodeIds;
-    private final List<Long> wayIds;
+    protected final List<Long> nodeIds;
+    protected final List<Long> wayIds;
 
-    private List<NodeStub> nodes;
-    private List<WayStub>  ways;
+    protected List<NodeStub> nodes;
+    protected List<WayStub>  ways;
 
     public RelationStub(Relation target) {
         super(target.getId(), target.getTags());
@@ -33,8 +35,8 @@ public class RelationStub extends EntityStub implements Serializable {
                        .stream()
                        .filter(member -> member.getMemberType() == EntityType.Way)
                        .map(RelationMember::getMemberId).collect(Collectors.toList());
-        nodes = new LinkedList<>();
-        ways = new LinkedList<>();
+        nodes = new ArrayList<>();
+        ways = new ArrayList<>();
     }
 
     public RelationStub(long id,
@@ -57,19 +59,39 @@ public class RelationStub extends EntityStub implements Serializable {
         return wayIds;
     }
 
-    public List<NodeStub> getNodes() {
+    public List<NodeStub> getNodes(OSMIndex index) {
+        nodes = nodeIds.stream()
+                       .filter(index::hasNode)
+                       .map(index::getNode)
+                       .collect(Collectors.toList());
         return nodes;
     }
+
+    public List<WayStub> getWays(OSMIndex index) {
+        ways = wayIds.stream()
+                     .filter(index::hasWay)
+                     .map(index::getWay)
+                     .collect(Collectors.toList());
+        return ways;
+    }
+
 
     public void setNodes(List<NodeStub> nodes) {
         this.nodes = nodes;
     }
 
-    public List<WayStub> getWays() {
-        return ways;
-    }
-
     public void setWays(List<WayStub> ways) {
         this.ways = ways;
+    }
+
+    @Override public String toString() {
+        return "RelationStub{" +
+               "id=" + id +
+               "tags=" + tags +
+               "nodeIds=" + nodeIds +
+               ", wayIds=" + wayIds +
+               ", nodes=" + nodes +
+               ", ways=" + ways +
+               '}';
     }
 }

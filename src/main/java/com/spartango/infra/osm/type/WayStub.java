@@ -1,10 +1,11 @@
 package com.spartango.infra.osm.type;
 
+import com.spartango.infra.osm.OSMIndex;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,8 +16,8 @@ import java.util.stream.Collectors;
  * Time: 11:52.
  */
 public class WayStub extends EntityStub implements Serializable {
-    private final List<Long>     nodeIds;
-    private       List<NodeStub> nodes;
+    protected final List<Long>     nodeIds;
+    protected       List<NodeStub> nodes;
 
     public WayStub(long id, Map<String, String> tags, List<NodeStub> nodes) {
         super(id, tags);
@@ -27,22 +28,35 @@ public class WayStub extends EntityStub implements Serializable {
     public WayStub(Way target) {
         super(target.getId(), target.getTags());
         nodeIds = target.getWayNodes().stream().map(WayNode::getNodeId).collect(Collectors.toList());
-        nodes = new LinkedList<>();
+        nodes = new ArrayList<>();
     }
 
     public List<Long> getNodeIds() {
         return nodeIds;
     }
 
-    public List<NodeStub> getNodes() {
-        return nodes;
-    }
-
     public void setNodes(List<NodeStub> nodes) {
         this.nodes = nodes;
     }
 
+    public List<NodeStub> getNodes(OSMIndex index) {
+        nodes = nodeIds.stream()
+                       .filter(index::hasNode)
+                       .map(index::getNode)
+                       .collect(Collectors.toList());
+        return nodes;
+    }
+
     public boolean contains(NodeStub o) {
         return getNodeIds().contains(o.getId());
+    }
+
+    @Override public String toString() {
+        return "WayStub{" +
+               "id=" + id +
+               "tags=" + tags +
+               "nodeIds=" + nodeIds +
+               ", nodes=" + nodes +
+               '}';
     }
 }

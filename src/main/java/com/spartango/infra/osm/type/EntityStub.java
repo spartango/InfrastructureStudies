@@ -2,6 +2,7 @@ package com.spartango.infra.osm.type;
 
 import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
  * Date: 9/6/15
  * Time: 11:55.
  */
-public class EntityStub {
+public class EntityStub implements Serializable {
     protected final long                id;
     protected final Map<String, String> tags;
 
@@ -72,11 +73,7 @@ public class EntityStub {
 
         final EntityStub that = (EntityStub) o;
 
-        if (id != that.id) {
-            return false;
-        }
-        return tags.equals(that.tags);
-
+        return (id != that.id);
     }
 
     @Override public int hashCode() {

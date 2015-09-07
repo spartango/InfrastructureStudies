@@ -51,21 +51,21 @@ public class OSMIndex {
     }
 
     public void addDesiredNode(long id) {
-        if (!nodes.containsKey(id)) {
+        if (!nodes.containsKey(id) && !desiredNodes.contains(id)) {
             desiredNodes.add(id);
             database.commit();
         }
     }
 
     public void addDesiredWay(long id) {
-        if (!ways.containsKey(id)) {
+        if (!ways.containsKey(id) && !desiredWays.contains(id)) {
             desiredWays.add(id);
             database.commit();
         }
     }
 
     public void addDesiredRelation(long id) {
-        if (!relations.containsKey(id)) {
+        if (!relations.containsKey(id) && !desiredRelations.contains(id)) {
             desiredRelations.add(id);
             database.commit();
         }
@@ -102,29 +102,26 @@ public class OSMIndex {
         database.commit();
     }
 
-    public void populateWay(WayStub target) {
-        final List<NodeStub> wayNodes = target.getNodeIds()
-                                              .stream()
-                                              .filter(this.nodes::containsKey)
-                                              .map(this.nodes::get)
-                                              .collect(Collectors.toList());
-        target.setNodes(wayNodes);
+    public void populateWays() {
+        ways.forEach((id, target) -> target.setNodes(target.getNodeIds()
+                                                           .stream()
+                                                           .filter(this.nodes::containsKey)
+                                                           .map(this.nodes::get)
+                                                           .collect(Collectors.toList())));
         database.commit();
     }
 
-    public void populateRelation(RelationStub target) {
-        final List<NodeStub> relationNodes = target.getNodeIds()
-                                                   .stream()
-                                                   .filter(this.nodes::containsKey)
-                                                   .map(this.nodes::get)
-                                                   .collect(Collectors.toList());
-        target.setNodes(relationNodes);
-        final List<WayStub> relationWays = target.getWayIds()
-                                                 .stream()
-                                                 .filter(this.ways::containsKey)
-                                                 .map(this.ways::get)
-                                                 .collect(Collectors.toList());
-        target.setWays(relationWays);
+    public void populateRelations() {
+        relations.forEach((id, target) -> target.setNodes(target.getNodeIds()
+                                                                .stream()
+                                                                .filter(this.nodes::containsKey)
+                                                                .map(this.nodes::get)
+                                                                .collect(Collectors.toList())));
+        relations.forEach((id, target) -> target.setWays(target.getWayIds()
+                                                               .stream()
+                                                               .filter(this.ways::containsKey)
+                                                               .map(this.ways::get)
+                                                               .collect(Collectors.toList())));
         database.commit();
     }
 
@@ -154,6 +151,31 @@ public class OSMIndex {
     public Map<Long, WayStub> getWays() {
         return ways;
     }
+
+    public WayStub getWay(long id) {
+        return ways.get(id);
+    }
+
+    public boolean hasNode(long id) {
+        return nodes.containsKey(id);
+    }
+
+    public boolean hasRelation(long id) {
+        return relations.containsKey(id);
+    }
+
+    public boolean hasWay(long id) {
+        return ways.containsKey(id);
+    }
+
+    public NodeStub getNode(long id) {
+        return nodes.get(id);
+    }
+
+    public RelationStub getRelation(long id) {
+        return relations.get(id);
+    }
+
 
     public Map<Long, NodeStub> getNodes() {
         return nodes;
