@@ -39,9 +39,9 @@ public class RouteMain {
         // Seeker
         TieredSeeker seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
             @Override protected boolean isTarget(Entity entity) {
-                return entity instanceof Relation &&
-                       (TagUtils.hasTag(entity, "route", "train")
-                        || TagUtils.hasTag(entity, "route", "railway"));
+                return (entity instanceof Relation &&
+                        (TagUtils.hasTag(entity, "route", "train")
+                         || TagUtils.hasTag(entity, "route", "railway")));
             }
         };
         seeker.run();

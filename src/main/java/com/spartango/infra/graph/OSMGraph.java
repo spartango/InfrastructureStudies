@@ -1,7 +1,13 @@
 package com.spartango.infra.graph;
 
+import com.spartango.infra.graph.types.NeoNode;
+import com.spartango.infra.osm.OSMIndex;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Author: spartango
@@ -11,7 +17,7 @@ import org.neo4j.graphdb.RelationshipType;
 
 
 public class OSMGraph {
-    private enum RelTypes implements RelationshipType {
+    public enum RelTypes implements RelationshipType {
         NEARBY,
         RAIL_LINK,
         POWER_LINK,
@@ -24,5 +30,33 @@ public class OSMGraph {
 
     public OSMGraph(GraphDatabaseService graphDb) {
         this.graphDb = graphDb;
+    }
+
+    public void build(OSMIndex index) {
+        // Pull out the stops as nodes, and uniquely enter them into the db
+        index.getRelations()
+             .values()
+             .stream()
+             .flatMap(route -> route.getNodes(index).stream())
+             .distinct()
+             .forEach(relationStub -> new NeoNode(relationStub, graphDb));
+
+        // Attach the appropriate links
+        index.getRelations().values()
+             .stream()
+             .map(route -> route.getNodes(index))
+             .forEach(stops -> {
+                 // Pull up the graph nodes for the route
+                 final List<NeoNode> neoStops = stops.stream()
+                                                     .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
+                                                     .filter(Optional::isPresent)
+                                                     .map(Optional::get)
+                                                     .collect(Collectors.toList());
+                 // Completely connect them.
+                 neoStops.stream().forEach(stop -> neoStops.stream()
+                                                           .forEach(otherStop -> stop.createRelationshipTo(otherStop,
+                                                                                                       RelTypes.RAIL_LINK,
+                                                                                                       graphDb)));
+             });
     }
 }
