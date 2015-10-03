@@ -20,6 +20,7 @@ public class OSMGraph {
     public enum RelTypes implements RelationshipType {
         NEARBY,
         RAIL_LINK,
+        REACHABLE,
         POWER_LINK,
         WATERWAY_LINK,
         ROAD_LINK,
@@ -42,21 +43,36 @@ public class OSMGraph {
              .forEach(relationStub -> new NeoNode(relationStub, graphDb));
 
         // Attach the appropriate links
-        index.getRelations().values()
-             .stream()
-             .map(route -> route.getNodes(index))
-             .forEach(stops -> {
+        index.getRelations()
+             .values()
+             .forEach(route -> {
                  // Pull up the graph nodes for the route
-                 final List<NeoNode> neoStops = stops.stream()
+                 final List<NeoNode> neoStops = route.getNodes(index)
+                                                     .stream()
                                                      .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
                                                      .filter(Optional::isPresent)
                                                      .map(Optional::get)
                                                      .collect(Collectors.toList());
-                 // Completely connect them.
-                 neoStops.stream().forEach(stop -> neoStops.stream()
-                                                           .forEach(otherStop -> stop.createRelationshipTo(otherStop,
-                                                                                                       RelTypes.RAIL_LINK,
-                                                                                                       graphDb)));
+
+                 // Reachability
+                 neoStops.forEach(stop -> neoStops.stream()
+                                                  .filter(otherStop -> !stop.equals(otherStop))
+                                                  .forEach(otherStop -> stop.createRelationshipTo(otherStop,
+                                                                                                  RelTypes.REACHABLE,
+                                                                                                  graphDb)));
+
+                 // Find the containing ways & adjacents
+//                 neoStops.forEach(stop -> route.getWays(index)
+//                                               .stream()
+//                                               .filter(way -> way.contains(stop.getOsmNode()))
+//                                               .forEach(way -> neoStops.stream() // Extract the stops contained in each way
+//                                                                .filter(otherStop -> !otherStop.equals(stop)
+//                                                                                     && way.contains(otherStop.getOsmNode()))
+//                                                                .forEach(otherStop ->
+//                                                                                 stop.createRelationshipTo(otherStop,
+//                                                                                                           RelTypes.RAIL_LINK,
+//                                                                                                           graphDb))
+//                                               ));
              });
     }
 }

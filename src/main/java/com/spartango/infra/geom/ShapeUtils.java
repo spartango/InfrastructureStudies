@@ -27,4 +27,11 @@ public class ShapeUtils {
         }
         return sum;
     }
+
+    public static double calculateDistance(NodeStub current, NodeStub next) {
+        GeodeticCalculator calculator = new GeodeticCalculator();
+        calculator.setStartingGeographicPoint(current.getLongitude(), current.getLatitude());
+        calculator.setDestinationGeographicPoint(next.getLongitude(), next.getLatitude());
+        return calculator.getOrthodromicDistance();
+    }
 }

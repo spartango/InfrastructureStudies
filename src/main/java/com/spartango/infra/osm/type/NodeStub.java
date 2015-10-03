@@ -30,7 +30,7 @@ public class NodeStub extends EntityStub implements Serializable {
         this.latitude = latitude;
     }
 
-    public NodeStub(long id, double latitude, double longitude, Collection<Tag> tagSet) {
+    public NodeStub(long id, double longitude, double latitude, Collection<Tag> tagSet) {
         super(id, tagSet);
         this.latitude = latitude;
         this.longitude = longitude;

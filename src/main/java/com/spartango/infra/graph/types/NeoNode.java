@@ -1,5 +1,6 @@
 package com.spartango.infra.graph.types;
 
+import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.osm.type.NodeStub;
 import org.neo4j.graphdb.*;
 
@@ -16,7 +17,8 @@ public class NeoNode {
     public static final String OSM_ID = "id";
 
     public enum OsmLabels implements Label {
-        OSM_NODE
+        OSM_NODE,
+        RAIL_STATION
     }
 
     protected Node     neoNode;
@@ -75,6 +77,8 @@ public class NeoNode {
         Relationship relationshipTo;
         try (Transaction tx = graphDb.beginTx()) {
             relationshipTo = neoNode.createRelationshipTo(otherNode.neoNode, type);
+            final double distance = ShapeUtils.calculateDistance(osmNode, otherNode.osmNode);
+            relationshipTo.setProperty("distance", String.valueOf(distance));
             tx.success();
         }
         return relationshipTo;
@@ -83,6 +87,10 @@ public class NeoNode {
     // Hopefully we don't need these later
     public Node getNeoNode() {
         return neoNode;
+    }
+
+    public NodeStub getOsmNode() {
+        return osmNode;
     }
 
     public static Optional<NeoNode> getNeoNode(long id, GraphDatabaseService graphDb) {
