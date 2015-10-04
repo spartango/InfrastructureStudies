@@ -4,7 +4,6 @@ import com.spartango.infra.framework.TieredSeeker;
 import com.spartango.infra.graph.OSMGraph;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
-import com.spartango.infra.osm.type.RelationStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -23,7 +22,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
-import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +37,7 @@ import java.util.stream.StreamSupport;
  */
 public class GraphMain {
     private static final String TARGET_PATH     = "data/china-latest.osm.pbf";
-    private static final String DB_PATH         = "data/routes.db";
+    private static final String DB_PATH         = "data/rail.db";
     private static final String GRAPH_DB_PATH   = "data/" + System.currentTimeMillis() + "_graph.db";
     private static final String GEO_PATH        = "data/graph.geojson";
     public static final  String STATION_GEOJSON = "data/s_station_graph.geojson";
@@ -61,14 +59,12 @@ public class GraphMain {
         // Seeker
         TieredSeeker seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
             @Override protected boolean isTarget(Entity entity) {
-                return (entity instanceof Relation &&
-                        (TagUtils.hasTag(entity, "route", "train")
-                         || TagUtils.hasTag(entity, "route", "railway")));
+                return TagUtils.hasTag(entity, "railway");
             }
         };
         seeker.run();
-        final Collection<RelationStub> routes = seeker.getRelations();
-        System.out.println("Building graph from " + routes.size() + " routes");
+//        final Collection<RelationStub> routes = seeker.getRelations();
+//        System.out.println("Building graph from " + routes.size() + " routes");
         OSMGraph graph = new OSMGraph(graphDb);
 
         long nodeCount;

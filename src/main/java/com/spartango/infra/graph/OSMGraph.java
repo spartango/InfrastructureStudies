@@ -4,7 +4,6 @@ import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.OSMIndex;
 import com.spartango.infra.osm.type.NodeStub;
-import com.spartango.infra.osm.type.RelationStub;
 import com.spartango.infra.osm.type.WayStub;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
@@ -90,25 +89,9 @@ public class OSMGraph {
     }
 
     private void linkStations(OSMIndex index) {
-        index.getRelations()
-             .values()
-             .forEach(route -> {
-                 // Pull up the graph nodes for the route
-                 final Set<NeoNode> neoStops = retrieveStations(index, route);
-                 final Set<WayStub> ways = new HashSet<>(route.getWays(index));
-                 System.out.println("Scanning route: "
-                                    + route.getId() + " -> "
-                                    + route.getTags()
-                                    + " w/ "
-                                    + ways.size()
-                                    + " ways and "
-                                    + neoStops.size()
-                                    + " stops");
-
-                 // Reachability
-//                 linkReachable(neoStops);
-                 linkAdjacent(index, neoStops, ways);
-             });
+        final Set<NeoNode> neoStops = retrieveStations(index);
+        final Set<WayStub> ways = new HashSet<>(index.getWays().values());
+        linkAdjacent(index, neoStops, ways);
     }
 
     private void linkAdjacent(OSMIndex index, Set<NeoNode> neoStops, Set<WayStub> ways) {
@@ -143,63 +126,55 @@ public class OSMGraph {
         System.out.print("Scanning complete\r");
     }
 
-    private Set<NeoNode> retrieveStations(OSMIndex index, RelationStub route) {
-        // Get all database nodes that are part of this route
-
-        return route.getNodes(index)
+    private Set<NeoNode> retrieveStations(OSMIndex index) {
+        // Get all database nodes that are stations
+        return index.getNodes()
+                    .values()
                     .stream()
+                    .filter(node -> node.getTag("railway").equals("station"))
                     .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .peek(node -> {
-                        node.getTags();
-                    })
                     .collect(Collectors.toSet());
     }
 
     private void buildStations(OSMIndex index) {
-        // For explicitly declared stations on routes
-        index.getRelations()
+        // For explicitly declared stations on ways
+        index.getNodes()
              .values()
              .stream()
-             .flatMap(route -> {
-                 final List<NodeStub> stations = new ArrayList<>(route.getNodes(index));
-                 return stations.stream()
-                                .map(station -> {
-                                    // Check that this station is on a way
-                                    final Optional<WayStub> adjoinedWay = index.getWays()
-                                                                               .values()
-                                                                               .stream()
-                                                                               .filter(way -> way.contains(station))
-                                                                               .findAny();
-                                    if (!adjoinedWay.isPresent()) {
-                                        // If we're not on a way, find the nearest node and put ourselves on it
-                                        System.out.print("Finding closest node to " + station.getId()
-                                                         + " -> " + station.getTags() + "\r");
-                                        final Optional<NodeStub> closest = route.getWays(index)
-                                                                                .stream()
-                                                                                .flatMap(way -> way.getNodes(index)
-                                                                                                   .stream())
-                                                                                .sorted(Comparator.comparingDouble(
-                                                                                        node -> ShapeUtils.calculateDistance(
-                                                                                                station,
-                                                                                                node)))
-                                                                                .findFirst();
-                                        if (closest.isPresent()) {
-                                            // Modify the route to contain this
-                                            final NodeStub close = closest.get();
-                                            route.addNode(close);
-                                            return close;
-                                        }
-                                    }
-                                    return station;
-                                });
-             })
-             .distinct()
-             .forEach(nodeStub -> new NeoNode(nodeStub, graphDb));
-
-        // TODO: Search for undeclared stations
-        // TODO: Attach unattached stations
+                .filter(node -> node.getTag("railway").equals("station")) // Extract stations
+                .map(station -> {
+                    final Optional<WayStub> adjoinedWay = index.getWays()
+                                                               .values()
+                                                               .stream()
+                                                               .filter(way -> way.contains(station))
+                                                               .findAny();
+                    if (!adjoinedWay.isPresent()) {
+                        // If we're not on a way, find the nearest node and put ourselves on it
+                        System.out.print("Finding closest node to " + station.getId()
+                                         + " -> " + station.getTags() + "\r");
+                        final Optional<NodeStub> closest = index.getWays()
+                                                                .values()
+                                                                .stream()
+                                                                .flatMap(way -> way.getNodes(index)
+                                                                                   .stream())
+                                                                .sorted(Comparator.comparingDouble(
+                                                                        node -> ShapeUtils.calculateDistance(
+                                                                                station,
+                                                                                node)))
+                                                                .findFirst();
+                        if (closest.isPresent()) {
+                            // Tag this as an actual station. Slightly shady
+                            final NodeStub close = closest.get();
+                            close.putAllTags(station.getTags());
+                            return close;
+                        }
+                    }
+                    return station;
+                })
+                .distinct()
+                .forEach(nodeStub -> new NeoNode(nodeStub, graphDb));
     }
 
     private void linkReachable(Set<NeoNode> neoStops) {
