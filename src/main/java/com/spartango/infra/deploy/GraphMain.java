@@ -40,10 +40,10 @@ import java.util.stream.StreamSupport;
 public class GraphMain {
     private static final String TARGET_PATH     = "data/china-latest.osm.pbf";
     private static final String DB_PATH         = "data/routes.db";
-    private static final String GRAPH_DB_PATH   = "data/graph.db";
+    private static final String GRAPH_DB_PATH   = "data/" + System.currentTimeMillis() + "_graph.db";
     private static final String GEO_PATH        = "data/graph.geojson";
-    public static final  String STATION_GEOJSON = "data/all_station_graph.geojson";
-    public static final  String LINK_GEOJSON    = "data/all_link_graph.geojson";
+    public static final  String STATION_GEOJSON = "data/s_station_graph.geojson";
+    public static final  String LINK_GEOJSON    = "data/s_link_graph.geojson";
 
     public static void main(String[] args) {
         // Neo4J
@@ -84,7 +84,7 @@ public class GraphMain {
 
         nodeCount = getNodeCount(graphDb);
         edgeCount = getEdgeCount(graphDb);
-        
+
         System.out.println("Graph built: " + nodeCount + " nodes & " + edgeCount + " links");
 
         // Dump out geojson
@@ -121,9 +121,15 @@ public class GraphMain {
                                                                              false);
 
             relationStream.forEach(relationship -> {
+//            seeker.getWays().stream().forEach(way -> {
+
                 // Grab the ends
                 final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
                 final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
+
+//                final List<NodeStub> nodes = way.getNodes(seeker.getIndex());
+//                final NodeStub startNode = nodes.get(0);
+//                final NodeStub endNode = nodes.get(nodes.size() - 1);
 
                 if (!stationFeatures.containsKey(startNode.getId())) {
                     final Point startPoint = geometryFactory.createPoint(new Coordinate(

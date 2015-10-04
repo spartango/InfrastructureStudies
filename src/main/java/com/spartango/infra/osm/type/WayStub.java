@@ -40,10 +40,16 @@ public class WayStub extends EntityStub implements Serializable {
     }
 
     public List<NodeStub> getNodes(OSMIndex index) {
-        nodes = nodeIds.stream()
-                       .filter(index::hasNode)
-                       .map(index::getNode)
-                       .collect(Collectors.toList());
+        if (nodes.size() != nodeIds.size()) {
+            nodes = nodeIds.stream()
+                           .filter(index::hasNode)
+                           .map(index::getNode)
+                           .collect(Collectors.toList());
+        }
+        return nodes;
+    }
+
+    public List<NodeStub> getNodes() {
         return nodes;
     }
 

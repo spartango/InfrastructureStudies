@@ -7,7 +7,6 @@ import org.openstreetmap.osmosis.core.domain.v0_6.RelationMember;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,10 +43,10 @@ public class RelationStub extends EntityStub implements Serializable {
                         List<NodeStub> nodes, List<WayStub> ways) {
         super(id, tags);
         this.nodes = nodes;
-        nodeIds = new LinkedList<>();
+        nodeIds = new ArrayList<>();
         nodeIds.addAll(nodes.stream().map(EntityStub::getId).collect(Collectors.toList()));
         this.ways = ways;
-        wayIds = new LinkedList<>();
+        wayIds = new ArrayList<>();
         wayIds.addAll(ways.stream().map(EntityStub::getId).collect(Collectors.toList()));
     }
 
@@ -60,21 +59,39 @@ public class RelationStub extends EntityStub implements Serializable {
     }
 
     public List<NodeStub> getNodes(OSMIndex index) {
-        nodes = nodeIds.stream()
-                       .filter(index::hasNode)
-                       .map(index::getNode)
-                       .collect(Collectors.toList());
+        if (nodes.size() != nodeIds.size()) {
+            nodes = nodeIds.stream()
+                           .filter(index::hasNode)
+                           .map(index::getNode)
+                           .collect(Collectors.toList());
+        }
         return nodes;
     }
 
     public List<WayStub> getWays(OSMIndex index) {
-        ways = wayIds.stream()
-                     .filter(index::hasWay)
-                     .map(index::getWay)
-                     .collect(Collectors.toList());
+        if (ways.size() != wayIds.size()) {
+            ways = wayIds.stream()
+                         .filter(index::hasWay)
+                         .map(index::getWay)
+                         .collect(Collectors.toList());
+        }
         return ways;
     }
 
+    public List<NodeStub> getNodes() {
+        return nodes;
+    }
+
+    public List<WayStub> getWays() {
+        return ways;
+    }
+
+    public void addNode(NodeStub nodeStub) {
+        if (!nodeIds.contains(nodeStub.getId())) {
+            nodes.add(nodeStub);
+            nodeIds.add(nodeStub.getId());
+        }
+    }
 
     public void setNodes(List<NodeStub> nodes) {
         this.nodes = nodes;

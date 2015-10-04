@@ -73,13 +73,11 @@ public class EntityStub implements Serializable {
 
         final EntityStub that = (EntityStub) o;
 
-        return (id != that.id);
+        return id == that.id;
     }
 
     @Override public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + tags.hashCode();
-        return result;
+        return (int) (id ^ (id >>> 32));
     }
 
     @Override public String toString() {

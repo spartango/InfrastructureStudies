@@ -1,13 +1,18 @@
 package com.spartango.infra.graph;
 
+import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.OSMIndex;
+import com.spartango.infra.osm.type.NodeStub;
+import com.spartango.infra.osm.type.RelationStub;
+import com.spartango.infra.osm.type.WayStub;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.spartango.infra.graph.OSMGraph.RelTypes.RAIL_LINK;
 
 /**
  * Author: spartango
@@ -17,6 +22,8 @@ import java.util.stream.Collectors;
 
 
 public class OSMGraph {
+    private static final double PROXIMITY_THRESHOLD = 100; // meters
+
     public enum RelTypes implements RelationshipType {
         NEARBY,
         RAIL_LINK,
@@ -27,6 +34,46 @@ public class OSMGraph {
         AIR_LINK
     }
 
+    private class ScanContext {
+        public final WayStub target;
+        public final NeoNode lastStation;
+
+        public ScanContext(WayStub target, NeoNode lastStation) {
+            this.lastStation = lastStation;
+            this.target = target;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            final ScanContext that = (ScanContext) o;
+
+            if (target != null ? !target.equals(that.target) : that.target != null) {
+                return false;
+            }
+            return !(lastStation != null ? !lastStation.equals(that.lastStation) : that.lastStation != null);
+
+        }
+
+        @Override public int hashCode() {
+            int result = target != null ? target.hashCode() : 0;
+            result = 31 * result + (lastStation != null ? lastStation.hashCode() : 0);
+            return result;
+        }
+
+        @Override public String toString() {
+            return "ScanContext{" +
+                   "lastStation=" + lastStation +
+                   ", target=" + target +
+                   '}';
+        }
+    }
+
     private GraphDatabaseService graphDb;
 
     public OSMGraph(GraphDatabaseService graphDb) {
@@ -35,44 +82,201 @@ public class OSMGraph {
 
     public void build(OSMIndex index) {
         // Pull out the stops as nodes, and uniquely enter them into the db
-        index.getRelations()
-             .values()
-             .stream()
-             .flatMap(route -> route.getNodes(index).stream())
-             .distinct()
-             .forEach(relationStub -> new NeoNode(relationStub, graphDb));
+        System.out.println("Building stations...");
+        buildStations(index);
 
         // Attach the appropriate links
+        linkStations(index);
+    }
+
+    private void linkStations(OSMIndex index) {
         index.getRelations()
              .values()
              .forEach(route -> {
                  // Pull up the graph nodes for the route
-                 final List<NeoNode> neoStops = route.getNodes(index)
-                                                     .stream()
-                                                     .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
-                                                     .filter(Optional::isPresent)
-                                                     .map(Optional::get)
-                                                     .collect(Collectors.toList());
+                 final Set<NeoNode> neoStops = retrieveStations(index, route);
+                 final Set<WayStub> ways = new HashSet<>(route.getWays(index));
+                 System.out.println("Scanning route: "
+                                    + route.getId() + " -> "
+                                    + route.getTags()
+                                    + " w/ "
+                                    + ways.size()
+                                    + " ways and "
+                                    + neoStops.size()
+                                    + " stops");
 
                  // Reachability
-                 neoStops.forEach(stop -> neoStops.stream()
-                                                  .filter(otherStop -> !stop.equals(otherStop))
-                                                  .forEach(otherStop -> stop.createRelationshipTo(otherStop,
-                                                                                                  RelTypes.REACHABLE,
-                                                                                                  graphDb)));
-
-                 // Find the containing ways & adjacents
-//                 neoStops.forEach(stop -> route.getWays(index)
-//                                               .stream()
-//                                               .filter(way -> way.contains(stop.getOsmNode()))
-//                                               .forEach(way -> neoStops.stream() // Extract the stops contained in each way
-//                                                                .filter(otherStop -> !otherStop.equals(stop)
-//                                                                                     && way.contains(otherStop.getOsmNode()))
-//                                                                .forEach(otherStop ->
-//                                                                                 stop.createRelationshipTo(otherStop,
-//                                                                                                           RelTypes.RAIL_LINK,
-//                                                                                                           graphDb))
-//                                               ));
+//                 linkReachable(neoStops);
+                 linkAdjacent(index, neoStops, ways);
              });
     }
+
+    private void linkAdjacent(OSMIndex index, Set<NeoNode> neoStops, Set<WayStub> ways) {
+        // Find the containing ways & adjacents
+        Set<ScanContext> checked = new HashSet<>();
+        final Stack<ScanContext> targets = new Stack<>();
+
+        // Seed with known ways and no priors
+        ways.forEach(way -> targets.push(new ScanContext(way, null)));
+
+        while (!targets.isEmpty()) {
+            final ScanContext entry = targets.pop();
+            if (checked.contains(entry)) {
+                continue;
+            } else {
+                checked.add(entry);
+            }
+            System.out.print("Scanning: " + targets.size() + " targets remaining\r");
+
+            // Scan this target
+            final List<ScanContext> newTargets = scan(entry.target,
+                                                      entry.lastStation,
+                                                      neoStops,
+                                                      ways,
+                                                      index,
+                                                      graphDb);
+            // Save the new targets, but only the ones we've not done before.
+            newTargets.stream()
+                      .filter(target -> !checked.contains(target))
+                      .forEach(targets::push);
+        }
+        System.out.print("Scanning complete\r");
+    }
+
+    private Set<NeoNode> retrieveStations(OSMIndex index, RelationStub route) {
+        // Get all database nodes that are part of this route
+
+        return route.getNodes(index)
+                    .stream()
+                    .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .peek(node -> {
+                        node.getTags();
+                    })
+                    .collect(Collectors.toSet());
+    }
+
+    private void buildStations(OSMIndex index) {
+        // For explicitly declared stations on routes
+        index.getRelations()
+             .values()
+             .stream()
+             .flatMap(route -> {
+                 final List<NodeStub> stations = new ArrayList<>(route.getNodes(index));
+                 return stations.stream()
+                                .map(station -> {
+                                    // Check that this station is on a way
+                                    final Optional<WayStub> adjoinedWay = index.getWays()
+                                                                               .values()
+                                                                               .stream()
+                                                                               .filter(way -> way.contains(station))
+                                                                               .findAny();
+                                    if (!adjoinedWay.isPresent()) {
+                                        // If we're not on a way, find the nearest node and put ourselves on it
+                                        System.out.print("Finding closest node to " + station.getId()
+                                                         + " -> " + station.getTags() + "\r");
+                                        final Optional<NodeStub> closest = route.getWays(index)
+                                                                                .stream()
+                                                                                .flatMap(way -> way.getNodes(index)
+                                                                                                   .stream())
+                                                                                .sorted(Comparator.comparingDouble(
+                                                                                        node -> ShapeUtils.calculateDistance(
+                                                                                                station,
+                                                                                                node)))
+                                                                                .findFirst();
+                                        if (closest.isPresent()) {
+                                            // Modify the route to contain this
+                                            final NodeStub close = closest.get();
+                                            route.addNode(close);
+                                            return close;
+                                        }
+                                    }
+                                    return station;
+                                });
+             })
+             .distinct()
+             .forEach(nodeStub -> new NeoNode(nodeStub, graphDb));
+
+        // TODO: Search for undeclared stations
+        // TODO: Attach unattached stations
+    }
+
+    private void linkReachable(Set<NeoNode> neoStops) {
+        neoStops.forEach(stop -> neoStops.stream()
+                                         .filter(otherStop -> !stop.equals(otherStop))
+                                         .forEach(otherStop -> stop.createRelationshipTo(otherStop,
+                                                                                         RelTypes.REACHABLE,
+                                                                                         graphDb)));
+    }
+
+    /**
+     * Crazy helper function
+     * Trying to connect lastStation to any station in target
+     * Trying to connect any station in Target to any other station in target
+     *
+     * @param target
+     * @param lastStation
+     * @param stations
+     * @param ways
+     * @param index
+     * @param graphDb
+     * @return targets, consisting of adjacent edges and the station we want to link
+     */
+    private List<ScanContext> scan(WayStub target,
+                                   NeoNode lastStation,
+                                   Set<NeoNode> stations,
+                                   Set<WayStub> ways,
+                                   OSMIndex index,
+                                   GraphDatabaseService graphDb) {
+
+        List<ScanContext> adjacents = new LinkedList<>();
+        List<WayStub> pending = new LinkedList<>();
+
+        NeoNode currentStation = lastStation;
+        // walk the target's nodes in order
+        for (NodeStub node : target.getNodes(index)) {
+            // if node is a station
+            Optional<NeoNode> stationCheck = stations.stream()
+                                                     .filter(station -> station.getOsmNode().equals(node))
+                                                     .findAny();
+            if (stationCheck.isPresent()) {
+                // link to last station
+                final NeoNode station = stationCheck.get();
+                if (currentStation != null && !currentStation.equals(station)) {
+                    currentStation.createRelationshipTo(station, RAIL_LINK, graphDb);
+                }
+
+                // set last station to this one, prior stations are no long adjacent
+                currentStation = station;
+
+                // Purge the list of pendings
+                for (final WayStub wayStub : pending) {
+                    adjacents.add(new ScanContext(wayStub, currentStation));
+                }
+                pending.clear();
+            }
+
+            // if the node is on another way, find those ways, ignoring this and the past one
+            final List<WayStub> newWays = ways.stream()
+                                              .filter(way -> !target.equals(way))
+                                              .filter(way -> way.contains(node)).collect(Collectors.toList());
+            if (currentStation != lastStation) {
+                for (final WayStub newWay : newWays) {
+                    adjacents.add(new ScanContext(newWay, currentStation));
+                }
+            } else {
+                pending.addAll(newWays);
+            }
+        }
+
+        // Purge the list of pendings
+        for (final WayStub wayStub : pending) {
+            adjacents.add(new ScanContext(wayStub, currentStation));
+        }
+        pending.clear();
+
+        return adjacents;
+    }
+
 }

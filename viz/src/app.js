@@ -12,7 +12,7 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={
 
 // Load up the geojson
 var xhr = new XMLHttpRequest();
-xhr.open('GET', 'link_graph.geojson', true);
+xhr.open('GET', 's_link_graph.geojson', true);
 xhr.onload = function (request) {
     if (xhr.readyState == 4) {
         console.log("Loaded data");
@@ -22,13 +22,28 @@ xhr.onload = function (request) {
 };
 xhr.send();
 
+function stationPopup(feature, layer) {
+    // does this feature have a property named popupContent?
+    if (feature.properties) {
+        var popupString = "<table>";
+        for (key in feature.properties) {
+            popupString += "<tr><td>" + feature.properties[key] + "</td></tr>";
+        }
+
+        popupString += "</table>";
+        layer.bindPopup(popupString);
+    }
+}
+
 var sXhr = new XMLHttpRequest();
 sXhr.open('GET', 'all_station_graph.geojson', true);
-sXhr.onload = function(request) {
+sXhr.onload = function () {
     if (sXhr.readyState == 4) {
         var data = JSON.parse(sXhr.responseText);
         var markers = new L.MarkerClusterGroup();
-        var geoJsonLayer = L.geoJson(data);
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: stationPopup
+        });
         markers.addLayer(geoJsonLayer);
         map.addLayer(markers);
         map.fitBounds(markers.getBounds());
