@@ -1,6 +1,5 @@
 package com.spartango.infra.graph;
 
-import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.OSMIndex;
 import com.spartango.infra.osm.type.NodeStub;
@@ -12,6 +11,7 @@ import org.neo4j.graphdb.RelationshipType;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.spartango.infra.geom.ShapeUtils.calculateDistance;
 import static com.spartango.infra.graph.OSMGraph.RelTypes.RAIL_LINK;
 
 /**
@@ -22,7 +22,6 @@ import static com.spartango.infra.graph.OSMGraph.RelTypes.RAIL_LINK;
 
 
 public class OSMGraph {
-    private static final double PROXIMITY_THRESHOLD = 100; // meters
 
     public enum RelTypes implements RelationshipType {
         NEARBY,
@@ -132,7 +131,6 @@ public class OSMGraph {
             final List<ScanContext> newTargets = scan(entry.target,
                                                       entry.lastStation,
                                                       neoStops,
-                                                      ways,
                                                       index,
                                                       graphDb);
             // Save the new targets, but only the ones we've not done before.
@@ -151,9 +149,6 @@ public class OSMGraph {
                     .map(stop -> NeoNode.getNeoNode(stop.getId(), graphDb))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .peek(node -> {
-                        node.getTags();
-                    })
                     .collect(Collectors.toSet());
     }
 
@@ -163,9 +158,9 @@ public class OSMGraph {
              .values()
              .stream()
              .flatMap(route -> {
-                 final List<NodeStub> stations = new ArrayList<>(route.getNodes(index));
+                 final Collection<NodeStub> stations = route.getNodes(index);
                  return stations.stream()
-                                .map(station -> {
+                                .peek(station -> {
                                     // Check that this station is on a way
                                     final Optional<WayStub> adjoinedWay = index.getWays()
                                                                                .values()
@@ -175,24 +170,50 @@ public class OSMGraph {
                                     if (!adjoinedWay.isPresent()) {
                                         // If we're not on a way, find the nearest node and put ourselves on it
                                         System.out.print("Finding closest node to " + station.getId()
-                                                         + " -> " + station.getTags() + "\r");
-                                        final Optional<NodeStub> closest = route.getWays(index)
-                                                                                .stream()
-                                                                                .flatMap(way -> way.getNodes(index)
-                                                                                                   .stream())
-                                                                                .sorted(Comparator.comparingDouble(
-                                                                                        node -> ShapeUtils.calculateDistance(
-                                                                                                station,
-                                                                                                node)))
-                                                                                .findFirst();
+                                                         + " -> " + station.getTags());
+                                        Optional<NodeStub> closest = route.getWays(index)
+                                                                          .stream()
+                                                                          .flatMap(way -> way.getNodes(index)
+                                                                                             .stream())
+                                                                          .sorted(Comparator.comparingDouble(
+                                                                                  node -> calculateDistance(
+                                                                                          station,
+                                                                                          node)))
+                                                                          .findFirst();
+                                        if (!closest.isPresent()) {
+                                            // Check if there's a nearby way in ALL the ways
+                                            closest = index.getWays()
+                                                           .values()
+                                                           .stream()
+                                                           .flatMap(way -> way.getNodes(index)
+                                                                              .stream())
+                                                           .sorted(Comparator.comparingDouble(
+                                                                   node -> calculateDistance(
+                                                                           station,
+                                                                           node)))
+                                                           .findFirst();
+                                        }
+
                                         if (closest.isPresent()) {
-                                            // Modify the route to contain this
                                             final NodeStub close = closest.get();
-                                            route.addNode(close);
-                                            return close;
+                                            // Make a way between the station and this target
+                                            long id;
+                                            while (index.hasWay(id = (long) (Math.random() * Long.MAX_VALUE))) {
+                                                System.out.println("Way ID generation clash!");
+                                            }
+
+                                            Map<String, String> tags = new HashMap<>();
+                                            tags.put("virtual", "station link");
+                                            tags.put("railway", "rail");
+                                            WayStub newWay = new WayStub(id,
+                                                                         tags,
+                                                                         Arrays.asList(close, station, close));
+                                            index.addWay(route, newWay);
+                                            System.out.println(" => " + newWay);
+                                        } else {
+                                            System.out.println(" => Nothing found");
                                         }
                                     }
-                                    return station;
                                 });
              })
              .distinct()
@@ -218,7 +239,6 @@ public class OSMGraph {
      * @param target
      * @param lastStation
      * @param stations
-     * @param ways
      * @param index
      * @param graphDb
      * @return targets, consisting of adjacent edges and the station we want to link
@@ -226,7 +246,6 @@ public class OSMGraph {
     private List<ScanContext> scan(WayStub target,
                                    NeoNode lastStation,
                                    Set<NeoNode> stations,
-                                   Set<WayStub> ways,
                                    OSMIndex index,
                                    GraphDatabaseService graphDb) {
 
@@ -250,28 +269,34 @@ public class OSMGraph {
                 // set last station to this one, prior stations are no long adjacent
                 currentStation = station;
 
-                // Purge the list of pendings
+                // Purge the list of pendings, as we've found a new station they're close to
                 for (final WayStub wayStub : pending) {
                     adjacents.add(new ScanContext(wayStub, currentStation));
                 }
                 pending.clear();
             }
 
-            // if the node is on another way, find those ways, ignoring this and the past one
-            final List<WayStub> newWays = ways.stream()
-                                              .filter(way -> !target.equals(way))
-                                              .filter(way -> way.contains(node)).collect(Collectors.toList());
+            // if the node is on another way, find those ways, ignoring this
+            final List<WayStub> newWays = index.getWays()
+                                               .values()
+                                               .stream()
+                                               .filter(way -> !target.equals(way))
+                                               .filter(way -> way.contains(node))
+                                               .collect(Collectors.toList());
+            // Target adjacent ways with the current station
             if (currentStation != lastStation) {
                 for (final WayStub newWay : newWays) {
                     adjacents.add(new ScanContext(newWay, currentStation));
                 }
             } else {
+                // If we haven't found a new station on this leg, we'll want to check in again once we find one
                 pending.addAll(newWays);
             }
         }
 
         // Purge the list of pendings
         for (final WayStub wayStub : pending) {
+            // These are places to search with the previous station
             adjacents.add(new ScanContext(wayStub, currentStation));
         }
         pending.clear();

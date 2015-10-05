@@ -24,6 +24,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
+import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,9 +62,11 @@ public class GraphMain {
         // Seeker
         TieredSeeker seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
             @Override protected boolean isTarget(Entity entity) {
-                return (entity instanceof Relation &&
-                        (TagUtils.hasTag(entity, "route", "train")
-                         || TagUtils.hasTag(entity, "route", "railway")));
+                return ((entity instanceof Relation &&
+                         (TagUtils.hasTag(entity, "route", "train")
+                          || TagUtils.hasTag(entity, "route", "railway")))
+                        || (entity instanceof Way
+                            && TagUtils.hasTag(entity, "railway")));
             }
         };
         seeker.run();

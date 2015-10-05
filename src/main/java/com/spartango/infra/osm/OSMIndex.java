@@ -95,6 +95,26 @@ public class OSMIndex {
         database.commit();
     }
 
+    public void addWay(WayStub target) {
+        final long id = target.getId();
+        ways.putIfAbsent(id, target);
+        desiredWays.remove(id);
+        database.commit();
+    }
+
+    public void addWay(RelationStub parent, WayStub target) {
+        addWay(target);
+        relations.get(parent.getId()).addWay(target);
+        database.commit();
+    }
+
+    public void addNode(NodeStub target) {
+        final long id = target.getId();
+        nodes.putIfAbsent(id, target);
+        desiredNodes.remove(id);
+        database.commit();
+    }
+
     public void addRelation(Relation target) {
         final long id = target.getId();
         relations.putIfAbsent(id, new RelationStub(target));
