@@ -36,10 +36,12 @@ public class OSMGraph {
     private class ScanContext {
         public final WayStub target;
         public final NeoNode lastStation;
+        public final WayStub origin;
 
-        public ScanContext(WayStub target, NeoNode lastStation) {
+        public ScanContext(WayStub target, NeoNode lastStation, WayStub origin) {
             this.lastStation = lastStation;
             this.target = target;
+            this.origin = origin;
         }
 
         @Override public boolean equals(Object o) {
@@ -116,7 +118,7 @@ public class OSMGraph {
         final Stack<ScanContext> targets = new Stack<>();
 
         // Seed with known ways and no priors
-        ways.forEach(way -> targets.push(new ScanContext(way, null)));
+        ways.forEach(way -> targets.push(new ScanContext(way, null, way)));
 
         while (!targets.isEmpty()) {
             final ScanContext entry = targets.pop();
@@ -130,6 +132,7 @@ public class OSMGraph {
             // Scan this target
             final List<ScanContext> newTargets = scan(entry.target,
                                                       entry.lastStation,
+                                                      entry.origin,
                                                       neoStops,
                                                       index,
                                                       graphDb);
@@ -245,6 +248,7 @@ public class OSMGraph {
      */
     private List<ScanContext> scan(WayStub target,
                                    NeoNode lastStation,
+                                   WayStub origin,
                                    Set<NeoNode> stations,
                                    OSMIndex index,
                                    GraphDatabaseService graphDb) {
@@ -271,7 +275,7 @@ public class OSMGraph {
 
                 // Purge the list of pendings, as we've found a new station they're close to
                 for (final WayStub wayStub : pending) {
-                    adjacents.add(new ScanContext(wayStub, currentStation));
+                    adjacents.add(new ScanContext(wayStub, currentStation, target));
                 }
                 pending.clear();
             }
@@ -280,13 +284,12 @@ public class OSMGraph {
             final List<WayStub> newWays = index.getWays()
                                                .values()
                                                .stream()
-                                               .filter(way -> !target.equals(way))
-                                               .filter(way -> way.contains(node))
+                                               .filter(way -> !target.equals(way) && !origin.equals(way) && way.contains(node))
                                                .collect(Collectors.toList());
             // Target adjacent ways with the current station
             if (currentStation != lastStation) {
                 for (final WayStub newWay : newWays) {
-                    adjacents.add(new ScanContext(newWay, currentStation));
+                    adjacents.add(new ScanContext(newWay, currentStation, target));
                 }
             } else {
                 // If we haven't found a new station on this leg, we'll want to check in again once we find one
@@ -297,7 +300,7 @@ public class OSMGraph {
         // Purge the list of pendings
         for (final WayStub wayStub : pending) {
             // These are places to search with the previous station
-            adjacents.add(new ScanContext(wayStub, currentStation));
+            adjacents.add(new ScanContext(wayStub, currentStation, target));
         }
         pending.clear();
 

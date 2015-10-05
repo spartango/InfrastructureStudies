@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
  */
 public class GraphMain {
     private static final String TARGET_PATH     = "data/china-latest.osm.pbf";
-    private static final String DB_PATH         = "data/routes.db";
+    private static final String DB_PATH         = "data/rail.db";
     private static final String GRAPH_DB_PATH   = "data/" + System.currentTimeMillis() + "_graph.db";
     private static final String GEO_PATH        = "data/graph.geojson";
     public static final  String STATION_GEOJSON = "data/s_station_graph.geojson";
