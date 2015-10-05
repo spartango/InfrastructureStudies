@@ -69,7 +69,7 @@ public class GraphMain {
                             && TagUtils.hasTag(entity, "railway")));
             }
         };
-        seeker.run();
+//        seeker.run();
         final Collection<RelationStub> routes = seeker.getRelations();
         System.out.println("Building graph from " + routes.size() + " routes");
         OSMGraph graph = new OSMGraph(graphDb);

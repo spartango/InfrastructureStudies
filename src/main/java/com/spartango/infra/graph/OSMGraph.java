@@ -91,25 +91,30 @@ public class OSMGraph {
     }
 
     private void linkStations(OSMIndex index) {
+        final Set<NeoNode> routeStations = new HashSet<>();
+        final Set<WayStub> seedWays = new HashSet<>();
         index.getRelations()
              .values()
              .forEach(route -> {
                  // Pull up the graph nodes for the route
-                 final Set<NeoNode> neoStops = retrieveStations(index, route);
-                 final Set<WayStub> ways = new HashSet<>(route.getWays(index));
-                 System.out.println("Scanning route: "
-                                    + route.getId() + " -> "
-                                    + route.getTags()
-                                    + " w/ "
-                                    + ways.size()
-                                    + " ways and "
-                                    + neoStops.size()
-                                    + " stops");
-
-                 // Reachability
-//                 linkReachable(neoStops);
-                 linkAdjacent(index, neoStops, ways);
+                 final Set<NeoNode> neoNodes = retrieveStations(index, route);
+                 final Set<NodeStub> osmNodes = neoNodes.stream()
+                                                        .map(NeoNode::getOsmNode)
+                                                        .collect(Collectors.toSet());
+                 routeStations.addAll(neoNodes);
+                 route.getWays(index)
+                      .stream()
+                      .filter(way -> way.getNodes(index)
+                                        .stream()
+                                        .anyMatch(osmNodes::contains))
+                      .forEach(seedWays::add);
+                 System.out.print("Seeding: " + routeStations.size() + " stations and " + seedWays.size() + " ways\r");
              });
+
+        // Reachability
+        // linkReachable(neoStops);
+        System.out.println("Seeding complete: " + routeStations.size() + " stations and " + seedWays.size() + " ways");
+        linkAdjacent(index, routeStations, seedWays);
     }
 
     private void linkAdjacent(OSMIndex index, Set<NeoNode> neoStops, Set<WayStub> ways) {
@@ -284,7 +289,9 @@ public class OSMGraph {
             final List<WayStub> newWays = index.getWays()
                                                .values()
                                                .stream()
-                                               .filter(way -> !target.equals(way) && !origin.equals(way) && way.contains(node))
+                                               .filter(way -> !target.equals(way)
+                                                              && !origin.equals(way)
+                                                              && way.contains(node))
                                                .collect(Collectors.toList());
             // Target adjacent ways with the current station
             if (currentStation != lastStation) {
