@@ -4,7 +4,6 @@ import com.spartango.infra.framework.TieredSeeker;
 import com.spartango.infra.graph.OSMGraph;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
-import com.spartango.infra.osm.type.RelationStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -70,20 +69,23 @@ public class GraphMain {
             }
         };
 //        seeker.run();
-        final Collection<RelationStub> routes = seeker.getRelations();
-        System.out.println("Building graph from " + routes.size() + " routes");
+        System.out.println("Building graph from "
+                           + seeker.getRelations().size()
+                           + " routes, "
+                           + seeker.getWays().size()
+                           + " ways, and "
+                           + seeker.getNodes().size()
+                           + " nodes");
         OSMGraph graph = new OSMGraph(graphDb);
 
         long nodeCount;
         long edgeCount;
         // Check that the graph has been built properly
         // Quick stats
-        nodeCount = getNodeCount(graphDb);
-        edgeCount = getEdgeCount(graphDb);
+//        nodeCount = getNodeCount(graphDb);
+//        edgeCount = getEdgeCount(graphDb);
 
-        if (edgeCount < 2000 || nodeCount < 4000) {
-            graph.build(seeker.getIndex());
-        }
+        graph.build(seeker.getIndex());
 
         nodeCount = getNodeCount(graphDb);
         edgeCount = getEdgeCount(graphDb);
@@ -134,7 +136,7 @@ public class GraphMain {
 //                final NodeStub startNode = nodes.get(0);
 //                final NodeStub endNode = nodes.get(nodes.size() - 1);
 
-                if (!stationFeatures.containsKey(startNode.getId())) {
+                if (startNode.getTag("railway").equals("station") && !stationFeatures.containsKey(startNode.getId())) {
                     final Point startPoint = geometryFactory.createPoint(new Coordinate(
                             startNode.getLongitude(),
                             startNode.getLatitude()));
@@ -146,7 +148,7 @@ public class GraphMain {
                     stationFeatures.put(startNode.getId(), startFeature);
                 }
 
-                if (!stationFeatures.containsKey(endNode.getId())) {
+                if (endNode.getTag("railway").equals("station") && !stationFeatures.containsKey(endNode.getId())) {
                     final Point endPoint = geometryFactory.createPoint(new Coordinate(
                             endNode.getLongitude(),
                             endNode.getLatitude()));
@@ -157,6 +159,7 @@ public class GraphMain {
                     final SimpleFeature endFeature = stationFeatureBuilder.buildFeature(String.valueOf(endNode.getId()));
                     stationFeatures.put(endNode.getId(), endFeature);
                 }
+
                 // Build the geometry
                 final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
                                                               .map(nodeStub -> new Coordinate(
