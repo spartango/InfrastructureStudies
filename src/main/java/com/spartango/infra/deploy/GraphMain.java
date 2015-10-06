@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
 public class GraphMain {
     private static final String TARGET_PATH     = "data/china-latest.osm.pbf";
     private static final String DB_PATH         = "data/rail.db";
-    private static final String GRAPH_DB_PATH   = "data/" + System.currentTimeMillis() + "_graph.db";
+    private static final String GRAPH_DB_PATH   = "data/graph.db";
     private static final String GEO_PATH        = "data/graph.geojson";
     public static final  String STATION_GEOJSON = "data/s_station_graph.geojson";
     public static final  String LINK_GEOJSON    = "data/s_link_graph.geojson";
@@ -85,7 +85,7 @@ public class GraphMain {
 //        nodeCount = getNodeCount(graphDb);
 //        edgeCount = getEdgeCount(graphDb);
 
-        graph.build(seeker.getIndex());
+//        graph.build(seeker.getIndex());
 
         nodeCount = getNodeCount(graphDb);
         edgeCount = getEdgeCount(graphDb);
@@ -135,8 +135,10 @@ public class GraphMain {
 //                final List<NodeStub> nodes = way.getNodes(seeker.getIndex());
 //                final NodeStub startNode = nodes.get(0);
 //                final NodeStub endNode = nodes.get(nodes.size() - 1);
-
-                if (startNode.getTag("railway").equals("station") && !stationFeatures.containsKey(startNode.getId())) {
+                System.out.print("Writing: " + startNode + " -> " + endNode + "\r");
+                if (startNode.getTags().containsKey("railway")
+                    && startNode.getTag("railway").equals("station")
+                    && !stationFeatures.containsKey(startNode.getId())) {
                     final Point startPoint = geometryFactory.createPoint(new Coordinate(
                             startNode.getLongitude(),
                             startNode.getLatitude()));
@@ -148,7 +150,9 @@ public class GraphMain {
                     stationFeatures.put(startNode.getId(), startFeature);
                 }
 
-                if (endNode.getTag("railway").equals("station") && !stationFeatures.containsKey(endNode.getId())) {
+                if (endNode.getTags().containsKey("railway")
+                    && endNode.getTag("railway").equals("station")
+                    && !stationFeatures.containsKey(endNode.getId())) {
                     final Point endPoint = geometryFactory.createPoint(new Coordinate(
                             endNode.getLongitude(),
                             endNode.getLatitude()));
