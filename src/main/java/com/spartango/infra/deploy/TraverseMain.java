@@ -14,6 +14,7 @@ import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.opengis.feature.simple.SimpleFeature;
@@ -70,15 +71,23 @@ public class TraverseMain {
                 .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                 .map(station -> stations.stream()
                                         .filter(destination -> !destination.equals(station))
-                                        .limit(1)
-                                        .peek(destination -> System.out.print(station.getId()
-                                                                              + " -> "
-                                                                              + destination.getId()
-                                                                              + "\r"))
-                                        .map(destination -> pathFinder.findSinglePath(station.getNeoNode(),
-                                                                                      destination.getNeoNode())))
+                        .limit(1) // TODO: DEBUG plotting just one set for now
+                        .peek(destination -> System.out.print(station.getId()
+                                                              + " -> "
+                                                              + destination.getId()
+                                                              + "\r"))
+                        .map(destination -> {
+                            final WeightedPath path;
+                            try (Transaction tx = graphDb.beginTx()) {
+                                path = pathFinder.findSinglePath(station.getNeoNode(),
+                                                                 destination.getNeoNode());
+                                tx.success();
+                            }
+                            return path;
+                        }))
                 .forEach(pathStream -> pathStream.forEach(TraverseMain::write));
 
+        System.out.println("Shutting down");
         graphDb.shutdown();
     }
 
