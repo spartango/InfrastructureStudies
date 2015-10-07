@@ -3,6 +3,7 @@ package com.spartango.infra.deploy;
 import com.spartango.infra.framework.TieredSeeker;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
+import com.spartango.infra.osm.type.NodeStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -93,41 +95,54 @@ public class TraverseMain {
 
     private static List<NeoNode> getStations() {
         System.out.println("Finding stations...");
-        return seeker.getNodes()
-                     .stream()
-                     .filter(node -> node.getTags().containsKey("railway")
-                                     && node.getTag("railway").equals("station"))
-                     .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
-                     .filter(Optional::isPresent)
-                     .map(Optional::get)
-                     .collect(Collectors.toList());
+        final Set<NodeStub> stations = seeker.getDatabase().getHashSet("stations");
+        if (stations.isEmpty()) {
+            System.out.println("Building station cache");
+            seeker.getNodes()
+                  .stream()
+                  .filter(node -> node.getTags().containsKey("railway")
+                                  && node.getTag("railway").equals("station"))
+                  .forEach(stations::add);
+            seeker.getDatabase().commit();
+        }
+        return stations.stream()
+                       .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
+                       .filter(Optional::isPresent)
+                       .map(Optional::get)
+                       .collect(Collectors.toList());
     }
 
     private static void write(WeightedPath path) {
-        System.out.println("Writing path: " + path);
+        // Setup schema
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
-        path.relationships()
-            .forEach(relationship -> {
-                final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
-                final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
-                // Build the geometry
-                final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
-                                                              .map(nodeStub -> new Coordinate(
-                                                                      nodeStub.getLongitude(),
-                                                                      nodeStub.getLatitude()))
-                                                              .collect(Collectors.toList());
-                final LineString lineString = geometryFactory.createLineString(
-                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
-                linkFeatureBuilder.add(lineString);
-                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(relationship.getId()));
-                linkFeatures.add(linkFeature);
-            });
 
+        try (Transaction tx = graphDb.beginTx()) {
+            path.relationships()
+                .forEach(relationship -> {
+                    final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
+                    final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
+
+                    // Build the geometry
+                    final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
+                                                                  .map(nodeStub -> new Coordinate(
+                                                                          nodeStub.getLongitude(),
+                                                                          nodeStub.getLatitude()))
+                                                                  .collect(Collectors.toList());
+                    final LineString lineString = geometryFactory.createLineString(
+                            coordinateList.toArray(new Coordinate[coordinateList.size()]));
+                    linkFeatureBuilder.add(lineString);
+
+                    final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(relationship.getId()));
+                    linkFeatures.add(linkFeature);
+
+                });
+            tx.success();
+        }
         try {
             FeatureJSON featureJSON = new FeatureJSON();
             featureJSON.setEncodeFeatureCollectionCRS(false);
