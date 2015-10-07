@@ -135,7 +135,7 @@ public class GraphMain {
 //                final List<NodeStub> nodes = way.getNodes(seeker.getIndex());
 //                final NodeStub startNode = nodes.get(0);
 //                final NodeStub endNode = nodes.get(nodes.size() - 1);
-                System.out.print("Writing: " + startNode + " -> " + endNode + "\r");
+                System.out.print("Writing: " + startNode.getOsmNode() + " -> " + endNode.getOsmNode() + "\r");
                 if (startNode.getTags().containsKey("railway")
                     && startNode.getTag("railway").equals("station")
                     && !stationFeatures.containsKey(startNode.getId())) {
@@ -197,7 +197,7 @@ public class GraphMain {
 
     }
 
-    private static long getEdgeCount(GraphDatabaseService graphDb) {
+    public static long getEdgeCount(GraphDatabaseService graphDb) {
         final long count;
         try (Transaction tx = graphDb.beginTx()) {
             count = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
@@ -212,7 +212,7 @@ public class GraphMain {
         return count;
     }
 
-    private static long getNodeCount(GraphDatabaseService graphDb) {
+    public static long getNodeCount(GraphDatabaseService graphDb) {
         final long nodeCount;
         try (Transaction tx = graphDb.beginTx()) {
 
