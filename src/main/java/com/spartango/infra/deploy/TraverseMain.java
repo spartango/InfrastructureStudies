@@ -118,7 +118,8 @@ public class TraverseMain {
                                                      tx.success();
                                                  }
                                                  return path;
-                                             }).collect(Collectors.toList());
+                                             }).filter(path -> path != null)
+                                             .collect(Collectors.toList());
                              write(station.getOsmNode(), paths);
                          }
                 );
@@ -190,6 +191,9 @@ public class TraverseMain {
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
 
         paths.forEach(path -> {
+            if (path == null) {
+                return;
+            }
             // Build the geometry
             try (Transaction tx = graphDb.beginTx()) {
                 final List<Coordinate> coordinateList =
