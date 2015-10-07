@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
@@ -185,27 +185,18 @@ public class TraverseMain {
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
 
         paths.forEach(path -> {
-            try (Transaction tx = graphDb.beginTx()) {
-                path.relationships()
-                    .forEach(relationship -> {
-                        final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
-                        final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
+            // Build the geometry
+            final List<Coordinate> coordinateList =
+                    StreamSupport.stream(path.nodes().spliterator(), false)
+                                 .map(neoNode -> new NeoNode(neoNode, graphDb))
+                                 .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
+                                 .collect(Collectors.toList());
+            final LineString lineString = geometryFactory.createLineString(
+                    coordinateList.toArray(new Coordinate[coordinateList.size()]));
+            linkFeatureBuilder.add(lineString);
 
-                        // Build the geometry
-                        final List<Coordinate> coordinateList =
-                                Stream.of(startNode, endNode)
-                                      .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
-                                      .collect(Collectors.toList());
-                        final LineString lineString = geometryFactory.createLineString(
-                                coordinateList.toArray(new Coordinate[coordinateList.size()]));
-                        linkFeatureBuilder.add(lineString);
-
-                        final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(relationship.getId()));
-                        linkFeatures.add(linkFeature);
-
-                    });
-                tx.success();
-            }
+            final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
+            linkFeatures.add(linkFeature);
         });
 
         try {
@@ -218,6 +209,7 @@ public class TraverseMain {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     private static void setupGraph() {
