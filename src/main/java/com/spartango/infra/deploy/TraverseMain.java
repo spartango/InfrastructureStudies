@@ -76,16 +76,15 @@ public class TraverseMain {
         final AtomicLong count = new AtomicLong();
 
         stations.stream()
+                .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .limit(1) // TODO: DEBUG plotting just one set for now
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
-                             final Optional<NeoNode> neoStation = NeoNode.getNeoNode(station.getId(), graphDb);
-                             if (!neoStation.isPresent()) {
-                                 return;
-                             }
                              final List<WeightedPath> paths =
                                      stations.parallelStream()
-                                             .filter(destination -> !destination.equals(station))
+                                             .filter(destination -> !destination.equals(station.getOsmNode()))
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
                                                  System.out.print(station.getId()
@@ -97,9 +96,7 @@ public class TraverseMain {
                                                                                                 - startTime))
                                                                   + "/s \r");
                                              })
-                                             .map(destination -> NeoNode.getNeoNode(destination
-                                                                                            .getId(),
-                                                                                    graphDb))
+                                             .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
                                              .map(Optional::get)
                                              .map(neoDestination -> {
@@ -111,13 +108,13 @@ public class TraverseMain {
 
                                                  final WeightedPath path;
                                                  try (Transaction tx = graphDb.beginTx()) {
-                                                     path = pathFinder.findSinglePath(neoStation.get().getNeoNode(),
+                                                     path = pathFinder.findSinglePath(station.getNeoNode(),
                                                                                       neoDestination.getNeoNode());
                                                      tx.success();
                                                  }
                                                  return path;
                                              }).collect(Collectors.toList());
-                             write(station, paths);
+                             write(station.getOsmNode(), paths);
                          }
                 );
     }
