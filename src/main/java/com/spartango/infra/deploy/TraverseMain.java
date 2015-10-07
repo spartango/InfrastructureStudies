@@ -58,7 +58,7 @@ public class TraverseMain {
         setupGraph();
 
         // Find all stations
-        final List<NeoNode> stations = getStations();
+        final Collection<NodeStub> stations = getStations();
         System.out.println("Seeding with " + stations.size());
 
         writeStations(stations);
@@ -70,15 +70,16 @@ public class TraverseMain {
         graphDb.shutdown();
     }
 
-    private static void findPaths(List<NeoNode> stations) {
+    private static void findPaths(Collection<NodeStub> stations) {
         System.out.println("DEBUG: Limiting paths to one station source");
         final long startTime = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong();
 
         stations.stream()
                 .limit(1) // TODO: DEBUG plotting just one set for now
-                .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
+                .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
+                             final NeoNode neoStation = new NeoNode(station, graphDb);
                              final List<WeightedPath> paths =
                                      stations.parallelStream()
                                              .filter(destination -> !destination.equals(station))
@@ -94,6 +95,8 @@ public class TraverseMain {
                                                                   + "/s \r");
                                              })
                                              .map(destination -> {
+                                                 final NeoNode neoDestination = new NeoNode(destination, graphDb);
+
                                                  PathFinder<WeightedPath> pathFinder =
                                                          aStar(allTypesAndDirections(),
                                                                (TraverseMain::linkLength),
@@ -102,8 +105,8 @@ public class TraverseMain {
 
                                                  final WeightedPath path;
                                                  try (Transaction tx = graphDb.beginTx()) {
-                                                     path = pathFinder.findSinglePath(station.getNeoNode(),
-                                                                                      destination.getNeoNode());
+                                                     path = pathFinder.findSinglePath(neoStation.getNeoNode(),
+                                                                                      neoDestination.getNeoNode());
                                                      tx.success();
                                                  }
                                                  return path;
@@ -113,7 +116,7 @@ public class TraverseMain {
                 );
     }
 
-    private static void writeStations(List<NeoNode> stations) {
+    private static void writeStations(Collection<NodeStub> stations) {
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName("Station");
         builder.add("the_geom", Point.class);
@@ -154,7 +157,7 @@ public class TraverseMain {
         }
     }
 
-    private static List<NeoNode> getStations() {
+    private static Collection<NodeStub> getStations() {
         System.out.println("Finding stations...");
         final Set<NodeStub> stations = seeker.getDatabase().getHashSet("stations");
         if (stations.isEmpty()) {
@@ -166,14 +169,15 @@ public class TraverseMain {
                   .forEach(stations::add);
             seeker.getDatabase().commit();
         }
-        return stations.parallelStream()
-                       .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
-                       .filter(Optional::isPresent)
-                       .map(Optional::get)
-                       .collect(Collectors.toList());
+        return stations;
+//                .parallelStream()
+//                       .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
+//                       .filter(Optional::isPresent)
+//                       .map(Optional::get)
+//                       .collect(Collectors.toList());
     }
 
-    private static void write(NeoNode station, Collection<WeightedPath> paths) {
+    private static void write(NodeStub station, Collection<WeightedPath> paths) {
         // Setup schema
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
