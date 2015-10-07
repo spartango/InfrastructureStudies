@@ -1,6 +1,7 @@
 package com.spartango.infra.deploy;
 
 import com.spartango.infra.framework.TieredSeeker;
+import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
 import com.spartango.infra.osm.type.NodeStub;
@@ -15,7 +16,9 @@ import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.spartango.infra.geom.ShapeUtils.calculateDistance;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 
@@ -62,13 +64,13 @@ public class TraverseMain {
         writeStations(stations);
 
         // Look for shortest paths
-        final PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
-                                                          (relationship, direction) -> 1.0d,
-                                                          (start, end) -> calculateDistance(new NeoNode(start, graphDb)
-                                                                                                    .getOsmNode(),
-                                                                                            new NeoNode(end, graphDb)
-                                                                                                    .getOsmNode()));
+        findPaths(stations);
 
+        System.out.println("Shutting down");
+        graphDb.shutdown();
+    }
+
+    private static void findPaths(List<NeoNode> stations) {
         System.out.println("DEBUG: Limiting paths to one station source");
         final long startTime = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong();
@@ -78,7 +80,7 @@ public class TraverseMain {
                 .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
-                                     stations.stream()
+                                     stations.parallelStream()
                                              .filter(destination -> !destination.equals(station))
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
@@ -92,6 +94,12 @@ public class TraverseMain {
                                                                   + "/s \r");
                                              })
                                              .map(destination -> {
+                                                 PathFinder<WeightedPath> pathFinder =
+                                                         aStar(allTypesAndDirections(),
+                                                               (TraverseMain::linkLength),
+                                                               (start, end) -> 1.0d);
+
+
                                                  final WeightedPath path;
                                                  try (Transaction tx = graphDb.beginTx()) {
                                                      path = pathFinder.findSinglePath(station.getNeoNode(),
@@ -103,9 +111,6 @@ public class TraverseMain {
                              write(station, paths);
                          }
                 );
-
-        System.out.println("Shutting down");
-        graphDb.shutdown();
     }
 
     private static void writeStations(List<NeoNode> stations) {
@@ -161,7 +166,7 @@ public class TraverseMain {
                   .forEach(stations::add);
             seeker.getDatabase().commit();
         }
-        return stations.stream()
+        return stations.parallelStream()
                        .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
                        .filter(Optional::isPresent)
                        .map(Optional::get)
@@ -259,4 +264,19 @@ public class TraverseMain {
         System.out.println("Graph built: " + nodeCount + " nodes & " + edgeCount + " links");
     }
 
+    private static double linkLength(Relationship relationship, Direction d) {
+        double length;
+        try (Transaction tx = graphDb.beginTx()) {
+            if (relationship.hasProperty("distance")) {
+                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
+            } else {
+                final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
+                final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
+                length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
+                relationship.setProperty("distance", String.valueOf(length));
+            }
+            tx.success();
+        }
+        return length;
+    }
 }
