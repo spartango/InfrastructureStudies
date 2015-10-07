@@ -85,20 +85,25 @@ public class TraverseMain {
                              final List<WeightedPath> paths =
                                      stations.parallelStream()
                                              .filter(destination -> !destination.equals(station.getOsmNode()))
-                                             .peek(destination -> {
-                                                 long time = System.currentTimeMillis();
-                                                 System.out.print(station.getId()
-                                                                  + " -> "
-                                                                  + destination.getId()
-                                                                  + " @ "
-                                                                  + (1000.0 *
-                                                                     count.incrementAndGet() / (time
-                                                                                                - startTime))
-                                                                  + "/s \r");
-                                             })
                                              .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
                                              .map(Optional::get)
+                                             .peek(destination -> {
+                                                 long time = System.currentTimeMillis();
+                                                 long progress = count.incrementAndGet();
+                                                 System.out.print(station.getId()
+                                                                  + " -> "
+                                                                  + destination.getId()
+                                                                  + " | "
+                                                                  + progress
+                                                                  + " @ "
+                                                                  + (1000.0
+                                                                     *
+                                                                     progress
+                                                                     / (time
+                                                                        - startTime))
+                                                                  + "/s \r");
+                                             })
                                              .map(neoDestination -> {
                                                  PathFinder<WeightedPath> pathFinder =
                                                          aStar(allTypesAndDirections(),
@@ -186,17 +191,21 @@ public class TraverseMain {
 
         paths.forEach(path -> {
             // Build the geometry
-            final List<Coordinate> coordinateList =
-                    StreamSupport.stream(path.nodes().spliterator(), false)
-                                 .map(neoNode -> new NeoNode(neoNode, graphDb))
-                                 .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
-                                 .collect(Collectors.toList());
-            final LineString lineString = geometryFactory.createLineString(
-                    coordinateList.toArray(new Coordinate[coordinateList.size()]));
-            linkFeatureBuilder.add(lineString);
+            try (Transaction tx = graphDb.beginTx()) {
+                final List<Coordinate> coordinateList =
+                        StreamSupport.stream(path.nodes().spliterator(), false)
+                                     .map(neoNode -> new NeoNode(neoNode, graphDb))
+                                     .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
+                                     .collect(Collectors.toList());
+                final LineString lineString = geometryFactory.createLineString(
+                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
+                linkFeatureBuilder.add(lineString);
 
-            final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
-            linkFeatures.add(linkFeature);
+                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
+                linkFeatures.add(linkFeature);
+
+                tx.success();
+            }
         });
 
         try {
