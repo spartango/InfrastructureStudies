@@ -73,7 +73,6 @@ public class TraverseMain {
                 .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                 .map(station -> stations.stream()
                                         .filter(destination -> !destination.equals(station))
-                        .limit(1) // TODO: DEBUG plotting just one set for now
                         .peek(destination -> System.out.print(station.getId()
                                                               + " -> "
                                                               + destination.getId()
