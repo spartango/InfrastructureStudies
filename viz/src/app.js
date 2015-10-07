@@ -10,17 +10,21 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={
     accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
 }).addTo(map);
 
-// Load up the geojson
-var xhr = new XMLHttpRequest();
-xhr.open('GET', 'R_link_graph.geojson', true);
-xhr.onload = function (request) {
-    if (xhr.readyState == 4) {
-        console.log("Loaded data");
-        var data = JSON.parse(xhr.responseText);
-        L.geoJson(data).addTo(map);
-    }
-};
-xhr.send();
+var layer;
+
+function showRoutes(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', id + '_path.geojson', true);
+    xhr.onload = function () {
+        if (xhr.readyState == 4) {
+            console.log("Loaded data");
+            var data = JSON.parse(xhr.responseText);
+            layer = L.geoJson(data);
+            later.addTo(map);
+        }
+    };
+    xhr.send();
+}
 
 function stationPopup(feature, layer) {
     // does this feature have a property named popupContent?
@@ -29,7 +33,9 @@ function stationPopup(feature, layer) {
         for (key in feature.properties) {
             popupString += "<td>" + feature.properties[key] + "</td>";
         }
-
+        if (feature.properties.id) {
+            popupString += "</tr><tr><td><button onclick='showRoutes(feature.properties.id)'>Routes</button></td>";
+        }
         popupString += "</tr></table>";
         layer.bindPopup(popupString);
     }
