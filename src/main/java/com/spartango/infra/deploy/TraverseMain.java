@@ -79,7 +79,10 @@ public class TraverseMain {
                 .limit(1) // TODO: DEBUG plotting just one set for now
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
-                             final NeoNode neoStation = new NeoNode(station, graphDb);
+                             final Optional<NeoNode> neoStation = NeoNode.getNeoNode(station.getId(), graphDb);
+                             if (!neoStation.isPresent()) {
+                                 return;
+                             }
                              final List<WeightedPath> paths =
                                      stations.parallelStream()
                                              .filter(destination -> !destination.equals(station))
@@ -94,9 +97,12 @@ public class TraverseMain {
                                                                                                 - startTime))
                                                                   + "/s \r");
                                              })
-                                             .map(destination -> {
-                                                 final NeoNode neoDestination = new NeoNode(destination, graphDb);
-
+                                             .map(destination -> NeoNode.getNeoNode(destination
+                                                                                            .getId(),
+                                                                                    graphDb))
+                                             .filter(Optional::isPresent)
+                                             .map(Optional::get)
+                                             .map(neoDestination -> {
                                                  PathFinder<WeightedPath> pathFinder =
                                                          aStar(allTypesAndDirections(),
                                                                (TraverseMain::linkLength),
@@ -105,7 +111,7 @@ public class TraverseMain {
 
                                                  final WeightedPath path;
                                                  try (Transaction tx = graphDb.beginTx()) {
-                                                     path = pathFinder.findSinglePath(neoStation.getNeoNode(),
+                                                     path = pathFinder.findSinglePath(neoStation.get().getNeoNode(),
                                                                                       neoDestination.getNeoNode());
                                                      tx.success();
                                                  }
