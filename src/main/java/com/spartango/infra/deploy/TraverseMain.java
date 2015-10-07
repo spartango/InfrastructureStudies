@@ -26,10 +26,7 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,22 +68,27 @@ public class TraverseMain {
         stations.stream()
                 .limit(1) // TODO: DEBUG plotting just one set for now
                 .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
-                .map(station -> stations.stream()
-                                        .filter(destination -> !destination.equals(station))
-                        .peek(destination -> System.out.print(station.getId()
-                                                              + " -> "
-                                                              + destination.getId()
-                                                              + "\r"))
-                        .map(destination -> {
-                            final WeightedPath path;
-                            try (Transaction tx = graphDb.beginTx()) {
-                                path = pathFinder.findSinglePath(station.getNeoNode(),
-                                                                 destination.getNeoNode());
-                                tx.success();
-                            }
-                            return path;
-                        }))
-                .forEach(pathStream -> pathStream.forEach(TraverseMain::write));
+                .forEach(station -> {
+                             final List<WeightedPath> paths =
+                                     stations.stream()
+                                             .filter(destination ->
+                                                             !destination.equals(station))
+                                             .peek(destination -> System.out.print(station.getId()
+                                                                                   + " -> "
+                                                                                   + destination.getId()
+                                                                                   + "\r"))
+                                             .map(destination -> {
+                                                 final WeightedPath path;
+                                                 try (Transaction tx = graphDb.beginTx()) {
+                                                     path = pathFinder.findSinglePath(station.getNeoNode(),
+                                                                                      destination.getNeoNode());
+                                                     tx.success();
+                                                 }
+                                                 return path;
+                                             }).collect(Collectors.toList());
+                             write(station, paths);
+                         }
+                );
 
         System.out.println("Shutting down");
         graphDb.shutdown();
@@ -111,7 +113,7 @@ public class TraverseMain {
                        .collect(Collectors.toList());
     }
 
-    private static void write(WeightedPath path) {
+    private static void write(NeoNode station, Collection<WeightedPath> paths) {
         // Setup schema
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
@@ -120,35 +122,38 @@ public class TraverseMain {
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
 
-        try (Transaction tx = graphDb.beginTx()) {
-            path.relationships()
-                .forEach(relationship -> {
-                    final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
-                    final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
+        paths.forEach(path -> {
+            try (Transaction tx = graphDb.beginTx()) {
+                path.relationships()
+                    .forEach(relationship -> {
+                        final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
+                        final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
 
-                    // Build the geometry
-                    final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
-                                                                  .map(nodeStub -> new Coordinate(
-                                                                          nodeStub.getLongitude(),
-                                                                          nodeStub.getLatitude()))
-                                                                  .collect(Collectors.toList());
-                    final LineString lineString = geometryFactory.createLineString(
-                            coordinateList.toArray(new Coordinate[coordinateList.size()]));
-                    linkFeatureBuilder.add(lineString);
+                        // Build the geometry
+                        final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
+                                                                      .map(nodeStub -> new Coordinate(
+                                                                              nodeStub.getLongitude(),
+                                                                              nodeStub.getLatitude()))
+                                                                      .collect(Collectors.toList());
+                        final LineString lineString = geometryFactory.createLineString(
+                                coordinateList.toArray(new Coordinate[coordinateList.size()]));
+                        linkFeatureBuilder.add(lineString);
 
-                    final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(relationship.getId()));
-                    linkFeatures.add(linkFeature);
+                        final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(relationship.getId()));
+                        linkFeatures.add(linkFeature);
 
-                });
-            tx.success();
-        }
+                    });
+                tx.success();
+            }
+        });
+
         try {
             FeatureJSON featureJSON = new FeatureJSON();
             featureJSON.setEncodeFeatureCollectionCRS(false);
             featureJSON.setEncodeFeatureBounds(false);
 
             final ListFeatureCollection linkCollection = new ListFeatureCollection(linkType, linkFeatures);
-            featureJSON.writeFeatureCollection(linkCollection, new File(PATH + path.hashCode() + "_path.geojson"));
+            featureJSON.writeFeatureCollection(linkCollection, new File(PATH + station.getId() + "_path.geojson"));
         } catch (IOException e) {
             e.printStackTrace();
         }
