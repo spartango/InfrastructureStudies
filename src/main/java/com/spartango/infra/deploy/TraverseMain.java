@@ -7,6 +7,7 @@ import com.spartango.infra.osm.type.NodeStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -27,6 +28,7 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,10 +42,11 @@ import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
  * Time: 16:07.
  */
 public class TraverseMain {
-    private static final String PATH          = "data/";
-    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
-    private static final String DB_PATH       = PATH + "rail.db";
-    private static final String GRAPH_DB_PATH = PATH + "graph.db";
+    private static final String PATH            = "data/";
+    private static final String TARGET_PATH     = PATH + "china-latest.osm.pbf";
+    private static final String DB_PATH         = PATH + "rail.db";
+    private static final String GRAPH_DB_PATH   = PATH + "graph.db";
+    private static final String STATION_GEOJSON = PATH + "stations.geojson";
 
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
@@ -56,6 +59,8 @@ public class TraverseMain {
         final List<NeoNode> stations = getStations();
         System.out.println("Seeding with " + stations.size());
 
+        writeStations(stations);
+
         // Look for shortest paths
         final PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
                                                           (relationship, direction) -> 1.0d,
@@ -65,18 +70,27 @@ public class TraverseMain {
                                                                                                     .getOsmNode()));
 
         System.out.println("DEBUG: Limiting paths to one station source");
+        final long startTime = System.currentTimeMillis();
+        final AtomicLong count = new AtomicLong();
+
         stations.stream()
                 .limit(1) // TODO: DEBUG plotting just one set for now
                 .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
                                      stations.stream()
-                                             .filter(destination ->
-                                                             !destination.equals(station))
-                                             .peek(destination -> System.out.print(station.getId()
-                                                                                   + " -> "
-                                                                                   + destination.getId()
-                                                                                   + "\r"))
+                                             .filter(destination -> !destination.equals(station))
+                                             .peek(destination -> {
+                                                 long time = System.currentTimeMillis();
+                                                 System.out.print(station.getId()
+                                                                  + " -> "
+                                                                  + destination.getId()
+                                                                  + " @ "
+                                                                  + (1000.0 *
+                                                                     count.incrementAndGet() / (time
+                                                                                                - startTime))
+                                                                  + "/s \r");
+                                             })
                                              .map(destination -> {
                                                  final WeightedPath path;
                                                  try (Transaction tx = graphDb.beginTx()) {
@@ -92,6 +106,47 @@ public class TraverseMain {
 
         System.out.println("Shutting down");
         graphDb.shutdown();
+    }
+
+    private static void writeStations(List<NeoNode> stations) {
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.setName("Station");
+        builder.add("the_geom", Point.class);
+        builder.add("id", Long.class);
+        builder.add("name", String.class);
+        builder.add("name:en", String.class);
+        builder.add("railway", String.class);
+
+        // build the type
+        final SimpleFeatureType stationType = builder.buildFeatureType();
+        SimpleFeatureBuilder stationFeatureBuilder = new SimpleFeatureBuilder(stationType);
+        final List<SimpleFeature> stationFeatures = new LinkedList<>();
+
+        stations.forEach(startNode -> {
+            final Point startPoint = geometryFactory.createPoint(new Coordinate(
+                    startNode.getLongitude(),
+                    startNode.getLatitude()));
+            stationFeatureBuilder.add(startPoint);
+            stationFeatureBuilder.add(startNode.getId());
+            stationFeatureBuilder.add(startNode.getTag("name"));
+            stationFeatureBuilder.add(startNode.getTag("name:en"));
+            stationFeatureBuilder.add(startNode.getTag("railway"));
+            final SimpleFeature startFeature = stationFeatureBuilder.buildFeature(String.valueOf(startNode.getId()));
+            stationFeatures.add(startFeature);
+        });
+
+        try {
+            FeatureJSON featureJSON = new FeatureJSON();
+            featureJSON.setEncodeFeatureCollectionCRS(false);
+            featureJSON.setEncodeFeatureBounds(false);
+
+            final ListFeatureCollection stationCollection = new ListFeatureCollection(stationType,
+                                                                                      stationFeatures);
+            featureJSON.writeFeatureCollection(stationCollection, new File(STATION_GEOJSON));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static List<NeoNode> getStations() {
@@ -130,11 +185,10 @@ public class TraverseMain {
                         final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
 
                         // Build the geometry
-                        final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
-                                                                      .map(nodeStub -> new Coordinate(
-                                                                              nodeStub.getLongitude(),
-                                                                              nodeStub.getLatitude()))
-                                                                      .collect(Collectors.toList());
+                        final List<Coordinate> coordinateList =
+                                Stream.of(startNode, endNode)
+                                      .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
+                                      .collect(Collectors.toList());
                         final LineString lineString = geometryFactory.createLineString(
                                 coordinateList.toArray(new Coordinate[coordinateList.size()]));
                         linkFeatureBuilder.add(lineString);
