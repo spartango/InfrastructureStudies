@@ -170,11 +170,6 @@ public class TraverseMain {
             seeker.getDatabase().commit();
         }
         return stations;
-//                .parallelStream()
-//                       .map(node -> NeoNode.getNeoNode(node.getId(), graphDb))
-//                       .filter(Optional::isPresent)
-//                       .map(Optional::get)
-//                       .collect(Collectors.toList());
     }
 
     private static void write(NodeStub station, Collection<WeightedPath> paths) {
