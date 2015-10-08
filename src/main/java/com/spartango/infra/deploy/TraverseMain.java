@@ -86,11 +86,12 @@ public class TraverseMain {
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
-                                     shuffled.parallelStream()
+                                     shuffled.parallelStream().unordered()  
                                              .filter(destination -> !destination.equals(station.getOsmNode()))
                                              .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
                                              .map(Optional::get)
+                                             .limit(10)
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
                                                  long progress = count.incrementAndGet();
@@ -121,8 +122,8 @@ public class TraverseMain {
                                                      tx.success();
                                                  }
                                                  return path;
-                                             }).filter(path -> path != null && path.length() != 0)
-                                             .limit(10)
+                                             }).filter(path -> path != null
+                                                               && path.length() != 0)
                                              .collect(Collectors.toList());
                              write(station.getOsmNode(), paths);
                          }
