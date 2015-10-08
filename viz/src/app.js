@@ -19,8 +19,12 @@ function showRoutes(id) {
         if (xhr.readyState == 4) {
             console.log("Loaded data");
             var data = JSON.parse(xhr.responseText);
+            if (layer && data) {
+                map.removeLayer(layer);
+            }
+
             layer = L.geoJson(data);
-            later.addTo(map);
+            layer.addTo(map);
         }
     };
     xhr.send();
@@ -34,7 +38,7 @@ function stationPopup(feature, layer) {
             popupString += "<td>" + feature.properties[key] + "</td>";
         }
         if (feature.properties.id) {
-            popupString += "</tr><tr><td><button onclick='showRoutes(feature.properties.id)'>Routes</button></td>";
+            popupString += "</tr><tr><td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
         }
         popupString += "</tr></table>";
         layer.bindPopup(popupString);
@@ -42,13 +46,17 @@ function stationPopup(feature, layer) {
 }
 
 var sXhr = new XMLHttpRequest();
-sXhr.open('GET', 's_station_graph.geojson', true);
+sXhr.open('GET', 'stations.geojson', true);
 sXhr.onload = function () {
     if (sXhr.readyState == 4) {
         var data = JSON.parse(sXhr.responseText);
         var markers = new L.MarkerClusterGroup();
+        var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup
+            onEachFeature: stationPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
         });
         markers.addLayer(geoJsonLayer);
         map.addLayer(markers);

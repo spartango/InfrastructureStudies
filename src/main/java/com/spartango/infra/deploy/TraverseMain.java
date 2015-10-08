@@ -71,7 +71,7 @@ public class TraverseMain {
     }
 
     private static void findPaths(Collection<NodeStub> stations) {
-        System.out.println("DEBUG: Limiting paths to one station source");
+        System.out.println("DEBUG: Limiting paths to 100 station targets");
         final long startTime = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong();
 
@@ -79,7 +79,6 @@ public class TraverseMain {
                 .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .limit(1) // TODO: DEBUG plotting just one set for now
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
@@ -87,6 +86,7 @@ public class TraverseMain {
                                              .filter(destination -> !destination.equals(station.getOsmNode()))
                                              .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
+                                             .limit(50)
                                              .map(Optional::get)
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
