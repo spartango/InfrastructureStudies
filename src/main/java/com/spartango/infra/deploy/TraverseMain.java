@@ -71,9 +71,13 @@ public class TraverseMain {
     }
 
     private static void findPaths(Collection<NodeStub> stations) {
-        System.out.println("DEBUG: Limiting paths to 50 station targets");
+        System.out.println("DEBUG: Limiting paths to 10 simulated station targets");
         final long startTime = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong();
+
+        // Simulates known sinks
+        final List<NodeStub> shuffled = new ArrayList<>(stations);
+        Collections.shuffle(shuffled);
 
         stations.stream()
                 .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
@@ -81,14 +85,11 @@ public class TraverseMain {
                 .map(Optional::get)
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
-                             final List<NodeStub> shuffled = new ArrayList<>(stations);
-                             Collections.shuffle(shuffled);
                              final List<WeightedPath> paths =
                                      shuffled.parallelStream()
                                              .filter(destination -> !destination.equals(station.getOsmNode()))
                                              .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
-                                             .limit(10)
                                              .map(Optional::get)
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
@@ -120,7 +121,8 @@ public class TraverseMain {
                                                      tx.success();
                                                  }
                                                  return path;
-                                             }).filter(path -> path != null)
+                                             }).filter(path -> path != null && path.length() != 0)
+                                             .limit(10)
                                              .collect(Collectors.toList());
                              write(station.getOsmNode(), paths);
                          }
