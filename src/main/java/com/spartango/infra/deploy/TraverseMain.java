@@ -71,7 +71,7 @@ public class TraverseMain {
     }
 
     private static void findPaths(Collection<NodeStub> stations) {
-        System.out.println("DEBUG: Limiting paths to 100 station targets");
+        System.out.println("DEBUG: Limiting paths to 50 station targets");
         final long startTime = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong();
 
@@ -81,12 +81,14 @@ public class TraverseMain {
                 .map(Optional::get)
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
+                             final List<NodeStub> shuffled = new ArrayList<>(stations);
+                             Collections.shuffle(shuffled);
                              final List<WeightedPath> paths =
-                                     stations.parallelStream()
+                                     shuffled.parallelStream()
                                              .filter(destination -> !destination.equals(station.getOsmNode()))
                                              .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
                                              .filter(Optional::isPresent)
-                                             .limit(50)
+                                             .limit(10)
                                              .map(Optional::get)
                                              .peek(destination -> {
                                                  long time = System.currentTimeMillis();
