@@ -49,6 +49,7 @@ public class TraverseMain {
     private static final String DB_PATH         = PATH + "rail.db";
     private static final String GRAPH_DB_PATH   = PATH + "graph.db";
     private static final String STATION_GEOJSON = PATH + "stations.geojson";
+    private static final long   TARGET_COUNT    = 20;
 
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
@@ -72,8 +73,6 @@ public class TraverseMain {
 
     private static void findPaths(Collection<NodeStub> stations) {
         System.out.println("DEBUG: Limiting paths to 10 simulated station targets");
-        final long startTime = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong();
 
         // Simulates known sinks
         final List<NodeStub> shuffled = new ArrayList<>(stations);
@@ -83,20 +82,24 @@ public class TraverseMain {
                                                                                      graphDb))
                                               .filter(Optional::isPresent)
                                               .map(Optional::get)
-                                              .limit(20)
+                                              .limit(2 * TARGET_COUNT)
                                               .collect(Collectors.toList());
 
+        System.out.println("Loaded targets");
+
+        final long startTime = System.currentTimeMillis();
+        final AtomicLong count = new AtomicLong();
         stations.stream()
                 .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .peek(station -> System.out.println("Finding paths from station: " + station))
+                .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
                                      targets.parallelStream().unordered()
                                             .filter(destination -> !destination.getOsmNode()
                                                                                .equals(station.getOsmNode()))
-                                            .limit(10)
+                                            .limit(TARGET_COUNT)
                                             .peek(destination -> {
                                                 long time = System.currentTimeMillis();
                                                 long progress = count.incrementAndGet();
