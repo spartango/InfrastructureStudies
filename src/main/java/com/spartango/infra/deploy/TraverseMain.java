@@ -78,6 +78,13 @@ public class TraverseMain {
         // Simulates known sinks
         final List<NodeStub> shuffled = new ArrayList<>(stations);
         Collections.shuffle(shuffled);
+        final List<NeoNode> targets = shuffled.parallelStream().unordered()
+                                              .map(destination -> NeoNode.getNeoNode(destination.getId(),
+                                                                                     graphDb))
+                                              .filter(Optional::isPresent)
+                                              .map(Optional::get)
+                                              .limit(20)
+                                              .collect(Collectors.toList());
 
         stations.stream()
                 .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
@@ -86,45 +93,43 @@ public class TraverseMain {
                 .peek(station -> System.out.println("Finding paths from station: " + station))
                 .forEach(station -> {
                              final List<WeightedPath> paths =
-                                     shuffled.parallelStream().unordered()  
-                                             .filter(destination -> !destination.equals(station.getOsmNode()))
-                                             .map(destination -> NeoNode.getNeoNode(destination.getId(), graphDb))
-                                             .filter(Optional::isPresent)
-                                             .map(Optional::get)
-                                             .limit(10)
-                                             .peek(destination -> {
-                                                 long time = System.currentTimeMillis();
-                                                 long progress = count.incrementAndGet();
-                                                 System.out.print(station.getId()
-                                                                  + " -> "
-                                                                  + destination.getId()
-                                                                  + " | "
-                                                                  + progress
-                                                                  + " @ "
-                                                                  + (1000.0
-                                                                     *
-                                                                     progress
-                                                                     / (time
-                                                                        - startTime))
-                                                                  + "/s \r");
-                                             })
-                                             .map(neoDestination -> {
-                                                 PathFinder<WeightedPath> pathFinder =
-                                                         aStar(allTypesAndDirections(),
-                                                               (TraverseMain::linkLength),
-                                                               (start, end) -> 1.0d);
+                                     targets.parallelStream().unordered()
+                                            .filter(destination -> !destination.getOsmNode()
+                                                                               .equals(station.getOsmNode()))
+                                            .limit(10)
+                                            .peek(destination -> {
+                                                long time = System.currentTimeMillis();
+                                                long progress = count.incrementAndGet();
+                                                System.out.print(station.getId()
+                                                                 + " -> "
+                                                                 + destination.getId()
+                                                                 + " | "
+                                                                 + progress
+                                                                 + " @ "
+                                                                 + (1000.0
+                                                                    *
+                                                                    progress
+                                                                    / (time
+                                                                       - startTime))
+                                                                 + "/s \r");
+                                            })
+                                            .map(neoDestination -> {
+                                                PathFinder<WeightedPath> pathFinder =
+                                                        aStar(allTypesAndDirections(),
+                                                              (TraverseMain::linkLength),
+                                                              (start, end) -> 1.0d);
 
 
-                                                 final WeightedPath path;
-                                                 try (Transaction tx = graphDb.beginTx()) {
-                                                     path = pathFinder.findSinglePath(station.getNeoNode(),
-                                                                                      neoDestination.getNeoNode());
-                                                     tx.success();
-                                                 }
-                                                 return path;
-                                             }).filter(path -> path != null
-                                                               && path.length() != 0)
-                                             .collect(Collectors.toList());
+                                                final WeightedPath path;
+                                                try (Transaction tx = graphDb.beginTx()) {
+                                                    path = pathFinder.findSinglePath(station.getNeoNode(),
+                                                                                     neoDestination.getNeoNode());
+                                                    tx.success();
+                                                }
+                                                return path;
+                                            }).filter(path -> path != null
+                                                              && path.length() != 0)
+                                            .collect(Collectors.toList());
                              write(station.getOsmNode(), paths);
                          }
                 );
