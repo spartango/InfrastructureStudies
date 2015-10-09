@@ -72,7 +72,7 @@ public class TraverseMain {
     }
 
     private static void findPaths(Collection<NodeStub> stations) {
-        System.out.println("DEBUG: Limiting paths to 10 simulated station targets");
+        System.out.println("DEBUG: Limiting paths to " + TARGET_COUNT + " simulated station targets");
 
         // Simulates known sinks
         final List<NodeStub> shuffled = new ArrayList<>(stations);
