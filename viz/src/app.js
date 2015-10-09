@@ -114,6 +114,7 @@ var overlayMaps = {
 };
 
 L.control.layers(baseMaps, overlayMaps).addTo(map);
+L.control.scale().addTo(map);
 
 function showRoutes(id) {
     var xhr = new XMLHttpRequest();
@@ -140,9 +141,22 @@ function stationPopup(feature, layer) {
         for (key in feature.properties) {
             popupString += "<td>" + feature.properties[key] + "</td>";
         }
-        if (feature.properties.id) {
-            popupString += "</tr><tr><td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
+        
+        if (feature.properties.id || feature.geometry) {
+            popupString += "</tr><tr>"
         }
+
+        if (feature.geometry) {
+            popupString += "<td><button onclick='map.setView({lat:"
+                        +feature.geometry.coordinates[1]
+                        +", lng:"
+                        +feature.geometry.coordinates[0]
+                        +"}, 16)'>Zoom</button></td>"
+        }
+        if (feature.properties.id) {
+            popupString += "<td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
+        }
+    
         popupString += "</tr></table>";
         layer.bindPopup(popupString);
     }
