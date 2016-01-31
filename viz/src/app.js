@@ -116,6 +116,8 @@ var overlayMaps = {
 L.control.layers(baseMaps, overlayMaps).addTo(map);
 L.control.scale().addTo(map);
 
+var backgroundLayers = {};
+
 var loadGeoJSON = function (path, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', path, true);
@@ -161,108 +163,134 @@ var infraPopup = function (feature, layer) {
 };
 
 var loadPorts = function () {
-    loadGeoJSON('background/WPI.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup({
-            iconCreateFunction: function (cluster) {
-                return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "l"});
-            }
+    if (!backgroundLayers['ports']) {
+        loadGeoJSON('background/WPI.geojson', function (data) {
+            var markers = new L.MarkerClusterGroup({
+                iconCreateFunction: function (cluster) {
+                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "l"});
+                }
+            });
+            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: infraPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            markers.addLayer(geoJsonLayer);
+            backgroundLayers['ports'] = markers;
+            map.addLayer(markers);
         });
-        var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-    });
+    } else {
+        map.removeLayer(backgroundLayers['ports']);
+        delete backgroundLayers['ports'];
+    }
 };
 
 var loadSAMs = function () {
-    loadGeoJSON('background/SAMs.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup({
-            iconCreateFunction: function (cluster) {
-                return L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "m"});
-            }
+    if (!backgroundLayers['sams']) {
+        loadGeoJSON('background/SAMs.geojson', function (data) {
+            var markers = new L.MarkerClusterGroup({
+                iconCreateFunction: function (cluster) {
+                    return L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "m"});
+                }
+            });
+            var icon = L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "s"});
+            var heatPoints = [];
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: infraPopup,
+                pointToLayer: function (feature, latlng) {
+                    heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            var heatmapLayer = new HeatmapOverlay({
+                // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+                // if scaleRadius is false it will be the constant radius used in pixels
+                "radius": 1,
+                "maxOpacity": .33,
+                // scales the radius based on map zoom
+                "scaleRadius": true,
+                // if set to false the heatmap uses the global maximum for colorization
+                // if activated: uses the data maximum within the current map boundaries
+                //   (there will always be a red spot with useLocalExtremas true)
+                "useLocalExtrema": false,
+                // which field name in your data represents the latitude - default "lat"
+                latField: 'lat',
+                // which field name in your data represents the longitude - default "lng"
+                lngField: 'lng',
+                // which field name in your data represents the data value - default "value"
+                valueField: 'count'
+            });
+            map.addLayer(heatmapLayer);
+            heatmapLayer.setData({
+                max: 3,
+                data: heatPoints
+            });
+            markers.addLayer(geoJsonLayer);
+            map.addLayer(markers);
+            backgroundLayers['sams'] = markers;
+            backgroundLayers['heat'] = heatmapLayer;
         });
-        var icon = L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "s"});
-        var heatPoints = [];
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        var heatmapLayer = new HeatmapOverlay({
-            // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-            // if scaleRadius is false it will be the constant radius used in pixels
-            "radius": 1,
-            "maxOpacity": .33,
-            // scales the radius based on map zoom
-            "scaleRadius": true,
-            // if set to false the heatmap uses the global maximum for colorization
-            // if activated: uses the data maximum within the current map boundaries
-            //   (there will always be a red spot with useLocalExtremas true)
-            "useLocalExtrema": false,
-            // which field name in your data represents the latitude - default "lat"
-            latField: 'lat',
-            // which field name in your data represents the longitude - default "lng"
-            lngField: 'lng',
-            // which field name in your data represents the data value - default "value"
-            valueField: 'count'
-        });
-        console.log(heatPoints);
-        map.addLayer(heatmapLayer);
-        heatmapLayer.setData({
-            max: 3,
-            data: heatPoints
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-    });
+    } else {
+        map.removeLayer(backgroundLayers['sams']);
+        map.removeLayer(backgroundLayers['heat']);
+        delete backgroundLayers['sams'];
+        delete backgroundLayers['heat'];
+    }
 };
 
 var loadAviation = function () {
-    loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup({
-            iconCreateFunction: function (cluster) {
-                return L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "l"});
-            }
+    if (!backgroundLayers['aviation']) {
+        loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
+            var markers = new L.MarkerClusterGroup({
+                iconCreateFunction: function (cluster) {
+                    return L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "l"});
+                }
+            });
+            var icon = L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: infraPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            markers.addLayer(geoJsonLayer);
+            map.addLayer(markers);
+            backgroundLayers['aviation'] = markers;
         });
-        var icon = L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-    });
+    } else {
+        map.removeLayer(backgroundLayers['aviation']);
+        delete backgroundLayers['aviation'];
+    }
 };
 
 var loadSecondArtillery = function () {
-    loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup({
-            iconCreateFunction: function (cluster) {
-                return L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "m"});
-            }
+    if (!backgroundLayers['missiles']) {
+        loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
+            var markers = new L.MarkerClusterGroup({
+                iconCreateFunction: function (cluster) {
+                    return L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "m"});
+                }
+            });
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "s"});
+            var geoJsonLayer = L.geoJson(data, {
+                filter: function (feature) {
+                    return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
+                },
+                onEachFeature: infraPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            markers.addLayer(geoJsonLayer);
+            map.addLayer(markers);
+            backgroundLayers['missiles'] = markers;
         });
-        var icon = L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "s"});
-        var geoJsonLayer = L.geoJson(data, {
-            filter: function (feature) {
-                return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
-            },
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-    });
+    } else {
+        map.removeLayer(backgroundLayers['missiles']);
+        delete backgroundLayers['missiles'];
+    }
 };
 
 var stationPopup = function (feature, layer) {
@@ -294,7 +322,7 @@ var stationPopup = function (feature, layer) {
 };
 
 var loadStations = function () {
-    loadGeoJSON('stations.geojson', function (data) {
+    loadGeoJSON('background/stations.geojson', function (data) {
         var markers = new L.MarkerClusterGroup();
         var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
@@ -384,7 +412,15 @@ var loadRangeRings = function () {
 
 loadSources();
 loadSinks();
-//loadPorts();
-//loadAviation();
-//loadSecondArtillery();
-loadSAMs();
+L.easyButton('fa-warning', function (btn, map) {
+    loadSAMs();
+}).addTo(map);
+L.easyButton('fa-ship', function (btn, map) {
+    loadPorts();
+}).addTo(map);
+L.easyButton('fa-plane', function (btn, map) {
+    loadAviation();
+}).addTo(map);
+L.easyButton('fa-rocket', function (btn, map) {
+    loadSecondArtillery();
+}).addTo(map);
