@@ -2,12 +2,12 @@
  * Created by spartango on 10/2/15.
  */
 
- // Setup Map
+// Setup Map
 
 var layer;
 var hash;
 
-var map = L.map('map',  {
+var map = L.map('map', {
     fullscreenControl: true
 }).setView([51.505, -0.09], 13);
 
@@ -94,8 +94,8 @@ var MapQuestOpen_HybridOverlay = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.
 });
 
 var baseMaps = {
-    "MapBox" : mapboxLayer,
-    "OpenStreetMap" : OpenStreetMap_Mapnik,
+    "MapBox": mapboxLayer,
+    "OpenStreetMap": OpenStreetMap_Mapnik,
     "TF Transport": Thunderforest_Transport,
     "Esri Street Map": Esri_WorldStreetMap,
     "Esri Imagery": Esri_WorldImagery,
@@ -116,57 +116,185 @@ var overlayMaps = {
 L.control.layers(baseMaps, overlayMaps).addTo(map);
 L.control.scale().addTo(map);
 
-function showRoutes(id) {
+var loadGeoJSON = function (path, callback) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '20_run/' + id + '_path.geojson', true);
+    xhr.open('GET', path, true);
     xhr.onload = function () {
         if (xhr.readyState == 4) {
-            console.log("Loaded data");
             var data = JSON.parse(xhr.responseText);
+            callback(data);
+        }
+    };
+    xhr.send();
+};
+
+var showRoutes = function (id) {
+    loadGeoJSON('2020/20_' + id + '_path.geojson',
+        function (data) {
             if (layer && data) {
                 map.removeLayer(layer);
             }
 
             layer = L.geoJson(data);
             layer.addTo(map);
-        }
-    };
-    xhr.send();
-}
+        });
+};
 
-function stationPopup(feature, layer) {
+var infraPopup = function (feature, layer) {
+    // does this feature have a property named popupContent?
+    if (feature.properties) {
+        var popupString = "<div style='height:100px;overflow:auto;'><table>";
+        for (key in feature.properties) {
+            popupString += "<tr><td>" + key + "</td><td>" + feature.properties[key] + "</td></tr>";
+        }
+
+        popupString += "</table></div>";
+        if (feature.geometry) {
+            popupString += "<div><button onclick='map.setView({lat:"
+                + feature.geometry.coordinates[1]
+                + ", lng:"
+                + feature.geometry.coordinates[0]
+                + "}, 16)'>Zoom</button></div>"
+        }
+        layer.bindPopup(popupString);
+    }
+};
+
+var loadPorts = function () {
+    loadGeoJSON('background/WPI.geojson', function (data) {
+        var markers = new L.MarkerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "l"});
+            }
+        });
+        var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: infraPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    });
+};
+
+var loadSAMs = function () {
+    loadGeoJSON('background/SAMs.geojson', function (data) {
+        var markers = new L.MarkerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "m"});
+            }
+        });
+        var icon = L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "s"});
+        var heatPoints = [];
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: infraPopup,
+            pointToLayer: function (feature, latlng) {
+                heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        var heatmapLayer = new HeatmapOverlay({
+            // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+            // if scaleRadius is false it will be the constant radius used in pixels
+            "radius": 1,
+            "maxOpacity": .33,
+            // scales the radius based on map zoom
+            "scaleRadius": true,
+            // if set to false the heatmap uses the global maximum for colorization
+            // if activated: uses the data maximum within the current map boundaries
+            //   (there will always be a red spot with useLocalExtremas true)
+            "useLocalExtrema": false,
+            // which field name in your data represents the latitude - default "lat"
+            latField: 'lat',
+            // which field name in your data represents the longitude - default "lng"
+            lngField: 'lng',
+            // which field name in your data represents the data value - default "value"
+            valueField: 'count'
+        });
+        console.log(heatPoints);
+        map.addLayer(heatmapLayer);
+        heatmapLayer.setData({
+            max: 3,
+            data: heatPoints
+        });
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    });
+};
+
+var loadAviation = function () {
+    loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
+        var markers = new L.MarkerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "l"});
+            }
+        });
+        var icon = L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "m"});
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: infraPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    });
+};
+
+var loadSecondArtillery = function () {
+    loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
+        var markers = new L.MarkerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "m"});
+            }
+        });
+        var icon = L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "s"});
+        var geoJsonLayer = L.geoJson(data, {
+            filter: function (feature) {
+                return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
+            },
+            onEachFeature: infraPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    });
+};
+
+var stationPopup = function (feature, layer) {
     // does this feature have a property named popupContent?
     if (feature.properties) {
         var popupString = "<table><tr>";
-        for (key in feature.properties) {
+        for (var key in feature.properties) {
             popupString += "<td>" + feature.properties[key] + "</td>";
         }
-        
+
         if (feature.properties.id || feature.geometry) {
             popupString += "</tr><tr>"
         }
 
         if (feature.geometry) {
             popupString += "<td><button onclick='map.setView({lat:"
-                        +feature.geometry.coordinates[1]
-                        +", lng:"
-                        +feature.geometry.coordinates[0]
-                        +"}, 16)'>Zoom</button></td>"
+                + feature.geometry.coordinates[1]
+                + ", lng:"
+                + feature.geometry.coordinates[0]
+                + "}, 16)'>Zoom</button></td>"
         }
-        if (feature.properties.id) {
+        if (false && feature.properties.id) {
             popupString += "<td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
         }
-    
+
         popupString += "</tr></table>";
         layer.bindPopup(popupString);
     }
-}
+};
 
-var sXhr = new XMLHttpRequest();
-sXhr.open('GET', 'stations.geojson', true);
-sXhr.onload = function () {
-    if (sXhr.readyState == 4) {
-        var data = JSON.parse(sXhr.responseText);
+var loadStations = function () {
+    loadGeoJSON('stations.geojson', function (data) {
         var markers = new L.MarkerClusterGroup();
         var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
@@ -179,6 +307,84 @@ sXhr.onload = function () {
         map.addLayer(markers);
         map.fitBounds(markers.getBounds());
         hash = new L.Hash(map);
-    }
+    })
 };
-sXhr.send();
+
+var loadPath = function (id) {
+    var pathPopup = function (feature, layer) {
+        if (feature.properties) {
+            var popupString = "<table><tr>";
+            for (var key in feature.properties) {
+                popupString += "<td>" + feature.properties[key] + "</td>";
+            }
+
+            if (feature.properties.id || feature.geometry) {
+                popupString += "</tr><tr>"
+            }
+            popupString += "</tr></table>";
+            layer.bindPopup(popupString);
+        }
+    };
+    loadGeoJSON('2020/20_' + id + '_path.geojson',
+        function (data) {
+            var path = L.geoJson(data, {
+                onEachFeature: pathPopup
+            });
+            path.addTo(map);
+        });
+};
+
+var loadSources = function () {
+    loadGeoJSON('2020/sources.geojson', function (data) {
+        //var markers = new L.MarkerClusterGroup();
+        var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: stationPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        //markers.addLayer(geoJsonLayer);
+        map.addLayer(geoJsonLayer);
+        map.fitBounds(geoJsonLayer.getBounds());
+        hash = new L.Hash(map);
+
+        // Load up the routes
+        data.features.forEach(function (feature) {
+            loadPath(feature.properties.id);
+        });
+    })
+};
+
+var loadSinks = function () {
+    loadGeoJSON('2020/sinks.geojson', function (data) {
+        //var markers = new L.MarkerClusterGroup();
+        var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+        var geoJsonLayer = L.geoJson(data, {
+            onEachFeature: stationPopup,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        //markers.addLayer(geoJsonLayer);
+        map.addLayer(geoJsonLayer);
+        map.fitBounds(geoJsonLayer.getBounds());
+        hash = new L.Hash(map);
+    })
+};
+
+var loadRangeRings = function () {
+    loadGeoJSON('background/RangeRings.geojson', function (data) {
+        var markers = new L.MarkerClusterGroup();
+        var geoJsonLayer = L.geoJson(data, {});
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    });
+};
+
+loadSources();
+loadSinks();
+//loadPorts();
+//loadAviation();
+//loadSecondArtillery();
+loadSAMs();

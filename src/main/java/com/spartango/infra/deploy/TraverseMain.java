@@ -31,7 +31,6 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -48,7 +47,8 @@ public class TraverseMain {
     private static final String TARGET_PATH     = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH         = PATH + "rail.db";
     private static final String GRAPH_DB_PATH   = PATH + "graph.db";
-    private static final String STATION_GEOJSON = PATH + "stations.geojson";
+    private static final String SOURCES_GEOJSON = PATH + "2020/sources.geojson";
+    private static final String SINKS_GEOJSON = PATH + "2020/sinks.geojson";
     private static final long   TARGET_COUNT    = 20;
 
     private static GraphDatabaseService graphDb;
@@ -60,9 +60,7 @@ public class TraverseMain {
 
         // Find all stations
         final Collection<NodeStub> stations = getStations();
-        System.out.println("Seeding with " + stations.size());
-
-        writeStations(stations);
+        System.out.println("Starting with " + stations.size());
 
         // Look for shortest paths
         findPaths(stations);
@@ -74,71 +72,72 @@ public class TraverseMain {
     private static void findPaths(Collection<NodeStub> stations) {
         System.out.println("DEBUG: Limiting paths to " + TARGET_COUNT + " simulated station targets");
 
+        long loadStartTime = System.currentTimeMillis();
         // Simulates known sinks
         final List<NodeStub> shuffled = new ArrayList<>(stations);
         Collections.shuffle(shuffled);
-        final List<NeoNode> targets = shuffled.parallelStream().unordered()
+        final List<NeoNode> sinks = shuffled.parallelStream().unordered()
+                                            .map(destination -> NeoNode.getNeoNode(destination.getId(),
+                                                                                   graphDb))
+                                            .filter(Optional::isPresent)
+                                            .map(Optional::get)
+                                            .limit(TARGET_COUNT)
+                                            .collect(Collectors.toList());
+
+        // Simulates known sources
+        final List<NeoNode> sources = shuffled.parallelStream().unordered()
                                               .map(destination -> NeoNode.getNeoNode(destination.getId(),
                                                                                      graphDb))
                                               .filter(Optional::isPresent)
+                                              .skip(TARGET_COUNT)
                                               .map(Optional::get)
-                                              .limit(2 * TARGET_COUNT)
+                                              .limit(TARGET_COUNT)
                                               .collect(Collectors.toList());
 
-        System.out.println("Loaded targets");
+        System.out.println("Loaded targets: "
+                           + sources.size()
+                           + " sources and "
+                           + sinks.size()
+                           + " sinks in "
+                           + (System.currentTimeMillis() - loadStartTime)
+                           + "ms");
 
-        final long startTime = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong();
-        stations.stream()
-                .map(station -> NeoNode.getNeoNode(station.getId(), graphDb))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
-                .forEach(station -> {
-                             final List<WeightedPath> paths =
-                                     targets.parallelStream().unordered()
-                                            .filter(destination -> !destination.getOsmNode()
-                                                                               .equals(station.getOsmNode()))
-                                            .limit(TARGET_COUNT)
-                                            .peek(destination -> {
-                                                long time = System.currentTimeMillis();
-                                                long progress = count.incrementAndGet();
-                                                System.out.print(station.getId()
-                                                                 + " -> "
-                                                                 + destination.getId()
-                                                                 + " | "
-                                                                 + progress
-                                                                 + " @ "
-                                                                 + (1000.0
-                                                                    *
-                                                                    progress
-                                                                    / (time
-                                                                       - startTime))
-                                                                 + "/s \r");
-                                            })
-                                            .map(neoDestination -> {
-                                                PathFinder<WeightedPath> pathFinder =
-                                                        aStar(allTypesAndDirections(),
-                                                              (TraverseMain::linkLength),
-                                                              (start, end) -> 1.0d);
+        // Write sources
+        writeStations(sources.stream().map(NeoNode::getOsmNode).collect(Collectors.toList()), SOURCES_GEOJSON);
+
+        // Write sinks
+        writeStations(sinks.stream().map(NeoNode::getOsmNode).collect(Collectors.toList()), SINKS_GEOJSON);
+
+        sources.stream()
+               .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
+               .forEach(station -> {
+                            final List<WeightedPath> paths =
+                                    sinks.parallelStream().unordered()
+                                         .filter(destination -> !destination.getOsmNode()
+                                                                            .equals(station.getOsmNode()))
+                                         .map(neoDestination -> {
+                                             PathFinder<WeightedPath> pathFinder =
+                                                     aStar(allTypesAndDirections(),
+                                                           (TraverseMain::linkLength),
+                                                           (start, end) -> 1.0d);
 
 
-                                                final WeightedPath path;
-                                                try (Transaction tx = graphDb.beginTx()) {
-                                                    path = pathFinder.findSinglePath(station.getNeoNode(),
-                                                                                     neoDestination.getNeoNode());
-                                                    tx.success();
-                                                }
-                                                return path;
-                                            }).filter(path -> path != null
-                                                              && path.length() != 0)
-                                            .collect(Collectors.toList());
-                             write(station.getOsmNode(), paths);
-                         }
-                );
+                                             final WeightedPath path;
+                                             try (Transaction tx = graphDb.beginTx()) {
+                                                 path = pathFinder.findSinglePath(station.getNeoNode(),
+                                                                                  neoDestination.getNeoNode());
+                                                 tx.success();
+                                             }
+                                             return path;
+                                         }).filter(path -> path != null
+                                                           && path.length() != 0)
+                                         .collect(Collectors.toList());
+                            write(station.getOsmNode(), paths);
+                        }
+               );
     }
 
-    private static void writeStations(Collection<NodeStub> stations) {
+    private static void writeStations(Collection<NodeStub> stations, String path) {
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName("Station");
         builder.add("the_geom", Point.class);
@@ -172,7 +171,7 @@ public class TraverseMain {
 
             final ListFeatureCollection stationCollection = new ListFeatureCollection(stationType,
                                                                                       stationFeatures);
-            featureJSON.writeFeatureCollection(stationCollection, new File(STATION_GEOJSON));
+            featureJSON.writeFeatureCollection(stationCollection, new File(path));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -199,6 +198,7 @@ public class TraverseMain {
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
+        rBuilder.add("cost", Double.class);
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
@@ -217,6 +217,7 @@ public class TraverseMain {
                 final LineString lineString = geometryFactory.createLineString(
                         coordinateList.toArray(new Coordinate[coordinateList.size()]));
                 linkFeatureBuilder.add(lineString);
+                linkFeatureBuilder.add(path.weight());
 
                 final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
                 linkFeatures.add(linkFeature);
@@ -231,7 +232,8 @@ public class TraverseMain {
             featureJSON.setEncodeFeatureBounds(false);
 
             final ListFeatureCollection linkCollection = new ListFeatureCollection(linkType, linkFeatures);
-            featureJSON.writeFeatureCollection(linkCollection, new File(PATH + station.getId() + "_path.geojson"));
+            featureJSON.writeFeatureCollection(linkCollection,
+                                               new File(PATH + "2020/20_" + station.getId() + "_path.geojson"));
         } catch (IOException e) {
             e.printStackTrace();
         }
