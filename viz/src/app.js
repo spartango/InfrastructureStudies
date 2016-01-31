@@ -356,7 +356,12 @@ var loadPath = function (id) {
     loadGeoJSON('2020/20_' + id + '_path.geojson',
         function (data) {
             var path = L.geoJson(data, {
-                onEachFeature: pathPopup
+                //onEachFeature: pathPopup
+                style: {
+                    "color": "#00d",
+                    "weight": 5,
+                    "opacity": 0.20
+                }
             });
             path.addTo(map);
         });
