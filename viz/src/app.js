@@ -182,10 +182,10 @@ var loadPorts = function () {
         loadGeoJSON('background/WPI.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "l"});
+                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
+            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -207,15 +207,13 @@ var loadSAMs = function () {
         loadGeoJSON('background/SAMs.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "m"});
+                    return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "danger", color: "#ab0", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
             var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
-                filter: function (feature) {
-                    return feature.properties.name != "EW site";
-                },
+
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
                     heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
@@ -240,7 +238,7 @@ var loadSAMs = function () {
                 // which field name in your data represents the data value - default "value"
                 valueField: 'count'
             });
-            map.addLayer(heatmapLayer);
+            //map.addLayer(heatmapLayer);
             heatmapLayer.setData({
                 max: 3,
                 data: heatPoints
@@ -252,7 +250,7 @@ var loadSAMs = function () {
         });
     } else {
         map.removeLayer(backgroundLayers['sams']);
-        map.removeLayer(backgroundLayers['heat']);
+        //map.removeLayer(backgroundLayers['heat']);
         delete backgroundLayers['sams'];
         delete backgroundLayers['heat'];
     }
@@ -263,10 +261,10 @@ var loadAviation = function () {
         loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "l"});
+                    return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "airport", color: "#d90", size: "m"});
+            var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -288,10 +286,10 @@ var loadSecondArtillery = function () {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "m"});
+                    return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#e70", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -352,33 +350,33 @@ var loadStations = function () {
         markers.addLayer(geoJsonLayer);
         map.addLayer(markers);
         map.fitBounds(markers.getBounds());
-        hash = new L.Hash(map);
     })
 };
 
-var loadPath = function (id) {
-    var pathPopup = function (feature, layer) {
-        if (feature.properties) {
-            var popupString = "<table><tr>";
-            for (var key in feature.properties) {
-                popupString += "<td>" + feature.properties[key] + "</td>";
-            }
-
-            if (feature.properties.id || feature.geometry) {
-                popupString += "</tr><tr>"
-            }
-            popupString += "</tr></table>";
-            layer.bindPopup(popupString);
+var pathPopup = function (feature, layer) {
+    if (feature.properties) {
+        var popupString = "<table><tr>";
+        for (var key in feature.properties) {
+            popupString += "<td>" + feature.properties[key] + "</td>";
         }
-    };
+
+        if (feature.properties.id || feature.geometry) {
+            popupString += "</tr><tr>"
+        }
+        popupString += "</tr></table>";
+        layer.bindPopup(popupString);
+    }
+};
+
+var loadPath = function (id) {
     loadGeoJSON('2020/20_' + id + '_path.geojson',
         function (data) {
             var path = L.geoJson(data, {
                 //onEachFeature: pathPopup
                 style: {
                     "color": "#00d",
-                    "weight": 5,
-                    "opacity": 0.20
+                    "weight": 4,
+                    "opacity": 0.10
                 }
             });
             path.addTo(map);
@@ -398,12 +396,13 @@ var loadSources = function () {
         //markers.addLayer(geoJsonLayer);
         map.addLayer(geoJsonLayer);
         map.fitBounds(geoJsonLayer.getBounds());
-        hash = new L.Hash(map);
 
         // Load up the routes
         data.features.forEach(function (feature) {
             loadPath(feature.properties.id);
         });
+
+        hash = new L.Hash(map);
     })
 };
 
@@ -419,24 +418,76 @@ var loadSinks = function () {
         });
         //markers.addLayer(geoJsonLayer);
         map.addLayer(geoJsonLayer);
-        map.fitBounds(geoJsonLayer.getBounds());
-        hash = new L.Hash(map);
+        //map.fitBounds(geoJsonLayer.getBounds());
     })
 };
 
 var loadRangeRings = function () {
-    loadGeoJSON('background/RangeRings.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup();
-        var geoJsonLayer = L.geoJson(data, {});
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-    });
+    if (!backgroundLayers['rings']) {
+        loadGeoJSON('background/RangeRingsP.geojson', function (data) {
+            // Merge the rings
+            var merged = turf.merge(data);
+            var fillLayer = L.geoJson(data, {
+                style: {
+                    "color": "#d00",
+                    "weight": 0,
+                    "opacity": 0.5,
+                    "fillOpacity": 0.05
+                }
+            });
+            var geoJsonLayer = L.geoJson(merged, {
+                style: {
+                    "color": "#d00",
+                    "weight": 2,
+                    "opacity": 0.8,
+                    "fillOpacity": 0.10
+                }
+            });
+            map.addLayer(geoJsonLayer);
+            map.addLayer(fillLayer);
+            backgroundLayers['rings'] = geoJsonLayer;
+            backgroundLayers['ringFill'] = fillLayer;
+        });
+    } else {
+        map.removeLayer(backgroundLayers['rings']);
+        map.removeLayer(backgroundLayers['ringFill']);
+        delete backgroundLayers['rings'];
+        delete backgroundLayers['ringFill'];
+    }
+};
+
+var loadSegments = function () {
+    if (!backgroundLayers['segments']) {
+        loadGeoJSON('2020/segments.geojson',
+            function (data) {
+                //var combined = turf.combine(data);
+                var path = L.geoJson(data, {
+                    onEachFeature: pathPopup,
+                    style: function (feature) {
+                        var scaled = (feature.properties.criticality - 10) / 10;
+                        var green = Math.round(255 * (1 - scaled));
+                        return {
+                            "color": "rgb(255, " + green + ", 0)",
+                            "weight": 4,
+                            "opacity": 0.8
+                        }
+                    }
+                });
+                path.addTo(map);
+                backgroundLayers['segments'] = path;
+            });
+    } else {
+        map.removeLayer(backgroundLayers['segments']);
+        delete backgroundLayers['segments'];
+    }
 };
 
 loadSources();
 loadSinks();
+
 L.easyButton('fa-warning', function (btn, map) {
     loadSAMs();
+    loadRangeRings();
 }).addTo(map);
 L.easyButton('fa-ship', function (btn, map) {
     loadPorts();
@@ -446,4 +497,7 @@ L.easyButton('fa-plane', function (btn, map) {
 }).addTo(map);
 L.easyButton('fa-rocket', function (btn, map) {
     loadSecondArtillery();
+}).addTo(map);
+L.easyButton('fa-bullseye', function (btn, map) {
+    loadSegments();
 }).addTo(map);

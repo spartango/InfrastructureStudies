@@ -43,13 +43,14 @@ import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
  * Time: 16:07.
  */
 public class TraverseMain {
-    private static final String PATH            = "data/";
-    private static final String TARGET_PATH     = PATH + "china-latest.osm.pbf";
-    private static final String DB_PATH         = PATH + "rail.db";
-    private static final String GRAPH_DB_PATH   = PATH + "graph.db";
-    private static final String SOURCES_GEOJSON = PATH + "2020/sources.geojson";
-    private static final String SINKS_GEOJSON   = PATH + "2020/sinks.geojson";
-    \
+    private static final String PATH             = "data/";
+    private static final String TARGET_PATH      = PATH + "china-latest.osm.pbf";
+    private static final String DB_PATH          = PATH + "rail.db";
+    private static final String GRAPH_DB_PATH    = PATH + "graph.db";
+    private static final String SOURCES_GEOJSON  = PATH + "2020/sources.geojson";
+    private static final String SINKS_GEOJSON    = PATH + "2020/sinks.geojson";
+    private static final String SEGMENTS_GEOJSON = PATH + "2020/segments.geojson";
+
     private static final long SOURCE_COUNT = 20;
     private static final long SINK_COUNT   = 20;
 
@@ -119,9 +120,14 @@ public class TraverseMain {
         System.out.println("Calculated paths in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
+
+        // Write the baseline paths
         generated.forEach((station, paths) -> write(station,
                                                     paths,
                                                     PATH + "2020/20_" + station.getId() + "_path.geojson"));
+
+        // Write histogrammed segments
+        writeSegments(generated, SEGMENTS_GEOJSON);
 
         // For each segment
         // Mark it damaged
@@ -202,6 +208,78 @@ public class TraverseMain {
             seeker.getDatabase().commit();
         }
         return stations;
+    }
+
+
+    private static void writeSegments(Map<NodeStub, List<WeightedPath>> targets, String filePath) {
+        // Histogram
+        Map<Set<NodeStub>, Set<NodeStub>> histogram = new HashMap<>();
+
+        targets.forEach((source, paths) -> paths.forEach(path -> {
+            // For each path
+            if (path == null) {
+                return;
+            }
+            try (Transaction tx = graphDb.beginTx()) {
+                path.relationships().forEach(relationship -> {
+                    // For each segment
+                    // Pull up the nodes & data
+                    final NeoNode startNode = new NeoNode(relationship.getStartNode(), graphDb);
+                    final NeoNode endNode = new NeoNode(relationship.getEndNode(), graphDb);
+                    final Set<NodeStub> pair = new HashSet<>(Arrays.asList(startNode.getOsmNode(),
+                                                                           endNode.getOsmNode()));
+                    // If we've seen this segment before
+                    Set<NodeStub> set = histogram.get(pair);
+                    if (set == null) {
+                        set = new HashSet<>();
+                        histogram.put(pair, set);
+                    }
+                    set.add(source);
+                });
+
+                tx.success();
+            }
+        }));
+
+        System.out.println("Calculated segment histogram: " + histogram.size());
+
+        // Feature type definitions
+        SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
+        rBuilder.setName("Rail Segment");
+        rBuilder.add("the_geom", LineString.class);
+        rBuilder.add("criticality", Integer.class);
+//        rBuilder.add("mean_cost", Double.class);
+
+        final SimpleFeatureType linkType = rBuilder.buildFeatureType();
+        SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
+
+        // Collection of segments
+        final List<SimpleFeature> linkFeatures = new ArrayList<>();
+
+        // For each segment we've seen
+        histogram.forEach((pair, criticality) -> {
+            if (criticality.size() > SOURCE_COUNT / 2) { // Ignore low criticality segments
+                // Create it a line feature
+                final List<Coordinate> coordinateList = pair.stream()
+                                                            .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
+                                                                                            nodeStub.getLatitude()))
+                                                            .collect(Collectors.toList());
+
+                final LineString lineString = geometryFactory.createLineString(
+                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
+
+                // Add the Criticality
+                linkFeatureBuilder.add(lineString);
+                linkFeatureBuilder.add(criticality.size());
+
+                // Add it to the collection
+                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(pair.hashCode()));
+                linkFeatures.add(linkFeature);
+            }
+        });
+
+        // Write the collection
+        writeFeature(filePath, linkType, linkFeatures);
     }
 
     private static void write(NodeStub station, Collection<WeightedPath> paths, String filePath) {
