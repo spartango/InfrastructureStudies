@@ -180,32 +180,12 @@ var infraPopup = function (feature, layer) {
 var loadPorts = function () {
     if (!backgroundLayers['ports']) {
         loadGeoJSON('background/WPI.geojson', function (data) {
-            // Iconography
-            var symbol = new MS.symbol(
-                "10042000001213090000", {
-                    size: 15
-                });
-            var icon = L.icon({
-                iconUrl: symbol.getMarker().asImage(),
-                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-            });
-
-            var largeSymbol = new MS.symbol(
-                "10042000001213090000", {
-                    size: 20
-                });
-            var largeIcon = L.icon({
-                iconUrl: largeSymbol.getMarker().asImage(),
-                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
-            });
-
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return largeIcon;
-                    //return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
+                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
                 }
             });
-            //var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -225,33 +205,13 @@ var loadPorts = function () {
 var loadSAMs = function () {
     if (!backgroundLayers['sams']) {
         loadGeoJSON('background/SAMs.geojson', function (data) {
-            // Iconography
-            var symbol = new MS.symbol(
-                "10061500001111000000", {
-                    size: 15
-                });
-            var icon = L.icon({
-                iconUrl: symbol.getMarker().asImage(),
-                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-            });
-
-            var largeSymbol = new MS.symbol(
-                "10061500001111000000", {
-                    size: 20
-                });
-            var largeIcon = L.icon({
-                iconUrl: largeSymbol.getMarker().asImage(),
-                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
-            });
-
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return largeIcon;
-                    //return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
+                    return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
                 }
             });
 
-            //var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
             //var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
@@ -290,32 +250,12 @@ var loadSAMs = function () {
 var loadAviation = function () {
     if (!backgroundLayers['aviation']) {
         loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
-            // Iconography
-            var symbol = new MS.symbol(
-                "10062000001213010000", {
-                    size: 15
-                });
-            var icon = L.icon({
-                iconUrl: symbol.getMarker().asImage(),
-                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-            });
-
-            var largeSymbol = new MS.symbol(
-                "10062000001213010000", {
-                    size: 20
-                });
-            var largeIcon = L.icon({
-                iconUrl: largeSymbol.getMarker().asImage(),
-                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
-            });
-
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return largeIcon;
-                    //return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
+                    return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
                 }
             });
-            //var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -335,33 +275,12 @@ var loadAviation = function () {
 var loadSecondArtillery = function () {
     if (!backgroundLayers['missiles']) {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
-            // Iconography
-            var symbol = new MS.symbol(
-                "10061500001113030000", {
-                    size: 15
-                });
-            var icon = L.icon({
-                iconUrl: symbol.getMarker().asImage(),
-                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-            });
-
-            var largeSymbol = new MS.symbol(
-                "10061500001113030000", {
-                    size: 20
-                });
-
-            var largeIcon = L.icon({
-                iconUrl: largeSymbol.getMarker().asImage(),
-                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
-            });
-
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return largeIcon;
-                    //return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
+                    return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
                 }
             });
-            //var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -457,15 +376,7 @@ var loadPath = function (id) {
 var loadSources = function () {
     loadGeoJSON('2020/sources.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
-        //var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
-        var symbol = new MS.symbol(
-            "10062000001213070000", {
-                size: 20
-            });
-        var icon = L.icon({
-            iconUrl: symbol.getMarker().asImage(),
-            iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-        });
+        var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: stationPopup,
             pointToLayer: function (feature, latlng) {
@@ -488,16 +399,7 @@ var loadSources = function () {
 var loadSinks = function () {
     loadGeoJSON('2020/sinks.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
-        // Iconography
-        var symbol = new MS.symbol(
-            "10062000001213070000", {
-                size: 20
-            });
-        var icon = L.icon({
-            iconUrl: symbol.getMarker().asImage(),
-            iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
-        });
-        //var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+        var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: stationPopup,
             pointToLayer: function (feature, latlng) {
