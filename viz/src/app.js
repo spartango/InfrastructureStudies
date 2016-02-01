@@ -3,7 +3,6 @@
  */
 
 // Setup Map
-
 var layer;
 var hash;
 
@@ -16,7 +15,7 @@ var mapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@
     maxZoom: 18,
     id: 'mapbox.streets',
     accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
-}).addTo(map);
+});
 
 var satelliteMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
@@ -108,27 +107,31 @@ var MapQuestOpen_HybridOverlay = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.
 });
 
 var baseMaps = {
-    "Light": CartoDB_Positron,
-    "Dark": CartoDB_DarkMatter,
-    "Standard": mapboxLayer,
-    "Physical": Esri_WorldPhysical,
-    "Topo": Esri_WorldTopoMap,
-    "Imagery": Esri_WorldImagery,
+    "Streets": CartoDB_Positron,
+    //"Dark": CartoDB_DarkMatter,
+    "Physical": mapboxLayer,
+    //"Physical": Esri_WorldPhysical,
+    //"Topo": Esri_WorldTopoMap,
+    //"Imagery": Esri_WorldImagery,
     "Hybrid": hybridMapboxLayer,
-    "OpenStreetMap": OpenStreetMap_Mapnik,
+    //"OpenStreetMap": OpenStreetMap_Mapnik,
 };
+
+var defaultMap = baseMaps["Streets"];
+defaultMap.addTo(map);
 
 var overlayMaps = {
-    "Labels": MapQuestOpen_HybridOverlay,
-    "Clouds": OpenWeatherMap_Clouds,
-    "Precipitation": OpenWeatherMap_Precipitation,
-    "Pressure": OpenWeatherMap_Pressure,
-    "Pressure Contours": OpenWeatherMap_PressureContour,
-    "Wind": OpenWeatherMap_Wind,
-    "Temperature": OpenWeatherMap_Temperature
+    //"Labels": MapQuestOpen_HybridOverlay,
+    //"Clouds": OpenWeatherMap_Clouds,
+    //"Precipitation": OpenWeatherMap_Precipitation,
+    //"Pressure": OpenWeatherMap_Pressure,
+    //"Pressure Contours": OpenWeatherMap_PressureContour,
+    //"Wind": OpenWeatherMap_Wind,
+    //"Temperature": OpenWeatherMap_Temperature
 };
 
-L.control.layers(baseMaps, overlayMaps).addTo(map);
+var layerControl = L.control.layers(baseMaps, overlayMaps);
+layerControl.addTo(map);
 L.control.scale().addTo(map);
 
 var backgroundLayers = {};
@@ -472,9 +475,11 @@ var loadSegments = function () {
     }
 };
 
+// Default layers
 loadSources();
 loadSinks();
 
+// Default controls
 L.easyButton('fa-bullseye', function (btn, map) {
     loadSegments();
 }).addTo(map);
@@ -483,13 +488,31 @@ L.easyButton('fa-warning', function (btn, map) {
     loadRangeRings();
 }).addTo(map);
 
-L.easyButton('fa-ship', function (btn, map) {
+// Advanced controls
+var portButton = L.easyButton('fa-ship', function (btn, map) {
     loadPorts();
-}).addTo(map);
-L.easyButton('fa-plane', function (btn, map) {
+});
+var aviationButton = L.easyButton('fa-plane', function (btn, map) {
     loadAviation();
+});
+var nuclearButton = L.easyButton('fa-rocket', function (btn, map) {
+    loadSecondArtillery();
+});
+
+var advancedMode = false;
+L.easyButton('fa-cog', function (btn) {
+    if (!advancedMode) {
+        btn.removeFrom(map);
+        advancedMode = true;
+        portButton.addTo(map);
+        aviationButton.addTo(map);
+        nuclearButton.addTo(map);
+        layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
+        layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
+        layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
+        layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
+        layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
+        layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
+    }
 }).addTo(map);
 
-L.easyButton('fa-rocket', function (btn, map) {
-    loadSecondArtillery();
-}).addTo(map);
