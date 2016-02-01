@@ -180,12 +180,32 @@ var infraPopup = function (feature, layer) {
 var loadPorts = function () {
     if (!backgroundLayers['ports']) {
         loadGeoJSON('background/WPI.geojson', function (data) {
+            // Iconography
+            var symbol = new MS.symbol(
+                "10042000001213090000", {
+                    size: 15
+                });
+            var icon = L.icon({
+                iconUrl: symbol.getMarker().asImage(),
+                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+            });
+
+            var largeSymbol = new MS.symbol(
+                "10042000001213090000", {
+                    size: 20
+                });
+            var largeIcon = L.icon({
+                iconUrl: largeSymbol.getMarker().asImage(),
+                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
+            });
+
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
+                    return largeIcon;
+                    //return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
+            //var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -205,44 +225,55 @@ var loadPorts = function () {
 var loadSAMs = function () {
     if (!backgroundLayers['sams']) {
         loadGeoJSON('background/SAMs.geojson', function (data) {
+            // Iconography
+            var symbol = new MS.symbol(
+                "10061500001111000000", {
+                    size: 15
+                });
+            var icon = L.icon({
+                iconUrl: symbol.getMarker().asImage(),
+                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+            });
+
+            var largeSymbol = new MS.symbol(
+                "10061500001111000000", {
+                    size: 20
+                });
+            var largeIcon = L.icon({
+                iconUrl: largeSymbol.getMarker().asImage(),
+                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
+            });
+
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
+                    return largeIcon;
+                    //return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
-            var heatPoints = [];
-            var geoJsonLayer = L.geoJson(data, {
 
+            //var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
+            //var heatPoints = [];
+            var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
-                    heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
+                    //heatPoints.push({lat: latlng.lat, lng: latlng.lng, count: 1});
                     return L.marker(latlng, {icon: icon});
                 }
             });
             var heatmapLayer = new HeatmapOverlay({
-                // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-                // if scaleRadius is false it will be the constant radius used in pixels
                 "radius": 1,
                 "maxOpacity": .33,
-                // scales the radius based on map zoom
                 "scaleRadius": true,
-                // if set to false the heatmap uses the global maximum for colorization
-                // if activated: uses the data maximum within the current map boundaries
-                //   (there will always be a red spot with useLocalExtremas true)
                 "useLocalExtrema": false,
-                // which field name in your data represents the latitude - default "lat"
                 latField: 'lat',
-                // which field name in your data represents the longitude - default "lng"
                 lngField: 'lng',
-                // which field name in your data represents the data value - default "value"
                 valueField: 'count'
             });
             //map.addLayer(heatmapLayer);
-            heatmapLayer.setData({
-                max: 3,
-                data: heatPoints
-            });
+            //heatmapLayer.setData({
+            //    max: 3,
+            //    data: heatPoints
+            //});
             markers.addLayer(geoJsonLayer);
             map.addLayer(markers);
             backgroundLayers['sams'] = markers;
@@ -259,12 +290,32 @@ var loadSAMs = function () {
 var loadAviation = function () {
     if (!backgroundLayers['aviation']) {
         loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
+            // Iconography
+            var symbol = new MS.symbol(
+                "10062000001213010000", {
+                    size: 15
+                });
+            var icon = L.icon({
+                iconUrl: symbol.getMarker().asImage(),
+                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+            });
+
+            var largeSymbol = new MS.symbol(
+                "10062000001213010000", {
+                    size: 20
+                });
+            var largeIcon = L.icon({
+                iconUrl: largeSymbol.getMarker().asImage(),
+                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
+            });
+
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
+                    return largeIcon;
+                    //return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
+            //var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -284,12 +335,33 @@ var loadAviation = function () {
 var loadSecondArtillery = function () {
     if (!backgroundLayers['missiles']) {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
+            // Iconography
+            var symbol = new MS.symbol(
+                "10061500001113030000", {
+                    size: 15
+                });
+            var icon = L.icon({
+                iconUrl: symbol.getMarker().asImage(),
+                iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+            });
+
+            var largeSymbol = new MS.symbol(
+                "10061500001113030000", {
+                    size: 20
+                });
+
+            var largeIcon = L.icon({
+                iconUrl: largeSymbol.getMarker().asImage(),
+                iconAnchor: [largeSymbol.markerAnchor.x, largeSymbol.markerAnchor.y],
+            });
+
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
+                    return largeIcon;
+                    //return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
+            //var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -374,9 +446,8 @@ var loadPath = function (id) {
             var path = L.geoJson(data, {
                 //onEachFeature: pathPopup
                 style: {
-                    "color": "#00d",
                     "weight": 4,
-                    "opacity": 0.10
+                    "opacity": 0.5
                 }
             });
             path.addTo(map);
@@ -386,7 +457,15 @@ var loadPath = function (id) {
 var loadSources = function () {
     loadGeoJSON('2020/sources.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+        //var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+        var symbol = new MS.symbol(
+            "10062000001213070000", {
+                size: 20
+            });
+        var icon = L.icon({
+            iconUrl: symbol.getMarker().asImage(),
+            iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+        });
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: stationPopup,
             pointToLayer: function (feature, latlng) {
@@ -409,7 +488,16 @@ var loadSources = function () {
 var loadSinks = function () {
     loadGeoJSON('2020/sinks.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+        // Iconography
+        var symbol = new MS.symbol(
+            "10062000001213070000", {
+                size: 20
+            });
+        var icon = L.icon({
+            iconUrl: symbol.getMarker().asImage(),
+            iconAnchor: [symbol.markerAnchor.x, symbol.markerAnchor.y],
+        });
+        //var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: stationPopup,
             pointToLayer: function (feature, latlng) {
@@ -444,13 +532,13 @@ var loadRangeRings = function () {
                 }
             });
             map.addLayer(geoJsonLayer);
-            map.addLayer(fillLayer);
+            //map.addLayer(fillLayer);
             backgroundLayers['rings'] = geoJsonLayer;
             backgroundLayers['ringFill'] = fillLayer;
         });
     } else {
         map.removeLayer(backgroundLayers['rings']);
-        map.removeLayer(backgroundLayers['ringFill']);
+        //map.removeLayer(backgroundLayers['ringFill']);
         delete backgroundLayers['rings'];
         delete backgroundLayers['ringFill'];
     }
@@ -468,7 +556,7 @@ var loadSegments = function () {
                         var green = Math.round(255 * (1 - scaled));
                         return {
                             "color": "rgb(255, " + green + ", 0)",
-                            "weight": 4,
+                            "weight": 6,
                             "opacity": 0.8
                         }
                     }
@@ -485,19 +573,21 @@ var loadSegments = function () {
 loadSources();
 loadSinks();
 
+L.easyButton('fa-bullseye', function (btn, map) {
+    loadSegments();
+}).addTo(map);
 L.easyButton('fa-warning', function (btn, map) {
     loadSAMs();
     loadRangeRings();
 }).addTo(map);
+
 L.easyButton('fa-ship', function (btn, map) {
     loadPorts();
 }).addTo(map);
 L.easyButton('fa-plane', function (btn, map) {
     loadAviation();
 }).addTo(map);
+
 L.easyButton('fa-rocket', function (btn, map) {
     loadSecondArtillery();
-}).addTo(map);
-L.easyButton('fa-bullseye', function (btn, map) {
-    loadSegments();
 }).addTo(map);
