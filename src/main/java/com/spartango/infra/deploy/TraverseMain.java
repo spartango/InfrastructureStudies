@@ -302,21 +302,31 @@ public class TraverseMain {
 
     private static double linkLength(Relationship relationship, Direction d, Set<NodeStub> damagedNodes) {
         double length;
-        boolean damaged;
+        boolean damaged = false;
 
         try (Transaction tx = graphDb.beginTx()) {
-            final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
-            final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
+            // Only go hunting if we really need these
+            NeoNode start = null;
+            NeoNode end = null;
+
             if (relationship.hasProperty("distance")) {
                 length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
             } else {
+                start = new NeoNode(relationship.getStartNode(), graphDb);
+                end = new NeoNode(relationship.getEndNode(), graphDb);
                 length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
                 relationship.setProperty("distance", String.valueOf(length));
             }
 
-            // Check for damage
-            damaged = damagedNodes.containsAll(Arrays.asList(start, end));
-            // TODO: Support multiple damaged legs properly
+            if (!damagedNodes.isEmpty()) {
+                // Lazy load
+                start = start == null ? new NeoNode(relationship.getStartNode(), graphDb) : start;
+                end = end == null ? new NeoNode(relationship.getEndNode(), graphDb) : end;
+
+                // Check for damage
+                damaged = damagedNodes.containsAll(Arrays.asList(start, end));
+                // TODO: Support multiple damaged legs properly
+            }
 
             tx.success();
         }
