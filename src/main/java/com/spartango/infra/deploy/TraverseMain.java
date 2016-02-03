@@ -7,14 +7,9 @@ import com.spartango.infra.osm.TagUtils;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.osm.type.WayStub;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
-import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geojson.feature.FeatureJSON;
-import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
@@ -29,14 +24,13 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
+import static com.spartango.infra.io.Writers.*;
+import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 
 /**
@@ -52,13 +46,16 @@ public class TraverseMain {
     private static final String SOURCES_GEOJSON  = PATH + "2020/sources.geojson";
     private static final String SINKS_GEOJSON    = PATH + "2020/sinks.geojson";
     private static final String SEGMENTS_GEOJSON = PATH + "2020/bridges.geojson";
+    private static final String DAMAGE_GEOJSON   = PATH + "2020/damage.geojson";
 
     private static final long SOURCE_COUNT = 20;
     private static final long SINK_COUNT   = 20;
 
+    // Damage equivalent to a track extension
+    private static final double DAMAGE_COST = 600000; // 600km @ 100km/hr = 6 hours of delay
+
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
-    private static GeometryFactory      geometryFactory;
 
     public static void main(String[] args) {
         setupGraph();
@@ -73,6 +70,50 @@ public class TraverseMain {
 
         System.out.println("Shutting down");
         graphDb.shutdown();
+    }
+
+    private static void setupGraph() {
+        // Neo4J
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(GRAPH_DB_PATH)
+                                            .setConfig(GraphDatabaseSettings.node_keys_indexable, NeoNode.OSM_ID)
+                                            .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
+                                            .newGraphDatabase();
+
+        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(NeoNode.OSM_ID);
+
+        // Seeker
+        seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
+            @Override protected boolean isTarget(Entity entity) {
+                return ((entity instanceof Relation &&
+                         (TagUtils.hasTag(entity, "route", "train")
+                          || TagUtils.hasTag(entity, "route", "railway")))
+                        || (entity instanceof Way
+                            && TagUtils.hasTag(entity, "railway")));
+            }
+        };
+
+        System.out.println("STATIC: No seeking, data expected");
+//        seeker.run();
+        System.out.println("Building graph from "
+                           + seeker.getRelations().size()
+                           + " routes, "
+                           + seeker.getWays().size()
+                           + " ways, and "
+                           + seeker.getNodes().size()
+                           + " nodes");
+
+//        OSMGraph graph = new OSMGraph(graphDb);
+        long nodeCount;
+        long edgeCount;
+        // Check that the graph has been built properly
+
+        System.out.println("STATIC: No building, data expected");
+//        graph.build(seeker.getIndex());
+
+        // Quick stats
+        nodeCount = GraphMain.getNodeCount(graphDb);
+        edgeCount = GraphMain.getEdgeCount(graphDb);
+        System.out.println("Graph built: " + nodeCount + " nodes & " + edgeCount + " links");
     }
 
     private static void findPaths(Collection<NodeStub> stations, Collection<WayStub> bridges) {
@@ -126,35 +167,106 @@ public class TraverseMain {
                            + "ms");
 
         // Write sources
-        writeStations(sources.stream().map(NeoNode::getOsmNode).collect(Collectors.toList()), SOURCES_GEOJSON);
+        writeStations(sources, SOURCES_GEOJSON);
 
         // Write sinks
-        writeStations(sinks.stream().map(NeoNode::getOsmNode).collect(Collectors.toList()), SINKS_GEOJSON);
+        writeStations(sinks, SINKS_GEOJSON);
 
         // Baseline
         startTime = System.currentTimeMillis();
-        final Map<NodeStub, List<WeightedPath>> generated = generatePaths(sinks, sources);
+        final Map<NodeStub, List<WeightedPath>> baselinePaths = generatePaths(sinks, sources);
         System.out.println("Calculated paths in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
 
         // Write the baseline paths
-        generated.forEach((station, paths) -> write(station,
-                                                    paths,
-                                                    PATH + "2020/20_" + station.getId() + "_path.geojson"));
+        baselinePaths.forEach((station, paths) -> write(station,
+                                                        paths,
+                                                        PATH + "2020/20_" + station.getId() + "_path.geojson",
+                                                        graphDb));
 
-        // Write histogrammed segments
+        // Calculate the total cost (baseline)
+        double baselineCost = calculateCost(baselinePaths);
+
+        // Histogram segments
         startTime = System.currentTimeMillis();
-        writeSegments(generated, bridges, SEGMENTS_GEOJSON);
-        System.out.println("Wrote bridges in "
+        Map<Set<NodeStub>, Set<NodeStub>> histogram = histogramPaths(baselinePaths);
+        System.out.println("Histogrammed segments in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
+
+
+        // Filter the histogram for bridges
+        final Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram = findBridges(histogram, bridges);
+        writeHistogram(bridgeHistogram, SEGMENTS_GEOJSON);
+
         // For each segment
-        // Mark it damaged
-        // TODO: Calculate the costs again
+        final Map<Set<NodeStub>, Double> segmentCosts = damageSegments(sinks, sources, baselineCost, bridgeHistogram);
+        writeSegments(segmentCosts, DAMAGE_GEOJSON);
     }
 
-    private static Map<NodeStub, List<WeightedPath>> generatePaths(List<NeoNode> sinks, List<NeoNode> sources) {
+    private static Map<Set<NodeStub>, Double> damageSegments(List<NeoNode> sinks,
+                                                             List<NeoNode> sources,
+                                                             double baselineCost,
+                                                             Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
+        return bridgeHistogram.entrySet()
+                              .stream()
+                              .filter(entry -> entry.getValue().size() > 12) // Eliminate low criticality bridges
+                              .map(Map.Entry::getKey)
+                              .collect(Collectors.toMap(Function.identity(),
+                                                        pair -> {
+                                                            // Generate the new paths with the damage marked
+                                                            long damageTime = System.currentTimeMillis();
+                                                            final Map<NodeStub, List<WeightedPath>> adjustedRoutes =
+                                                                    generatePaths(sinks, sources, pair);
+                                                            System.out.println("Calculated damage for" + pair
+                                                                               + " in "
+                                                                               + (System.currentTimeMillis()
+                                                                                  - damageTime)
+                                                                               + "ms");
+
+                                                            // Calculate the costs again
+                                                            final double newCost = calculateCost(adjustedRoutes);
+
+                                                            // Compute the change from the baseline
+                                                            return newCost - baselineCost;
+                                                        }));
+    }
+
+    private static Map<Set<NodeStub>, Set<NodeStub>> findBridges(Map<Set<NodeStub>, Set<NodeStub>> histogram,
+                                                                 Collection<WayStub> bridges) {
+
+        // Build up a structure that makes it easy to check for bridges
+        final Set<Long> bridgeNodeIds = bridges.stream()
+                                               .flatMap(bridge -> bridge.getNodeIds().stream())
+                                               .collect(Collectors.toSet());
+        return histogram.entrySet()
+                        .stream()
+                        .filter(entry -> {
+                            final Set<NodeStub> pair = entry.getKey();
+                            return pair.stream()
+                                       .map(NodeStub::getId)
+                                       .allMatch(bridgeNodeIds::contains);
+                        })
+                        .collect(Collectors.toMap(Map.Entry::getKey,
+                                                  Map.Entry::getValue));
+    }
+
+    private static double calculateCost(Map<NodeStub, List<WeightedPath>> generated) {
+        return generated.values()
+                        .stream()
+                        .flatMap(List::stream)
+                        .mapToDouble(WeightedPath::weight).sum();
+    }
+
+    private static Map<NodeStub, List<WeightedPath>> generatePaths(List<NeoNode> sinks,
+                                                                   List<NeoNode> sources) {
+        return generatePaths(sinks, sources, Collections.EMPTY_SET);
+    }
+
+    private static Map<NodeStub, List<WeightedPath>> generatePaths(List<NeoNode> sinks,
+                                                                   List<NeoNode> sources,
+                                                                   Set<NodeStub> damaged) {
         return sources.stream()
                       .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
                       .collect(Collectors.toMap(NeoNode::getOsmNode,
@@ -164,7 +276,8 @@ public class TraverseMain {
                                                                                                    .equals(station.getOsmNode()))
 
                                                                 .map(neoDestination -> calculatePath(station,
-                                                                                                     neoDestination))
+                                                                                                     neoDestination,
+                                                                                                     damaged))
                                                                 .filter(path -> path != null
                                                                                 && path.length()
                                                                                    != 0)
@@ -172,10 +285,11 @@ public class TraverseMain {
                       ));
     }
 
-    private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination) {
-        PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
-                                                    (TraverseMain::linkLength),
-                                                    (start, end) -> 1.0d);
+    private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination, Set<NodeStub> damaged) {
+        PathFinder<WeightedPath> pathFinder = dijkstra(allTypesAndDirections(),
+                                                       (relationship, d) -> TraverseMain.linkLength(relationship,
+                                                                                                    d,
+                                                                                                    damaged));
         final WeightedPath path;
         try (Transaction tx = graphDb.beginTx()) {
             path = pathFinder.findSinglePath(station.getNeoNode(),
@@ -185,7 +299,51 @@ public class TraverseMain {
         return path;
     }
 
-    private static void writeStations(Collection<NodeStub> stations, String path) {
+
+    private static double linkLength(Relationship relationship, Direction d, Set<NodeStub> damagedNodes) {
+        double length;
+        boolean damaged;
+
+        try (Transaction tx = graphDb.beginTx()) {
+            final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
+            final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
+            if (relationship.hasProperty("distance")) {
+                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
+            } else {
+                length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
+                relationship.setProperty("distance", String.valueOf(length));
+            }
+
+            // Check for damage
+            damaged = damagedNodes.containsAll(Arrays.asList(start, end));
+            // TODO: Support multiple damaged legs properly
+
+            tx.success();
+        }
+
+        if (damaged) {
+            length += DAMAGE_COST;
+        }
+        return length;
+    }
+
+    private static double linkLength(Relationship relationship, Direction d) {
+        double length;
+        try (Transaction tx = graphDb.beginTx()) {
+            if (relationship.hasProperty("distance")) {
+                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
+            } else {
+                final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
+                final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
+                length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
+                relationship.setProperty("distance", String.valueOf(length));
+            }
+            tx.success();
+        }
+        return length;
+    }
+
+    private static void writeStations(Collection<NeoNode> stations, String path) {
         SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName("Station");
         builder.add("the_geom", Point.class);
@@ -199,7 +357,7 @@ public class TraverseMain {
         SimpleFeatureBuilder stationFeatureBuilder = new SimpleFeatureBuilder(stationType);
         final List<SimpleFeature> stationFeatures = new LinkedList<>();
 
-        stations.forEach(startNode -> {
+        stations.stream().map(NeoNode::getOsmNode).forEach(startNode -> {
             final Point startPoint = geometryFactory.createPoint(new Coordinate(
                     startNode.getLongitude(),
                     startNode.getLatitude()));
@@ -244,9 +402,7 @@ public class TraverseMain {
         return bridges;
     }
 
-    private static void writeSegments(Map<NodeStub, List<WeightedPath>> targets,
-                                      Collection<WayStub> bridges,
-                                      String filePath) {
+    private static Map<Set<NodeStub>, Set<NodeStub>> histogramPaths(Map<NodeStub, List<WeightedPath>> targets) {
         // Histogram
         Map<Set<NodeStub>, Set<NodeStub>> histogram = new HashMap<>();
 
@@ -277,166 +433,6 @@ public class TraverseMain {
         }));
 
         System.out.println("Calculated segment histogram: " + histogram.size());
-
-        // Feature type definitions
-        SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
-        rBuilder.setName("Rail Segment");
-        rBuilder.add("the_geom", LineString.class);
-        rBuilder.add("criticality", Integer.class);
-//        rBuilder.add("mean_cost", Double.class);
-
-        final SimpleFeatureType linkType = rBuilder.buildFeatureType();
-        SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
-
-        // Collection of segments
-        final List<SimpleFeature> linkFeatures = new ArrayList<>();
-
-        // Build up a structure that makes it easy to check for bridges
-        final Set<Long> bridgeNodeIds = bridges.stream()
-                                               .flatMap(bridge -> bridge.getNodeIds().stream())
-                                               .collect(Collectors.toSet());
-
-        // For each segment we've seen
-        histogram.forEach((pair, criticality) -> {
-//            if (criticality.size() > SOURCE_COUNT / 2) { // Ignore low criticality segments
-            // Check if this is a bridge
-            final boolean isBridge = pair.stream()
-                                         .map(NodeStub::getId)
-                                         .allMatch(bridgeNodeIds::contains);
-            if (isBridge) {
-                // Create it a line feature
-                final List<Coordinate> coordinateList = pair.stream()
-                                                            .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
-                                                                                            nodeStub.getLatitude()))
-                                                            .collect(Collectors.toList());
-
-                final LineString lineString = geometryFactory.createLineString(
-                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
-
-                // Add the Criticality
-                linkFeatureBuilder.add(lineString);
-                linkFeatureBuilder.add(criticality.size());
-
-                // Add it to the collection
-                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(pair.hashCode()));
-                linkFeatures.add(linkFeature);
-            }
-//            }
-        });
-
-        // Write the collection
-        writeFeature(filePath, linkType, linkFeatures);
-    }
-
-    private static void write(NodeStub station, Collection<WeightedPath> paths, String filePath) {
-        // Setup schema
-        SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
-        rBuilder.setName("Rail Link");
-        rBuilder.add("the_geom", LineString.class);
-        rBuilder.add("cost", Double.class);
-        final SimpleFeatureType linkType = rBuilder.buildFeatureType();
-        SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
-        final List<SimpleFeature> linkFeatures = new ArrayList<>();
-
-        paths.forEach(path -> {
-            if (path == null) {
-                return;
-            }
-            // Build the geometry
-            try (Transaction tx = graphDb.beginTx()) {
-                final List<Coordinate> coordinateList =
-                        StreamSupport.stream(path.nodes().spliterator(), false)
-                                     .map(neoNode -> new NeoNode(neoNode, graphDb))
-                                     .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
-                                     .collect(Collectors.toList());
-                final LineString lineString = geometryFactory.createLineString(
-                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
-                linkFeatureBuilder.add(lineString);
-                linkFeatureBuilder.add(path.weight());
-
-                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
-                linkFeatures.add(linkFeature);
-
-                tx.success();
-            }
-        });
-
-        writeFeature(filePath, linkType, linkFeatures);
-    }
-
-    private static void writeFeature(String filePath, SimpleFeatureType linkType, List<SimpleFeature> linkFeatures) {
-        try {
-            FeatureJSON featureJSON = new FeatureJSON();
-            featureJSON.setEncodeFeatureCollectionCRS(false);
-            featureJSON.setEncodeFeatureBounds(false);
-
-            final ListFeatureCollection linkCollection = new ListFeatureCollection(linkType, linkFeatures);
-            featureJSON.writeFeatureCollection(linkCollection,
-                                               new File(filePath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void setupGraph() {
-        geometryFactory = JTSFactoryFinder.getGeometryFactory();
-
-        // Neo4J
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(GRAPH_DB_PATH)
-                                            .setConfig(GraphDatabaseSettings.node_keys_indexable, NeoNode.OSM_ID)
-                                            .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
-                                            .newGraphDatabase();
-
-        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(NeoNode.OSM_ID);
-
-        // Seeker
-        seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
-            @Override protected boolean isTarget(Entity entity) {
-                return ((entity instanceof Relation &&
-                         (TagUtils.hasTag(entity, "route", "train")
-                          || TagUtils.hasTag(entity, "route", "railway")))
-                        || (entity instanceof Way
-                            && TagUtils.hasTag(entity, "railway")));
-            }
-        };
-
-        System.out.println("STATIC: No seeking, data expected");
-//        seeker.run();
-        System.out.println("Building graph from "
-                           + seeker.getRelations().size()
-                           + " routes, "
-                           + seeker.getWays().size()
-                           + " ways, and "
-                           + seeker.getNodes().size()
-                           + " nodes");
-
-//        OSMGraph graph = new OSMGraph(graphDb);
-        long nodeCount;
-        long edgeCount;
-        // Check that the graph has been built properly
-
-        System.out.println("STATIC: No building, data expected");
-//        graph.build(seeker.getIndex());
-
-        // Quick stats
-        nodeCount = GraphMain.getNodeCount(graphDb);
-        edgeCount = GraphMain.getEdgeCount(graphDb);
-        System.out.println("Graph built: " + nodeCount + " nodes & " + edgeCount + " links");
-    }
-
-    private static double linkLength(Relationship relationship, Direction d) {
-        double length;
-        try (Transaction tx = graphDb.beginTx()) {
-            if (relationship.hasProperty("distance")) {
-                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
-            } else {
-                final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
-                final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
-                length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
-                relationship.setProperty("distance", String.valueOf(length));
-            }
-            tx.success();
-        }
-        return length;
+        return histogram;
     }
 }

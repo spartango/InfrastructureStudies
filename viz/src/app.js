@@ -505,6 +505,7 @@ var loadSegments = function () {
 // Default layers
 loadSources();
 loadSinks();
+loadRangeRings();
 
 // Default controls
 L.easyButton('fa-crosshairs', function (btn, map) {
@@ -538,10 +539,9 @@ var bridgeButton = L.easyButton('fa-road', function (btn, map) {
     if (!allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
         loadSegments();
-        // Load the layer with the right styling
-        allBridges = true;
     }
 
+    allBridges = true;
     // Load or unload the layer
     loadSegments();
 });
