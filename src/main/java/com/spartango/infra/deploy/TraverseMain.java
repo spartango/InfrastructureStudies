@@ -210,7 +210,8 @@ public class TraverseMain {
                                                              double baselineCost,
                                                              Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
         return bridgeHistogram.entrySet()
-                              .stream()
+                              .parallelStream() // This could really take a while
+                              .unordered()
                               .filter(entry -> entry.getValue().size() > 12) // Eliminate low criticality bridges
                               .map(Map.Entry::getKey)
                               .collect(Collectors.toMap(Function.identity(),
