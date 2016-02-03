@@ -304,33 +304,23 @@ public class TraverseMain {
     private static double linkLength(Relationship relationship, Direction d, Set<NodeStub> damagedNodes) {
         double length;
         boolean damaged = false;
+        final Set<Long> damagedIds = damagedNodes.stream().map(NodeStub::getId).collect(Collectors.toSet());
 
         try (Transaction tx = graphDb.beginTx()) {
-            // Only go hunting if we really need these
-            NeoNode start = null;
-            NeoNode end = null;
-
-            if (relationship.hasProperty("distance")) {
-                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
-            } else {
-                start = new NeoNode(relationship.getStartNode(), graphDb);
-                end = new NeoNode(relationship.getEndNode(), graphDb);
-                length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
-                relationship.setProperty("distance", String.valueOf(length));
-            }
-
             if (!damagedNodes.isEmpty()) {
-                // Lazy load
-                start = start == null ? new NeoNode(relationship.getStartNode(), graphDb) : start;
-                end = end == null ? new NeoNode(relationship.getEndNode(), graphDb) : end;
+                // Just need to know the Identifiers
+                final Long startId = Long.parseLong(relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString());
+                final Long endId = Long.parseLong(relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString());
 
                 // Check for damage
-                damaged = damagedNodes.containsAll(Arrays.asList(start, end));
+                damaged = damagedIds.contains(startId) && damagedIds.contains(endId);
                 // TODO: Support multiple damaged legs properly
             }
 
             tx.success();
         }
+
+        length = linkLength(relationship, d);
 
         if (damaged) {
             length += DAMAGE_COST;
