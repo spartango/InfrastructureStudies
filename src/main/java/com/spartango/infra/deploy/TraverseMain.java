@@ -5,6 +5,7 @@ import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
 import com.spartango.infra.osm.type.NodeStub;
+import com.spartango.infra.osm.type.WayStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -32,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
@@ -49,7 +51,7 @@ public class TraverseMain {
     private static final String GRAPH_DB_PATH    = PATH + "graph.db";
     private static final String SOURCES_GEOJSON  = PATH + "2020/sources.geojson";
     private static final String SINKS_GEOJSON    = PATH + "2020/sinks.geojson";
-    private static final String SEGMENTS_GEOJSON = PATH + "2020/segments.geojson";
+    private static final String SEGMENTS_GEOJSON = PATH + "2020/bridges.geojson";
 
     private static final long SOURCE_COUNT = 20;
     private static final long SINK_COUNT   = 20;
@@ -63,16 +65,17 @@ public class TraverseMain {
 
         // Find all stations
         final Collection<NodeStub> stations = getStations();
-        System.out.println("Starting with " + stations.size() + " stations");
+        final Collection<WayStub> bridges = getBridges();
+        System.out.println("Starting with " + stations.size() + " stations and " + bridges.size() + " bridges");
 
         // Look for shortest paths
-        findPaths(stations);
+        findPaths(stations, bridges);
 
         System.out.println("Shutting down");
         graphDb.shutdown();
     }
 
-    private static void findPaths(Collection<NodeStub> stations) {
+    private static void findPaths(Collection<NodeStub> stations, Collection<WayStub> bridges) {
         System.out.println("DEBUG: Limiting paths to " + (SOURCE_COUNT + SINK_COUNT) + " simulated station targets");
 
         long startTime = System.currentTimeMillis();
@@ -89,13 +92,27 @@ public class TraverseMain {
                                               .map(Optional::get)
                                               .collect(Collectors.toList());
         // Simulates known sinks
-        final List<NeoNode> sinks = simPool.stream()
-                                           .limit(SINK_COUNT)
-                                           .collect(Collectors.toList());
+//        final List<NeoNode> sinks = simPool.stream()
+//                                           .limit(SINK_COUNT)
+//                                           .collect(Collectors.toList());
+
+        final List<NeoNode> sinks = Stream.of(3195094191l, 2874005142l, 1681825138l,
+                                              2971189978l, 269838555l, 2051979297l,
+                                              2699872473l, 3048742262l, 3476981835l,
+                                              843052502l, 270146375l, 1658989377l,
+                                              339089288l, 1582348731l, 677180563l,
+                                              2023044210l, 2333085945l, 525377519l,
+                                              843121428l, 1577895082l, 2483530943l,
+                                              2651768079l, 661025343l, 3662634093l,
+                                              1642904934l, 3019467507l, 2279127731l)
+                                          .map(id -> NeoNode.getNeoNode(id, graphDb))
+                                          .filter(Optional::isPresent)
+                                          .map(Optional::get)
+                                          .collect(Collectors.toList());
 
         // Simulates known sources
         final List<NeoNode> sources = simPool.stream()
-                                             .skip(SINK_COUNT) // Skip the ones we've alrady seen
+//                                             .skip(SINK_COUNT) Skip the ones we've alrady seen
                                              .filter(node -> !sinks.contains(node)) // Paranoid
                                              .limit(SOURCE_COUNT)
                                              .collect(Collectors.toList());
@@ -127,8 +144,11 @@ public class TraverseMain {
                                                     PATH + "2020/20_" + station.getId() + "_path.geojson"));
 
         // Write histogrammed segments
-        writeSegments(generated, SEGMENTS_GEOJSON);
-
+        startTime = System.currentTimeMillis();
+        writeSegments(generated, bridges, SEGMENTS_GEOJSON);
+        System.out.println("Wrote bridges in "
+                           + (System.currentTimeMillis() - startTime)
+                           + "ms");
         // For each segment
         // Mark it damaged
         // TODO: Calculate the costs again
@@ -210,8 +230,23 @@ public class TraverseMain {
         return stations;
     }
 
+    private static Collection<WayStub> getBridges() {
+        System.out.println("Finding bridges...");
+        final Set<WayStub> bridges = seeker.getDatabase().getHashSet("bridges");
+        if (bridges.isEmpty()) {
+            System.out.println("Building bridge cache");
+            seeker.getWays()
+                  .stream()
+                  .filter(rel -> rel.getTags().containsKey("bridge"))
+                  .forEach(bridges::add);
+            seeker.getDatabase().commit();
+        }
+        return bridges;
+    }
 
-    private static void writeSegments(Map<NodeStub, List<WeightedPath>> targets, String filePath) {
+    private static void writeSegments(Map<NodeStub, List<WeightedPath>> targets,
+                                      Collection<WayStub> bridges,
+                                      String filePath) {
         // Histogram
         Map<Set<NodeStub>, Set<NodeStub>> histogram = new HashMap<>();
 
@@ -256,9 +291,19 @@ public class TraverseMain {
         // Collection of segments
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
 
+        // Build up a structure that makes it easy to check for bridges
+        final Set<Long> bridgeNodeIds = bridges.stream()
+                                               .flatMap(bridge -> bridge.getNodeIds().stream())
+                                               .collect(Collectors.toSet());
+
         // For each segment we've seen
         histogram.forEach((pair, criticality) -> {
-            if (criticality.size() > SOURCE_COUNT / 2) { // Ignore low criticality segments
+//            if (criticality.size() > SOURCE_COUNT / 2) { // Ignore low criticality segments
+            // Check if this is a bridge
+            final boolean isBridge = pair.stream()
+                                         .map(NodeStub::getId)
+                                         .allMatch(bridgeNodeIds::contains);
+            if (isBridge) {
                 // Create it a line feature
                 final List<Coordinate> coordinateList = pair.stream()
                                                             .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
@@ -276,6 +321,7 @@ public class TraverseMain {
                 final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(pair.hashCode()));
                 linkFeatures.add(linkFeature);
             }
+//            }
         });
 
         // Write the collection

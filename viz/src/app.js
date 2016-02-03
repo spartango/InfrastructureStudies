@@ -7,8 +7,17 @@ var layer;
 var hash;
 
 var map = L.map('map', {
-    fullscreenControl: true
+    zoomControl: false
 }).setView([51.505, -0.09], 13);
+L.control.fullscreen({
+    position: 'bottomright'
+}).addTo(map);
+
+var loadingControl = L.Control.loading({
+    separate: true,
+    position: 'bottomright'
+});
+map.addControl(loadingControl);
 
 var mapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
@@ -137,12 +146,14 @@ L.control.scale().addTo(map);
 var backgroundLayers = {};
 
 var loadGeoJSON = function (path, callback) {
+    loadingControl.addLoader(path);
     var xhr = new XMLHttpRequest();
     xhr.open('GET', path, true);
     xhr.onload = function () {
         if (xhr.readyState == 4) {
             var data = JSON.parse(xhr.responseText);
             callback(data);
+            loadingControl.removeLoader(path);
         }
     };
     xhr.send();
@@ -332,19 +343,28 @@ var stationPopup = function (feature, layer) {
 };
 
 var loadStations = function () {
-    loadGeoJSON('background/stations.geojson', function (data) {
-        var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-        map.fitBounds(markers.getBounds());
-    })
+    if (!backgroundLayers['stations']) {
+        loadGeoJSON('background/stations.geojson', function (data) {
+            var markers = new L.MarkerClusterGroup({
+                iconCreateFunction: function (cluster) {
+                    return L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
+                }
+            });
+            var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "s"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: stationPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            markers.addLayer(geoJsonLayer);
+            map.addLayer(markers);
+            backgroundLayers['stations'] = markers;
+        })
+    } else {
+        map.removeLayer(backgroundLayers['stations']);
+        delete backgroundLayers['stations'];
+    }
 };
 
 var pathPopup = function (feature, layer) {
@@ -449,20 +469,27 @@ var loadRangeRings = function () {
     }
 };
 
+var allBridges = false;
+
 var loadSegments = function () {
     if (!backgroundLayers['segments']) {
-        loadGeoJSON('2020/segments.geojson',
+        loadGeoJSON('2020/bridges.geojson',
             function (data) {
                 //var combined = turf.combine(data);
                 var path = L.geoJson(data, {
-                    onEachFeature: pathPopup,
+                    filter: function (feature) {
+                        return allBridges || feature.properties.criticality >= 10;
+                    },
+                    //onEachFeature: pathPopup,
                     style: function (feature) {
                         var scaled = (feature.properties.criticality - 10) / 10;
-                        var green = Math.round(255 * (1 - scaled));
+                        var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
+                        var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
+                        var weight = scaled >= 0 ? 8 : 4;
                         return {
-                            "color": "rgb(255, " + green + ", 0)",
-                            "weight": 6,
-                            "opacity": 0.8
+                            "color": "rgb(" + red + ", " + green + ", 0)",
+                            "weight": weight,
+                            "opacity": 0.66
                         }
                     }
                 });
@@ -480,11 +507,11 @@ loadSources();
 loadSinks();
 
 // Default controls
-L.easyButton('fa-bullseye', function (btn, map) {
+L.easyButton('fa-crosshairs', function (btn, map) {
+    allBridges = false;
     loadSegments();
 }).addTo(map);
 L.easyButton('fa-warning', function (btn, map) {
-    loadSAMs();
     loadRangeRings();
 }).addTo(map);
 
@@ -499,14 +526,41 @@ var nuclearButton = L.easyButton('fa-rocket', function (btn, map) {
     loadSecondArtillery();
 });
 
+var stationButton = L.easyButton('fa-train', function (btn, map) {
+    loadStations();
+});
+
+var SAMButton = L.easyButton('fa-warning', function (btn, map) {
+    loadSAMs();
+});
+
+var bridgeButton = L.easyButton('fa-road', function (btn, map) {
+    if (!allBridges && backgroundLayers['segments']) {
+        // unload the layer to be reloaded
+        loadSegments();
+        // Load the layer with the right styling
+        allBridges = true;
+    }
+
+    // Load or unload the layer
+    loadSegments();
+});
+
 var advancedMode = false;
-L.easyButton('fa-cog', function (btn) {
+L.easyButton('fa-building', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
-        portButton.addTo(map);
-        aviationButton.addTo(map);
-        nuclearButton.addTo(map);
+        L.easyBar([
+            portButton,
+            aviationButton,
+            nuclearButton,
+            stationButton,
+            SAMButton,
+            bridgeButton
+        ], {
+            position: 'topright'
+        }).addTo(map);
         layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
         layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
         layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
@@ -514,5 +568,7 @@ L.easyButton('fa-cog', function (btn) {
         layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
         layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
     }
+}, {
+    position: 'topright'
 }).addTo(map);
 
