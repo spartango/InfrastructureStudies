@@ -29,9 +29,19 @@ public class ShapeUtils {
     }
 
     public static double calculateDistance(NodeStub current, NodeStub next) {
+        return calculateDistance(current.getLatitude(),
+                                 current.getLongitude(),
+                                 next.getLatitude(),
+                                 next.getLongitude());
+    }
+
+    public static double calculateDistance(double startLatitude,
+                                           double startLongitude,
+                                           double endLatitude,
+                                           double endLongitude) {
         GeodeticCalculator calculator = new GeodeticCalculator();
-        calculator.setStartingGeographicPoint(current.getLongitude(), current.getLatitude());
-        calculator.setDestinationGeographicPoint(next.getLongitude(), next.getLatitude());
+        calculator.setStartingGeographicPoint(startLongitude, startLatitude);
+        calculator.setDestinationGeographicPoint(endLongitude, endLatitude);
         return calculator.getOrthodromicDistance();
     }
 }

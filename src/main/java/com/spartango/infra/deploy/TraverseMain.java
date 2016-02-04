@@ -10,13 +10,9 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.opengis.feature.simple.SimpleFeature;
@@ -290,7 +286,7 @@ public class TraverseMain {
     private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination, final Set<NodeStub> damaged) {
         PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
                                                     (rel, d) -> damageCost(rel, d, damaged), // Real cost
-                                                    CommonEvaluators.geoEstimateEvaluator("Latitude", "Longitude")); // Estimate
+                                                    TraverseMain::lengthEstimate); // Estimate
         final WeightedPath path;
         try (Transaction tx = graphDb.beginTx()) {
             path = pathFinder.findSinglePath(station.getNeoNode(),
@@ -327,6 +323,16 @@ public class TraverseMain {
             length += DAMAGE_COST;
         }
         return length;
+    }
+
+    private static double lengthEstimate(Node start, Node end) {
+        final double startLatitude = Double.parseDouble(start.getProperty("Latitude").toString());
+        final double startLongitude = Double.parseDouble(start.getProperty("Longitude").toString());
+
+        final double endLatitude = Double.parseDouble(end.getProperty("Latitude").toString());
+        final double endLongitude = Double.parseDouble(end.getProperty("Longitude").toString());
+
+        return ShapeUtils.calculateDistance(startLatitude, startLongitude, endLatitude, endLongitude);
     }
 
     private static double linkLength(Relationship relationship, Direction d) {
