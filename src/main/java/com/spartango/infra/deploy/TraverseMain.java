@@ -22,7 +22,6 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,10 +48,12 @@ public class TraverseMain {
     private static final long SINK_COUNT   = 20;
 
     // Damage equivalent to a track extension
-    private static final double DAMAGE_COST = 600000; // 600km @ 100km/hr = 6 hours of delay
+    private static final double DAMAGE_COST = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
 
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
+
+    private static Map<NodeStub, List<WeightedPath>> baselinePaths;
 
     public static void main(String[] args) {
         setupGraph();
@@ -171,7 +172,7 @@ public class TraverseMain {
 
         // Baseline
         startTime = System.currentTimeMillis();
-        final Map<NodeStub, List<WeightedPath>> baselinePaths = generatePaths(sinks, sources);
+        baselinePaths = generatePaths(sinks, sources);
         System.out.println("Calculated paths in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
@@ -198,35 +199,59 @@ public class TraverseMain {
         writeHistogram(bridgeHistogram, SEGMENTS_GEOJSON);
 
         // For each segment
-        final Map<Set<NodeStub>, Double> segmentCosts = damageSegments(sinks, sources, baselineCost, bridgeHistogram);
+        final Map<Set<NodeStub>, Double> segmentCosts = damageSegments(sinks, sources, bridgeHistogram);
         writeSegments(segmentCosts, DAMAGE_GEOJSON);
     }
 
     private static Map<Set<NodeStub>, Double> damageSegments(List<NeoNode> sinks,
                                                              List<NeoNode> sources,
-                                                             double baselineCost,
                                                              Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
         return bridgeHistogram.entrySet()
                               .stream() // This could really take a while
                               .filter(entry -> entry.getValue().size() > 12) // Eliminate low criticality bridges
-                              .map(Map.Entry::getKey)
-                              .collect(Collectors.toMap(Function.identity(),
-                                                        pair -> {
+                              .collect(Collectors.toMap(Map.Entry::getKey,
+                                                        entry -> {
+                                                            final Set<NodeStub> pair = entry.getKey();
+                                                            final Set<NodeStub> affected = entry.getValue();
+                                                            // Don't recalculate paths from sources that don't include damage
+                                                            final Set<NeoNode> affectedSources =
+                                                                    sources.stream()
+                                                                           .filter(source -> affected.contains(source.getOsmNode()))
+                                                                           .collect(Collectors.toSet());
+
                                                             // Generate the new paths with the damage marked
                                                             long damageTime = System.currentTimeMillis();
                                                             final Map<NodeStub, List<WeightedPath>> adjustedRoutes =
-                                                                    generatePaths(sinks, sources, pair);
-                                                            System.out.println("Calculated damage for" + pair
-                                                                               + " in "
-                                                                               + (System.currentTimeMillis()
-                                                                                  - damageTime)
-                                                                               + "ms");
+                                                                    generatePaths(sinks, affectedSources, pair);
 
                                                             // Calculate the costs again
                                                             final double newCost = calculateCost(adjustedRoutes);
 
+                                                            // Get the unaffected route costs
+
+                                                            // Sum that up using the cached paths
+                                                            final double oldCost = affected.stream()
+                                                                                           .filter(baselinePaths::containsKey) // Just in case
+                                                                                           .map(baselinePaths::get)
+                                                                                           .flatMap(List::stream)
+                                                                                           .mapToDouble(
+                                                                                                   WeightedPath::weight)
+                                                                                           .sum();
+
+                                                            System.out.println("Calculated damage for "
+                                                                               + pair.hashCode()
+                                                                               + " w/ "
+                                                                               + affected.size()
+                                                                               + " in "
+                                                                               + (System.currentTimeMillis()
+                                                                                  - damageTime)
+                                                                               + "ms: "
+                                                                               + newCost
+                                                                               + " vs "
+                                                                               + oldCost);
+
                                                             // Compute the change from the baseline
-                                                            return newCost - baselineCost;
+                                                            return (newCost - oldCost);
                                                         }));
     }
 
@@ -256,13 +281,13 @@ public class TraverseMain {
                         .mapToDouble(WeightedPath::weight).sum();
     }
 
-    private static Map<NodeStub, List<WeightedPath>> generatePaths(List<NeoNode> sinks,
-                                                                   List<NeoNode> sources) {
+    private static Map<NodeStub, List<WeightedPath>> generatePaths(Collection<NeoNode> sinks,
+                                                                   Collection<NeoNode> sources) {
         return generatePaths(sinks, sources, Collections.EMPTY_SET);
     }
 
-    private static Map<NodeStub, List<WeightedPath>> generatePaths(List<NeoNode> sinks,
-                                                                   List<NeoNode> sources,
+    private static Map<NodeStub, List<WeightedPath>> generatePaths(Collection<NeoNode> sinks,
+                                                                   Collection<NeoNode> sources,
                                                                    Set<NodeStub> damaged) {
         return sources.stream()
                       .peek(station -> System.out.println("Finding paths from station: " + station.getOsmNode()))
