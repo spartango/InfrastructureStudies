@@ -207,8 +207,7 @@ public class TraverseMain {
                                                              double baselineCost,
                                                              Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
         return bridgeHistogram.entrySet()
-                              .parallelStream() // This could really take a while
-                              .unordered()
+                              .stream() // This could really take a while
                               .filter(entry -> entry.getValue().size() > 12) // Eliminate low criticality bridges
                               .map(Map.Entry::getKey)
                               .collect(Collectors.toMap(Function.identity(),
@@ -326,10 +325,6 @@ public class TraverseMain {
     }
 
     private static double lengthEstimate(Node start, Node end) {
-        // Fixed length assessment. This is basically a reversion to Dijkstra, because we lose all the performance
-        // benefits of A* in doing Neo4J I/O.
-//        return 1.0d;
-
         // Get node IDs
         final long startId = Long.parseLong(start.getProperty(NeoNode.OSM_ID).toString());
         final long endId = Long.parseLong(end.getProperty(NeoNode.OSM_ID).toString());
@@ -338,13 +333,6 @@ public class TraverseMain {
         final NodeStub startNode = seeker.getIndex().getNode(startId);
         final NodeStub endNode = seeker.getIndex().getNode(endId);
 
-        // Read the properties directly because reading up the entire node is really slow
-//        final double startLatitude = Double.parseDouble(start.getProperty("Latitude").toString());
-//        final double startLongitude = Double.parseDouble(start.getProperty("Longitude").toString());
-//
-//        final double endLatitude = Double.parseDouble(end.getProperty("Latitude").toString());
-//        final double endLongitude = Double.parseDouble(end.getProperty("Longitude").toString());
-//
         return ShapeUtils.calculateDistance(startNode, endNode);
     }
 
