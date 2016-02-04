@@ -44,8 +44,9 @@ public class TraverseMain {
     private static final String SEGMENTS_GEOJSON = PATH + "2020/bridges.geojson";
     private static final String DAMAGE_GEOJSON   = PATH + "2020/damage.geojson";
 
-    private static final long SOURCE_COUNT = 20;
-    private static final long SINK_COUNT   = 20;
+    private static final long SOURCE_COUNT    = 18;
+    private static final long MIN_CRITICALITY = 15;
+    private static final long SINK_COUNT      = 20;
 
     // Damage equivalent to a track extension
     private static final double DAMAGE_COST = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
@@ -206,9 +207,15 @@ public class TraverseMain {
     private static Map<Set<NodeStub>, Double> damageSegments(List<NeoNode> sinks,
                                                              List<NeoNode> sources,
                                                              Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
+        long count = bridgeHistogram.entrySet()
+                                    .stream() // This could really take a while
+                                    .filter(entry -> entry.getValue().size()
+                                                     >= MIN_CRITICALITY).count();
+        System.out.println("Damaging " + count + " bridges, one at a time");
         return bridgeHistogram.entrySet()
-                              .stream() // This could really take a while
-                              .filter(entry -> entry.getValue().size() > 12) // Eliminate low criticality bridges
+                              .parallelStream() // This could really take a while
+                              .filter(entry -> entry.getValue().size()
+                                               >= MIN_CRITICALITY) // Eliminate low criticality bridges
                               .collect(Collectors.toMap(Map.Entry::getKey,
                                                         entry -> {
                                                             final Set<NodeStub> pair = entry.getKey();
