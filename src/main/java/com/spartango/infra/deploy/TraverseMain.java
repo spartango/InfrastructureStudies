@@ -10,6 +10,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.spartango.infra.io.Writers.*;
-import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
+import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 
 /**
@@ -286,11 +287,10 @@ public class TraverseMain {
                       ));
     }
 
-    private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination, Set<NodeStub> damaged) {
-        PathFinder<WeightedPath> pathFinder = dijkstra(allTypesAndDirections(),
-                                                       (relationship, d) -> TraverseMain.linkLength(relationship,
-                                                                                                    d,
-                                                                                                    damaged));
+    private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination, final Set<NodeStub> damaged) {
+        PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
+                                                    (rel, d) -> damageCost(rel, d, damaged), // Real cost
+                                                    CommonEvaluators.geoEstimateEvaluator("Latitude", "Longitude")); // Estimate
         final WeightedPath path;
         try (Transaction tx = graphDb.beginTx()) {
             path = pathFinder.findSinglePath(station.getNeoNode(),
@@ -300,17 +300,18 @@ public class TraverseMain {
         return path;
     }
 
-
-    private static double linkLength(Relationship relationship, Direction d, Set<NodeStub> damagedNodes) {
-        double length;
+    private static double damageCost(Relationship relationship, Direction d, Set<NodeStub> damagedNodes) {
         boolean damaged = false;
-        final Set<Long> damagedIds = damagedNodes.stream().map(NodeStub::getId).collect(Collectors.toSet());
+        final Set<String> damagedIds = damagedNodes.stream()
+                                                   .map(NodeStub::getId)
+                                                   .map(String::valueOf)
+                                                   .collect(Collectors.toSet());
 
         try (Transaction tx = graphDb.beginTx()) {
             if (!damagedNodes.isEmpty()) {
                 // Just need to know the Identifiers
-                final Long startId = Long.parseLong(relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString());
-                final Long endId = Long.parseLong(relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString());
+                final String startId = relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString();
+                final String endId = relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString();
 
                 // Check for damage
                 damaged = damagedIds.contains(startId) && damagedIds.contains(endId);
@@ -320,7 +321,7 @@ public class TraverseMain {
             tx.success();
         }
 
-        length = linkLength(relationship, d);
+        double length = linkLength(relationship, d);
 
         if (damaged) {
             length += DAMAGE_COST;
