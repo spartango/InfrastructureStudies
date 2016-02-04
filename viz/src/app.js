@@ -1,6 +1,7 @@
 /**
  * Created by spartango on 10/2/15.
  */
+var DATA_DIR = "latest_2020/";
 
 // Setup Map
 var layer;
@@ -160,7 +161,7 @@ var loadGeoJSON = function (path, callback) {
 };
 
 var showRoutes = function (id) {
-    loadGeoJSON('2020/20_' + id + '_path.geojson',
+    loadGeoJSON(DATA_DIR + '20_' + id + '_path.geojson',
         function (data) {
             if (layer && data) {
                 map.removeLayer(layer);
@@ -381,9 +382,8 @@ var pathPopup = function (feature, layer) {
         layer.bindPopup(popupString);
     }
 };
-
 var loadPath = function (id) {
-    loadGeoJSON('2020/20_' + id + '_path.geojson',
+    loadGeoJSON(DATA_DIR + '20_' + id + '_path.geojson',
         function (data) {
             var path = L.geoJson(data, {
                 //onEachFeature: pathPopup
@@ -397,7 +397,7 @@ var loadPath = function (id) {
 };
 
 var loadSources = function () {
-    loadGeoJSON('2020/sources.geojson', function (data) {
+    loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
         var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
@@ -420,7 +420,7 @@ var loadSources = function () {
 };
 
 var loadSinks = function () {
-    loadGeoJSON('2020/sinks.geojson', function (data) {
+    loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
         //var markers = new L.MarkerClusterGroup();
         var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
         var geoJsonLayer = L.geoJson(data, {
@@ -473,16 +473,34 @@ var allBridges = false;
 
 var loadSegments = function () {
     if (!backgroundLayers['segments']) {
-        loadGeoJSON('2020/bridges.geojson',
+        loadGeoJSON(DATA_DIR + 'bridges.geojson',
             function (data) {
+                // Have a quick look through the data and figure out what the range of criticality is
+                var minCriticality = null;
+                var maxCriticality = null;
+
+                data.features.forEach(function (feature) {
+                    var criticality = feature.properties.criticality;
+                    if (criticality && (maxCriticality == null || criticality > maxCriticality)) {
+                        maxCriticality = criticality;
+                    }
+
+                    if (criticality && (minCriticality == null || criticality < minCriticality)) {
+                        minCriticality = criticality;
+                    }
+                });
+
+                var criticalityRange = maxCriticality - minCriticality;
+                var midPoint = criticalityRange / 2;
+                console.log(minCriticality + " to " + maxCriticality + " range: " + criticalityRange + " mid: " + midPoint);
                 //var combined = turf.combine(data);
                 var path = L.geoJson(data, {
                     filter: function (feature) {
-                        return allBridges || feature.properties.criticality >= 10;
+                        return allBridges || feature.properties.criticality >= midPoint;
                     },
                     //onEachFeature: pathPopup,
                     style: function (feature) {
-                        var scaled = (feature.properties.criticality - 10) / 10;
+                        var scaled = (feature.properties.criticality - midPoint) / midPoint;
                         var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
                         var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
                         var weight = scaled >= 0 ? 8 : 4;
