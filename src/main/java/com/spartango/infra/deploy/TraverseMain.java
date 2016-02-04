@@ -285,8 +285,8 @@ public class TraverseMain {
 
     private static WeightedPath calculatePath(NeoNode station, NeoNode neoDestination, final Set<NodeStub> damaged) {
         PathFinder<WeightedPath> pathFinder = aStar(allTypesAndDirections(),
-                                                    (rel, d) -> damageCost(rel, d, damaged), // Real cost
-                                                    TraverseMain::lengthEstimate); // Estimate
+                                                    (rel, d) -> damageCost(rel, d, damaged), // Real cost (d + damage)
+                                                    TraverseMain::lengthEstimate); // Estimate (distance only)
         final WeightedPath path;
         try (Transaction tx = graphDb.beginTx()) {
             path = pathFinder.findSinglePath(station.getNeoNode(),
@@ -326,13 +326,26 @@ public class TraverseMain {
     }
 
     private static double lengthEstimate(Node start, Node end) {
-        final double startLatitude = Double.parseDouble(start.getProperty("Latitude").toString());
-        final double startLongitude = Double.parseDouble(start.getProperty("Longitude").toString());
+        // Fixed length assessment. This is basically a reversion to Dijkstra, because we lose all the performance
+        // benefits of A* in doing Neo4J I/O.
+//        return 1.0d;
 
-        final double endLatitude = Double.parseDouble(end.getProperty("Latitude").toString());
-        final double endLongitude = Double.parseDouble(end.getProperty("Longitude").toString());
+        // Get node IDs
+        final long startId = Long.parseLong(start.getProperty(NeoNode.OSM_ID).toString());
+        final long endId = Long.parseLong(end.getProperty(NeoNode.OSM_ID).toString());
 
-        return ShapeUtils.calculateDistance(startLatitude, startLongitude, endLatitude, endLongitude);
+        // Look up the nodes in MapDB because it's faster than Neo4J and all we need is lat/long
+        final NodeStub startNode = seeker.getIndex().getNode(startId);
+        final NodeStub endNode = seeker.getIndex().getNode(endId);
+
+        // Read the properties directly because reading up the entire node is really slow
+//        final double startLatitude = Double.parseDouble(start.getProperty("Latitude").toString());
+//        final double startLongitude = Double.parseDouble(start.getProperty("Longitude").toString());
+//
+//        final double endLatitude = Double.parseDouble(end.getProperty("Latitude").toString());
+//        final double endLongitude = Double.parseDouble(end.getProperty("Longitude").toString());
+//
+        return ShapeUtils.calculateDistance(startNode, endNode);
     }
 
     private static double linkLength(Relationship relationship, Direction d) {
