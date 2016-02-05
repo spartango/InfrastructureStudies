@@ -1,7 +1,7 @@
 /**
  * Created by spartango on 10/2/15.
  */
-var DATA_DIR = "latest_2020/";
+var DATA_DIR = "2020/";
 
 // Setup Map
 var layer;
@@ -473,7 +473,7 @@ var allBridges = false;
 
 var loadSegments = function () {
     if (!backgroundLayers['segments']) {
-        loadGeoJSON(DATA_DIR + 'bridges.geojson',
+        loadGeoJSON(DATA_DIR + 'damage.geojson',
             function (data) {
                 // Have a quick look through the data and figure out what the range of criticality is
                 var minCriticality = null;
