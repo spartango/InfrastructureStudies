@@ -49,7 +49,7 @@ public class TraverseMain {
 
     // Damage equivalent to a track extension
     private static final double DAMAGE_COST  = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
-    private static final long   BRIDGE_LIMIT = 10;
+    private static final long   BRIDGE_LIMIT = 300;
 
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
