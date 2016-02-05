@@ -44,13 +44,12 @@ public class TraverseMain {
     private static final String SEGMENTS_GEOJSON = PATH + "2020/bridges.geojson";
     private static final String DAMAGE_GEOJSON   = PATH + "2020/damage.geojson";
 
-    private static final long SOURCE_COUNT    = 20;
-    private static final long MIN_CRITICALITY = 15;
-    private static final long SINK_COUNT      = 20;
+    private static final long SOURCE_COUNT = 20;
+    private static final long SINK_COUNT   = 20;
 
     // Damage equivalent to a track extension
     private static final double DAMAGE_COST  = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
-    private static final long   BRIDGE_LIMIT = 300;
+    private static final long   BRIDGE_LIMIT = 10;
 
     private static GraphDatabaseService graphDb;
     private static TieredSeeker         seeker;
@@ -209,10 +208,6 @@ public class TraverseMain {
                                                              List<NeoNode> sources,
                                                              Map<Set<NodeStub>, Set<NodeStub>> bridgeHistogram) {
         long count = BRIDGE_LIMIT;
-//                bridgeHistogram.entrySet()
-//                                    .stream() // This could really take a while
-//                                    .filter(entry -> entry.getValue().size()
-//                                                     >= MIN_CRITICALITY).count();
         System.out.println("Damaging " + count + " bridges, one at a time");
         return bridgeHistogram.entrySet()
                               .stream()
@@ -220,9 +215,6 @@ public class TraverseMain {
                                       (Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) ->
                                               entry.getValue().size()).reversed()) // Sort by criticality
                               .limit(BRIDGE_LIMIT)
-                              .parallel() // This could really take a while
-//                              .filter(entry -> entry.getValue().size()
-//                                               >= MIN_CRITICALITY) // Eliminate low criticality bridges
                               .collect(Collectors.toMap(Map.Entry::getKey,
                                                         entry -> {
                                                             final Set<NodeStub> pair = entry.getKey();
