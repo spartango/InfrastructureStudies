@@ -501,7 +501,7 @@ var loadSegments = function () {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
-                            .range(["green", "yellow", "red"]);
+                            .range(["#00FF00", "#FFFF00", "#FF0000"]);
                         var weight = criticality >= midPoint || !allBridges ? 8 : 4;
                         return {
                             "color": color(criticality),
@@ -550,7 +550,7 @@ var loadTargets = function () {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scalePow(3)
                             .domain([minCriticality, maxCriticality])
-                            .range(["yellow", "red"]);
+                            .range(["#FFFF00", "#FF0000"]);
                         return {
                             "color": color(criticality),
                             "weight": 16,
