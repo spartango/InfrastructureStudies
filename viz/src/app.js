@@ -498,12 +498,13 @@ var loadSegments = function () {
                     },
                     //onEachFeature: pathPopup,
                     style: function (feature) {
-                        var scaled = (feature.properties.criticality - midPoint) / midPoint;
-                        var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
-                        var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
-                        var weight = scaled >= 0 && !allBridges ? 8 : 4;
+                        var criticality = feature.properties.criticality;
+                        var color = d3_scale.scaleLinear()
+                            .domain([minCriticality, midPoint, maxCriticality])
+                            .range(["green", "yellow", "red"]);
+                        var weight = criticality >= midPoint || !allBridges ? 8 : 4;
                         return {
-                            "color": "rgb(" + red + ", " + green + ", 0)",
+                            "color": color(criticality),
                             "weight": weight,
                             "opacity": 0.66
                         }
@@ -537,18 +538,21 @@ var loadTargets = function () {
                     }
                 });
 
-                console.log(data);
 
                 var criticalityRange = maxCriticality - minCriticality;
                 var midPoint = criticalityRange / 2;
+
+                console.log(minCriticality + " -> " + midPoint + " -> " + maxCriticality);
+
                 var path = L.geoJson(data, {
                     onEachFeature: pathPopup,
                     style: function (feature) {
-                        var scaled = (feature.properties.criticality - midPoint) / midPoint;
-                        var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
-                        var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
+                        var criticality = feature.properties.criticality;
+                        var color = d3_scale.scalePow(3)
+                            .domain([minCriticality, maxCriticality])
+                            .range(["yellow", "red"]);
                         return {
-                            "color": "rgb(" + red + ", " + green + ", 0)",
+                            "color": color(criticality),
                             "weight": 16,
                             "opacity": 0.8
                         }
