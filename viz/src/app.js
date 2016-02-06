@@ -473,7 +473,7 @@ var allBridges = false;
 
 var loadSegments = function () {
     if (!backgroundLayers['segments']) {
-        loadGeoJSON(DATA_DIR + 'damage.geojson',
+        loadGeoJSON(DATA_DIR + 'bridges.geojson',
             function (data) {
                 // Have a quick look through the data and figure out what the range of criticality is
                 var minCriticality = null;
@@ -492,8 +492,6 @@ var loadSegments = function () {
 
                 var criticalityRange = maxCriticality - minCriticality;
                 var midPoint = criticalityRange / 2;
-                console.log(minCriticality + " to " + maxCriticality + " range: " + criticalityRange + " mid: " + midPoint);
-                //var combined = turf.combine(data);
                 var path = L.geoJson(data, {
                     filter: function (feature) {
                         return allBridges || feature.properties.criticality >= midPoint;
@@ -503,7 +501,7 @@ var loadSegments = function () {
                         var scaled = (feature.properties.criticality - midPoint) / midPoint;
                         var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
                         var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
-                        var weight = scaled >= 0 ? 8 : 4;
+                        var weight = scaled >= 0 && !allBridges ? 8 : 4;
                         return {
                             "color": "rgb(" + red + ", " + green + ", 0)",
                             "weight": weight,
@@ -520,16 +518,77 @@ var loadSegments = function () {
     }
 };
 
+var loadTargets = function () {
+    if (!backgroundLayers['targets']) {
+        loadGeoJSON(DATA_DIR + 'damage.geojson',
+            function (data) {
+                // Have a quick look through the data and figure out what the range of criticality is
+                var minCriticality = null;
+                var maxCriticality = null;
+
+                data.features.forEach(function (feature) {
+                    var criticality = feature.properties.criticality;
+                    if (criticality && (maxCriticality == null || criticality > maxCriticality)) {
+                        maxCriticality = criticality;
+                    }
+
+                    if (criticality && (minCriticality == null || criticality < minCriticality)) {
+                        minCriticality = criticality;
+                    }
+                });
+
+                console.log(data);
+
+                var criticalityRange = maxCriticality - minCriticality;
+                var midPoint = criticalityRange / 2;
+                var path = L.geoJson(data, {
+                    onEachFeature: pathPopup,
+                    style: function (feature) {
+                        var scaled = (feature.properties.criticality - midPoint) / midPoint;
+                        var red = scaled >= 0 ? 255 : Math.round(-255 * scaled);
+                        var green = scaled >= 0 ? Math.round(255 * (1 - scaled)) : 255;
+                        return {
+                            "color": "rgb(" + red + ", " + green + ", 0)",
+                            "weight": 16,
+                            "opacity": 0.8
+                        }
+                    }
+                });
+                path.addTo(map);
+                backgroundLayers['targets'] = path;
+            });
+    } else {
+        map.removeLayer(backgroundLayers['targets']);
+        delete backgroundLayers['targets'];
+    }
+};
+
 // Default layers
 loadSources();
 loadSinks();
 loadRangeRings();
 
 // Default controls
-L.easyButton('fa-crosshairs', function (btn, map) {
-    allBridges = false;
+var bridgeButton = L.easyButton('fa-road', function (btn, map) {
+    if (!allBridges && backgroundLayers['segments']) {
+        // unload the layer to be reloaded
+        loadSegments();
+    }
+
+    allBridges = true;
+    // Load or unload the layer
     loadSegments();
-}).addTo(map);
+});
+
+L.easyBar([
+    L.easyButton('fa-crosshairs', function (btn, map) {
+        allBridges = false;
+        loadSegments();
+    }),
+    L.easyButton('fa-fire', function (btn, map) {
+        loadTargets();
+    })]).addTo(map);
+
 L.easyButton('fa-warning', function (btn, map) {
     loadRangeRings();
 }).addTo(map);
@@ -553,29 +612,18 @@ var SAMButton = L.easyButton('fa-warning', function (btn, map) {
     loadSAMs();
 });
 
-var bridgeButton = L.easyButton('fa-road', function (btn, map) {
-    if (!allBridges && backgroundLayers['segments']) {
-        // unload the layer to be reloaded
-        loadSegments();
-    }
-
-    allBridges = true;
-    // Load or unload the layer
-    loadSegments();
-});
-
 var advancedMode = false;
 L.easyButton('fa-building', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
         L.easyBar([
+            bridgeButton,
             portButton,
             aviationButton,
             nuclearButton,
             stationButton,
-            SAMButton,
-            bridgeButton
+            SAMButton
         ], {
             position: 'topright'
         }).addTo(map);
