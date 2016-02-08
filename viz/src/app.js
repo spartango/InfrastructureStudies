@@ -476,22 +476,17 @@ var loadSegments = function () {
         loadGeoJSON(DATA_DIR + 'bridges.geojson',
             function (data) {
                 // Have a quick look through the data and figure out what the range of criticality is
-                var minCriticality = null;
-                var maxCriticality = null;
-
-                data.features.forEach(function (feature) {
-                    var criticality = feature.properties.criticality;
-                    if (criticality && (maxCriticality == null || criticality > maxCriticality)) {
-                        maxCriticality = criticality;
-                    }
-
-                    if (criticality && (minCriticality == null || criticality < minCriticality)) {
-                        minCriticality = criticality;
-                    }
+                var criticalityData = data.features.map(function (feature) {
+                    return feature.properties.criticality;
                 });
 
-                var criticalityRange = maxCriticality - minCriticality;
-                var midPoint = criticalityRange / 2;
+                var minCriticality = d3_array.min(criticalityData);
+                //var maxCriticality = d3_array.max(criticalityData);
+
+                //var criticalityRange = maxCriticality - minCriticality;
+                var midPoint = d3_array.median(criticalityData);
+                var maxCriticality = midPoint * 2;
+
                 var path = L.geoJson(data, {
                     filter: function (feature) {
                         return allBridges || feature.properties.criticality >= midPoint;
@@ -502,7 +497,7 @@ var loadSegments = function () {
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                        var weight = criticality >= midPoint || !allBridges ? 8 : 4;
+                        var weight = criticality < midPoint || allBridges ? 4 : 8;
                         return {
                             "color": color(criticality),
                             "weight": weight,
@@ -523,37 +518,26 @@ var loadTargets = function () {
     if (!backgroundLayers['targets']) {
         loadGeoJSON(DATA_DIR + 'damage.geojson',
             function (data) {
-                // Have a quick look through the data and figure out what the range of criticality is
-                var minCriticality = null;
-                var maxCriticality = null;
-
-                data.features.forEach(function (feature) {
-                    var criticality = feature.properties.criticality;
-                    if (criticality && (maxCriticality == null || criticality > maxCriticality)) {
-                        maxCriticality = criticality;
-                    }
-
-                    if (criticality && (minCriticality == null || criticality < minCriticality)) {
-                        minCriticality = criticality;
-                    }
+                // Have a quick look through the data and figure out what the range of criticality
+                var criticalityData = data.features.map(function (feature) {
+                    return feature.properties.criticality;
                 });
 
-
-                var criticalityRange = maxCriticality - minCriticality;
-                var midPoint = criticalityRange / 2;
-
-                console.log(minCriticality + " -> " + midPoint + " -> " + maxCriticality);
+                var minCriticality = d3_array.min(criticalityData);
+                //var maxCriticality = d3_array.max(criticalityData);
+                var midPoint = d3_array.median(criticalityData);
+                var maxCriticality = midPoint * 2;
 
                 var path = L.geoJson(data, {
                     onEachFeature: pathPopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
-                        var color = d3_scale.scalePow(3)
-                            .domain([minCriticality, maxCriticality])
-                            .range(["#FFFF00", "#FF0000"]);
+                        var color = d3_scale.scaleLinear()
+                            .domain([minCriticality, midPoint, maxCriticality])
+                            .range(["#00FF00",  "#FFFF00", "#FF0000"]);
                         return {
                             "color": color(criticality),
-                            "weight": 16,
+                            "weight": 12,
                             "opacity": 0.8
                         }
                     }
