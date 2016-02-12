@@ -4,7 +4,6 @@ import com.spartango.infra.framework.TieredSeeker;
 import com.spartango.infra.graph.OSMGraph;
 import com.spartango.infra.graph.types.NeoNode;
 import com.spartango.infra.osm.TagUtils;
-import com.spartango.infra.osm.type.RelationStub;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -24,6 +23,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
+import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,8 +39,8 @@ import java.util.stream.StreamSupport;
  */
 public class GraphMain {
     private static final String TARGET_PATH     = "data/china-latest.osm.pbf";
-    private static final String DB_PATH         = "data/routes.db";
-    private static final String GRAPH_DB_PATH   = "data/" + System.currentTimeMillis() + "_graph.db";
+    private static final String DB_PATH         = "data/rail.db";
+    private static final String GRAPH_DB_PATH   = "data/graph.db";
     private static final String GEO_PATH        = "data/graph.geojson";
     public static final  String STATION_GEOJSON = "data/s_station_graph.geojson";
     public static final  String LINK_GEOJSON    = "data/s_link_graph.geojson";
@@ -61,26 +61,31 @@ public class GraphMain {
         // Seeker
         TieredSeeker seeker = new TieredSeeker(TARGET_PATH, DB_PATH) {
             @Override protected boolean isTarget(Entity entity) {
-                return (entity instanceof Relation &&
-                        (TagUtils.hasTag(entity, "route", "train")
-                         || TagUtils.hasTag(entity, "route", "railway")));
+                return ((entity instanceof Relation &&
+                         (TagUtils.hasTag(entity, "route", "train")
+                          || TagUtils.hasTag(entity, "route", "railway")))
+                        || (entity instanceof Way
+                            && TagUtils.hasTag(entity, "railway")));
             }
         };
-        seeker.run();
-        final Collection<RelationStub> routes = seeker.getRelations();
-        System.out.println("Building graph from " + routes.size() + " routes");
+//        seeker.run();
+        System.out.println("Building graph from "
+                           + seeker.getRelations().size()
+                           + " routes, "
+                           + seeker.getWays().size()
+                           + " ways, and "
+                           + seeker.getNodes().size()
+                           + " nodes");
         OSMGraph graph = new OSMGraph(graphDb);
 
         long nodeCount;
         long edgeCount;
         // Check that the graph has been built properly
         // Quick stats
-        nodeCount = getNodeCount(graphDb);
-        edgeCount = getEdgeCount(graphDb);
+//        nodeCount = getNodeCount(graphDb);
+//        edgeCount = getEdgeCount(graphDb);
 
-        if (edgeCount < 2000 || nodeCount < 4000) {
-            graph.build(seeker.getIndex());
-        }
+//        graph.build(seeker.getIndex());
 
         nodeCount = getNodeCount(graphDb);
         edgeCount = getEdgeCount(graphDb);
@@ -130,8 +135,10 @@ public class GraphMain {
 //                final List<NodeStub> nodes = way.getNodes(seeker.getIndex());
 //                final NodeStub startNode = nodes.get(0);
 //                final NodeStub endNode = nodes.get(nodes.size() - 1);
-
-                if (!stationFeatures.containsKey(startNode.getId())) {
+                System.out.print("Writing: " + startNode.getOsmNode() + " -> " + endNode.getOsmNode() + "\r");
+                if (startNode.getTags().containsKey("railway")
+                    && startNode.getTag("railway").equals("station")
+                    && !stationFeatures.containsKey(startNode.getId())) {
                     final Point startPoint = geometryFactory.createPoint(new Coordinate(
                             startNode.getLongitude(),
                             startNode.getLatitude()));
@@ -143,7 +150,9 @@ public class GraphMain {
                     stationFeatures.put(startNode.getId(), startFeature);
                 }
 
-                if (!stationFeatures.containsKey(endNode.getId())) {
+                if (endNode.getTags().containsKey("railway")
+                    && endNode.getTag("railway").equals("station")
+                    && !stationFeatures.containsKey(endNode.getId())) {
                     final Point endPoint = geometryFactory.createPoint(new Coordinate(
                             endNode.getLongitude(),
                             endNode.getLatitude()));
@@ -154,6 +163,7 @@ public class GraphMain {
                     final SimpleFeature endFeature = stationFeatureBuilder.buildFeature(String.valueOf(endNode.getId()));
                     stationFeatures.put(endNode.getId(), endFeature);
                 }
+
                 // Build the geometry
                 final List<Coordinate> coordinateList = Stream.of(startNode, endNode)
                                                               .map(nodeStub -> new Coordinate(
@@ -187,7 +197,7 @@ public class GraphMain {
 
     }
 
-    private static long getEdgeCount(GraphDatabaseService graphDb) {
+    public static long getEdgeCount(GraphDatabaseService graphDb) {
         final long count;
         try (Transaction tx = graphDb.beginTx()) {
             count = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
@@ -202,7 +212,7 @@ public class GraphMain {
         return count;
     }
 
-    private static long getNodeCount(GraphDatabaseService graphDb) {
+    public static long getNodeCount(GraphDatabaseService graphDb) {
         final long nodeCount;
         try (Transaction tx = graphDb.beginTx()) {
 

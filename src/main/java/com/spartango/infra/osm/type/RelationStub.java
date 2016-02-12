@@ -93,6 +93,13 @@ public class RelationStub extends EntityStub implements Serializable {
         }
     }
 
+    public void addWay(WayStub newWay) {
+        if (!wayIds.contains(newWay.getId())) {
+            ways.add(newWay);
+            wayIds.add(newWay.getId());
+        }
+    }
+
     public void setNodes(List<NodeStub> nodes) {
         this.nodes = nodes;
     }
@@ -111,4 +118,6 @@ public class RelationStub extends EntityStub implements Serializable {
                ", ways=" + ways +
                '}';
     }
+
+
 }

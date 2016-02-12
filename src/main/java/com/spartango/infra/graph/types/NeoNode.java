@@ -2,6 +2,7 @@ package com.spartango.infra.graph.types;
 
 import com.spartango.infra.geom.ShapeUtils;
 import com.spartango.infra.osm.type.NodeStub;
+import com.spartango.infra.osm.type.WayStub;
 import org.neo4j.graphdb.*;
 
 import java.util.Map;
@@ -79,6 +80,21 @@ public class NeoNode {
             relationshipTo = neoNode.createRelationshipTo(otherNode.neoNode, type);
             final double distance = ShapeUtils.calculateDistance(osmNode, otherNode.osmNode);
             relationshipTo.setProperty("distance", String.valueOf(distance));
+            tx.success();
+        }
+        return relationshipTo;
+    }
+
+    public Relationship createRelationshipTo(NeoNode otherNode,
+                                             WayStub way,
+                                             RelationshipType type,
+                                             GraphDatabaseService graphDb) {
+        Relationship relationshipTo;
+        try (Transaction tx = graphDb.beginTx()) {
+            relationshipTo = neoNode.createRelationshipTo(otherNode.neoNode, type);
+            way.getTags().forEach(relationshipTo::setProperty);
+//            final double distance = ShapeUtils.calculateLength(way.getNodes());
+//            relationshipTo.setProperty("distance", String.valueOf(distance));
             tx.success();
         }
         return relationshipTo;

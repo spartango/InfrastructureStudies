@@ -179,4 +179,8 @@ public abstract class TieredSeeker {
     public OSMIndex getIndex() {
         return index;
     }
+
+    public DB getDatabase() {
+        return database;
+    }
 }
