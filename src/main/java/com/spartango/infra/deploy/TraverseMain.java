@@ -131,7 +131,7 @@ public class TraverseMain {
                 targeter.deltaStream()
                         .limit(BRIDGE_LIMIT)
                         .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
-                                                    PATH + OUTPUT_PATH + railFlow.getDamagedNodes().hashCode()))
+                                                    PATH + OUTPUT_PATH + railFlow.getDamagedNodes().hashCode() + "_"))
                         .peek((x) -> System.out.println("Calculated damaged flow after "
                                                         + (System.currentTimeMillis() - damageStartTime)
                                                         + "ms"))

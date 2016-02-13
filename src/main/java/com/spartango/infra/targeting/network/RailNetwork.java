@@ -42,7 +42,6 @@ public class RailNetwork {
     }
 
     public Collection<NodeStub> getStations() {
-        System.out.println("Finding stations...");
         final Set<NodeStub> stations = database.getHashSet("stations");
         if (stations.isEmpty()) {
             System.out.println("Building station cache");
@@ -53,7 +52,6 @@ public class RailNetwork {
     }
 
     public Collection<WayStub> getBridges() {
-        System.out.println("Finding bridges...");
         final Set<WayStub> bridges = database.getHashSet("bridges");
         if (bridges.isEmpty()) {
             System.out.println("Building bridge cache");
