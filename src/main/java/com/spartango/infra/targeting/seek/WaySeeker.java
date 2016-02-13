@@ -1,6 +1,6 @@
-package com.spartango.infra.framework;
+package com.spartango.infra.targeting.seek;
 
-import com.spartango.infra.osm.OSMIndex;
+import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.osm.type.NodeStub;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -96,7 +96,7 @@ public abstract class WaySeeker implements Runnable {
             @Override public void process(EntityContainer entityContainer) {
                 final Entity entity = entityContainer.getEntity();
                 if (entity instanceof Way && isTarget((Way) entity)) {
-                    final List<NodeStub> path = index.getNodes((Way) entity);
+                    final List<NodeStub> path = index.getNodesById((Way) entity);
                     onWayFound((Way) entity, path);
                 }
             }
