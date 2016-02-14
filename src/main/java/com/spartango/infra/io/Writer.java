@@ -79,8 +79,7 @@ public class Writer {
         writeFeature(filePath, linkType, linkFeatures);
     }
 
-    public static void write(NodeStub station,
-                             Collection<WeightedPath> paths,
+    public static void write(Collection<WeightedPath> paths,
                              String filePath,
                              RailNetwork railNetwork) {
         // Setup schema
@@ -92,27 +91,13 @@ public class Writer {
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
 
+
         paths.forEach(path -> {
             if (path == null) {
                 return;
             }
             // Build the geometry
-            try (Transaction tx = railNetwork.beginGraphTx()) {
-                final List<Coordinate> coordinateList =
-                        StreamSupport.stream(path.nodes().spliterator(), false)
-                                     .map(railNetwork::getGraphNode)
-                                     .map(nodeStub -> new Coordinate(nodeStub.getLongitude(), nodeStub.getLatitude()))
-                                     .collect(Collectors.toList());
-                tx.success();
-
-                final LineString lineString = geometryFactory.createLineString(
-                        coordinateList.toArray(new Coordinate[coordinateList.size()]));
-                linkFeatureBuilder.add(lineString);
-                linkFeatureBuilder.add(path.weight());
-
-                final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
-                linkFeatures.add(linkFeature);
-            }
+            linkFeatures.add(buildGeometry(railNetwork, linkFeatureBuilder, path));
         });
 
         writeFeature(filePath, linkType, linkFeatures);
@@ -162,12 +147,51 @@ public class Writer {
         writeFeature(path, stationType, stationFeatures);
     }
 
-    public static void writeFlow(RailFlow flow, String path) {
-        flow.getPaths()
-            .forEach((station, paths) -> write(station,
-                                               paths,
-                                               path + station.getId() + "_path.geojson",
-                                               flow.getRailNetwork()));
+    public static void writeFlow(RailFlow flow, String filePath) {
+        final RailNetwork railNetwork = flow.getRailNetwork();
 
+        // Setup schema
+        SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
+        rBuilder.setName("Rail Link");
+        rBuilder.add("the_geom", LineString.class);
+        rBuilder.add("cost", Double.class);
+        final SimpleFeatureType linkType = rBuilder.buildFeatureType();
+        SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
+        final List<SimpleFeature> linkFeatures = new ArrayList<>();
+
+        flow.getPaths()
+            .values()
+            .stream()
+            .flatMap(List::stream)
+            .forEach(path -> {
+                if (path == null) {
+                    return;
+                }
+                // Build the geometry
+                linkFeatures.add(buildGeometry(railNetwork, linkFeatureBuilder, path));
+            });
+
+        writeFeature(filePath, linkType, linkFeatures);
+    }
+
+    private static SimpleFeature buildGeometry(RailNetwork railNetwork,
+                                               SimpleFeatureBuilder linkFeatureBuilder,
+                                               WeightedPath path) {
+        try (Transaction tx = railNetwork.beginGraphTx()) {
+            final List<Coordinate> coordinateList =
+                    StreamSupport.stream(path.nodes().spliterator(), false)
+                                 .map(railNetwork::getGraphNode)
+                                 .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
+                                                                 nodeStub.getLatitude()))
+                                 .collect(Collectors.toList());
+            tx.success();
+
+            final LineString lineString = geometryFactory.createLineString(
+                    coordinateList.toArray(new Coordinate[coordinateList.size()]));
+            linkFeatureBuilder.add(lineString);
+            linkFeatureBuilder.add(path.weight());
+
+            return linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
+        }
     }
 }

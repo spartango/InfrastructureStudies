@@ -16,21 +16,25 @@ import java.util.stream.Stream;
 public class HistogramTargeter {
     private final RailFlow                          baseFlow;
     private final Map<Set<NodeStub>, Set<NodeStub>> histogram;
+    private final long                              limit;
 
     public HistogramTargeter(RailFlow baseFlow,
-                             Map<Set<NodeStub>, Set<NodeStub>> histogram) {
+                             Map<Set<NodeStub>, Set<NodeStub>> histogram,
+                             long limit) {
         this.baseFlow = baseFlow;
         this.histogram = histogram;
+        this.limit = limit;
     }
 
-    public HistogramTargeter(RailFlow baseFlow) {
-        this(baseFlow, baseFlow.histogramPaths());
+    public HistogramTargeter(RailFlow baseFlow, long limit) {
+        this(baseFlow, baseFlow.histogramPaths(), limit);
     }
 
     public Stream<RailFlow> targetStream() {
         return histogram.entrySet()
                         .stream()
                         .sorted(ENTRY_COMPARATOR) // Sort by criticality
+                        .limit(limit)
                         .map(entry -> baseFlow.damage(entry.getKey()));
     }
 
@@ -38,6 +42,7 @@ public class HistogramTargeter {
         return histogram.entrySet()
                         .stream()
                         .sorted(ENTRY_COMPARATOR) // Sort by criticality
+                        .limit(limit)
                         .map(entry -> baseFlow.damageDelta(entry.getKey(), entry.getValue()));
     }
 

@@ -38,10 +38,11 @@ public class TraverseMain {
     private static final String SOURCES_GEOJSON  = PATH + OUTPUT_PATH + "sources.geojson";
     private static final String SINKS_GEOJSON    = PATH + OUTPUT_PATH + "sinks.geojson";
     private static final String SEGMENTS_GEOJSON = PATH + OUTPUT_PATH + "bridges.geojson";
+    private static final String BASELINE_GEOJSON = PATH + OUTPUT_PATH + "baseline.geojson";
     private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
 
     // Damage equivalent to a track extension
-    private static final long BRIDGE_LIMIT = 10;
+    private static final long BRIDGE_LIMIT = 100;
 
     private static GraphDatabaseService graphDb;
     private static DB                   database;
@@ -57,7 +58,7 @@ public class TraverseMain {
         long startTime = System.currentTimeMillis();
 
         // Load up the sources and sinks
-        final List<NeoNode> sinks = new NodeIdLoader(railNet)
+        final List<NeoNode> sources = new NodeIdLoader(railNet)
                 .addIds(Arrays.asList(3195094191l,
                                       2874005142l,
                                       1681825138l,
@@ -70,9 +71,12 @@ public class TraverseMain {
                                       843052502l,
                                       270146375l,
                                       1658989377l,
-                                      339089288l)).load();
+                                      339089288l,
+                                      582373939l,
+                                      3499304147l,
+                                      2987122176l)).load();
 
-        final List<NeoNode> sources = new NodeIdLoader(railNet)
+        final List<NeoNode> sinks = new NodeIdLoader(railNet)
                 .addIds(Arrays.asList(1582348731l,
                                       677180563l,
                                       2023044210l,
@@ -86,7 +90,10 @@ public class TraverseMain {
                                       3662634093l,
                                       1642904934l,
                                       3019467507l,
-                                      2279127731l)).load();
+                                      2279127731l,
+                                      2999345286l,
+                                      1584384382l,
+                                      2451329911l)).load();
 
         System.out.println("Loaded "
                            + sources.size()
@@ -113,7 +120,7 @@ public class TraverseMain {
                            + "ms");
 
         // Write the baseline flow
-        writeFlow(baselineFlow, PATH + OUTPUT_PATH);
+        writeFlow(baselineFlow, BASELINE_GEOJSON);
 
         // Histogram the segments, only including bridges
         final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
@@ -122,29 +129,31 @@ public class TraverseMain {
         writeHistogram(histogram, SEGMENTS_GEOJSON);
 
         // Rank targets with the histogram
-        HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram);
+        HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
         final long damageStartTime = System.currentTimeMillis();
-
         // Simulate Damage, get the changes
         final Map<Set<NodeStub>, Double> resilienceScores =
                 targeter.deltaStream()
-                        .limit(BRIDGE_LIMIT)
                         .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
-                                                    PATH + OUTPUT_PATH + railFlow.getDamagedNodes().hashCode() + "_"))
+                                                    PATH
+                                                    + OUTPUT_PATH
+                                                    + railFlow.getDamagedNodes().hashCode()
+                                                    + "_damage.geojson"))
                         .peek((x) -> System.out.println("Calculated damaged flow after "
                                                         + (System.currentTimeMillis() - damageStartTime)
                                                         + "ms"))
                         .collect(Collectors.toMap(
                                 RailFlow::getDamagedNodes,
                                 deltaFlow -> {
-                                    // Baseline cost for the affected parts
                                     double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
                                     return deltaFlow.getTotalCost() - baseCost;
                                 }));
 
         // Write the resilience scores
         writeSegments(resilienceScores, DAMAGE_GEOJSON);
+
+        System.out.println("Finished damage analysis");
 
         // Shutdown
         cleanUp();
