@@ -397,53 +397,113 @@ var loadPath = function (id) {
         });
 };
 
-
 var loadPaths = function () {
-    loadGeoJSON(DATA_DIR + 'baseline.geojson',
-        function (data) {
-            var path = L.geoJson(data, {
-                //onEachFeature: pathPopup
-                style: {
-                    "weight": 4,
-                    "opacity": 0.5
-                }
+    if (!backgroundLayers['paths']) {
+        loadGeoJSON(DATA_DIR + 'baseline.geojson',
+            function (data) {
+                var path = L.geoJson(data, {
+                    style: {
+                        "weight": 4,
+                        "opacity": 0.5
+                    }
+                });
+
+                path.addTo(map);
+                backgroundLayers['paths'] = path;
+
+                map.fitBounds(path.getBounds());
+                //hash = new L.Hash(map);
             });
-            path.addTo(map);
+    } else {
+        map.removeLayer(backgroundLayers['paths']);
+        delete backgroundLayers['paths'];
+    }
+};
+
+var loadAnimation = function () {
+    if (!backgroundLayers['animation']) {
+        loadGeoJSON(DATA_DIR + 'baseline.geojson',
+            function (data) {
+                var animatedMarkers = [];
+                data.features.forEach(function (feature) {
+                    // Create a little animated disk
+                    var durations = [];
+                    var last = null;
+                    var latlngs = feature.geometry.coordinates.map(function (coord) {
+                        var point = turf.point(coord);
+                        if (last) {
+                            var distance = turf.distance(last, point); // km
+                            var time = distance * 5; // 200 km/s
+                            durations.push(time);
+                        }
+                        last = point;
+                        return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
+                    }).reverse();
+                    durations.reverse();
+                    var duration = /*(Math.random() + 1) */ 10000;
+                    var aMarker = L.Marker.movingMarker(latlngs, durations, {
+                        loop: true,
+                        autostart: true,
+                        icon: new L.DivIcon({
+                            html: '<div></div>',
+                            className: 'flow-marker',
+                            iconSize: new L.Point(10, 10)
+                        })
+                    });
+                    animatedMarkers.push(aMarker);
+                });
+
+                animatedMarkers.forEach(function (m) {
+                    m.addTo(map);
+                });
+
+                backgroundLayers['animation'] = animatedMarkers;
+            });
+    } else {
+        backgroundLayers['animation'].forEach(function (m) {
+            map.removeLayer(m);
         });
+        delete backgroundLayers['animation'];
+    }
 };
 
 var loadSources = function () {
-    loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
-        //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        //markers.addLayer(geoJsonLayer);
-        map.addLayer(geoJsonLayer);
-        map.fitBounds(geoJsonLayer.getBounds());
-
-        hash = new L.Hash(map);
-    })
+    if (!backgroundLayers['sources']) {
+        loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
+            var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: stationPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            map.addLayer(geoJsonLayer);
+            backgroundLayers['sources'] = geoJsonLayer;
+        })
+    } else {
+        map.removeLayer(backgroundLayers['sources']);
+        delete backgroundLayers['sources'];
+    }
 };
 
 var loadSinks = function () {
-    loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
-        //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        //markers.addLayer(geoJsonLayer);
-        map.addLayer(geoJsonLayer);
-        //map.fitBounds(geoJsonLayer.getBounds());
-    })
+    if (!backgroundLayers['sinks']) {
+        loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
+            var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: stationPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            map.addLayer(geoJsonLayer);
+            backgroundLayers['sinks'] = geoJsonLayer;
+            //map.fitBounds(geoJsonLayer.getBounds());
+        })
+    } else {
+        map.removeLayer(backgroundLayers['sinks']);
+        delete backgroundLayers['sinks'];
+    }
 };
 
 var loadRangeRings = function () {
@@ -612,9 +672,9 @@ var loadTargets = function () {
 };
 
 // Default layers
+loadRangeRings();
 loadSources();
 loadSinks();
-loadRangeRings();
 loadPaths();
 
 // Default controls
@@ -661,18 +721,22 @@ var SAMButton = L.easyButton('fa-warning', function (btn, map) {
     loadSAMs();
 });
 
+var flowButton = L.easyButton('fa-exchange', function (btn, map) {
+    loadAnimation();
+});
 var advancedMode = false;
 L.easyButton('fa-building', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
         L.easyBar([
-            bridgeButton,
             portButton,
             aviationButton,
             nuclearButton,
             stationButton,
-            SAMButton
+            SAMButton,
+            bridgeButton,
+            flowButton
         ], {
             position: 'topright'
         }).addTo(map);
