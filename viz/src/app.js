@@ -492,11 +492,8 @@ var loadSegments = function () {
                 });
 
                 var minCriticality = d3_array.min(criticalityData);
-                //var maxCriticality = d3_array.max(criticalityData);
-
-                //var criticalityRange = maxCriticality - minCriticality;
+                var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = d3_array.median(criticalityData);
-                var maxCriticality = midPoint * 2;
 
                 var path = L.geoJson(data, {
                     filter: function (feature) {
@@ -508,7 +505,7 @@ var loadSegments = function () {
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                        var weight = criticality < midPoint || allBridges ? 4 : 8;
+                        var weight = allBridges ? 4 : 8;
                         return {
                             "color": color(criticality),
                             "weight": weight,
@@ -589,7 +586,7 @@ var loadTargets = function () {
                 var minCriticality = d3_array.min(criticalityData);
                 //var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = d3_array.median(criticalityData);
-                var maxCriticality = midPoint * 2;
+                var maxCriticality = (midPoint - minCriticality) + midPoint;
 
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
