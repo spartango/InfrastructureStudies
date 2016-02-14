@@ -141,13 +141,11 @@ public class TraverseMain {
                                             + OUTPUT_PATH
                                             + railFlow.getDamagedNodes().hashCode()
                                             + "_damage.geojson"))
-                .peek((x) -> System.out.println("Calculated damaged flow after "
-                                                + (System.currentTimeMillis() - damageStartTime)
-                                                + "ms"))
+                .peek((x) -> System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
+                                                                                    - damageStartTime) + "ms"))
                 .forEach(deltaFlow -> {
                     double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
                     double deltaCost = deltaFlow.getTotalCost() - baseCost;
-
                     resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
 
                     // Write the resilience scores in progress

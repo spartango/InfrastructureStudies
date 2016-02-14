@@ -27,14 +27,14 @@ public class RailFlow {
     protected final double                            totalCost;
 
     public RailFlow(RailNetwork railNetwork,
-                    Collection<NeoNode> sinks,
-                    Collection<NeoNode> sources) {
+                    Collection<NeoNode> sources,
+                    Collection<NeoNode> sinks) {
         this(railNetwork, sinks, sources, Collections.EMPTY_SET);
     }
 
     public RailFlow(RailNetwork railNetwork,
-                    Collection<NeoNode> sinks,
                     Collection<NeoNode> sources,
+                    Collection<NeoNode> sinks,
                     Set<NodeStub> damagedNodes) {
         this.railNetwork = railNetwork;
         this.sinks = sinks;
