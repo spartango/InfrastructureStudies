@@ -1,7 +1,7 @@
 /**
  * Created by spartango on 10/2/15.
  */
-var DATA_DIR = "2020/";
+var DATA_DIR = "testing/";
 
 // Setup Map
 var layer;
@@ -382,8 +382,24 @@ var pathPopup = function (feature, layer) {
         layer.bindPopup(popupString);
     }
 };
+
 var loadPath = function (id) {
-    loadGeoJSON(DATA_DIR + '20_' + id + '_path.geojson',
+    loadGeoJSON(DATA_DIR + id + '_path.geojson',
+        function (data) {
+            var path = L.geoJson(data, {
+                //onEachFeature: pathPopup
+                style: {
+                    "weight": 4,
+                    "opacity": 0.5
+                }
+            });
+            path.addTo(map);
+        });
+};
+
+
+var loadPaths = function () {
+    loadGeoJSON(DATA_DIR + 'baseline.geojson',
         function (data) {
             var path = L.geoJson(data, {
                 //onEachFeature: pathPopup
@@ -409,11 +425,6 @@ var loadSources = function () {
         //markers.addLayer(geoJsonLayer);
         map.addLayer(geoJsonLayer);
         map.fitBounds(geoJsonLayer.getBounds());
-
-        // Load up the routes
-        data.features.forEach(function (feature) {
-            loadPath(feature.properties.id);
-        });
 
         hash = new L.Hash(map);
     })
@@ -514,6 +525,58 @@ var loadSegments = function () {
     }
 };
 
+var clearDamagedPath = function () {
+    if (backgroundLayers['damagedPath']) {
+        map.removeLayer(backgroundLayers['damagedPath']);
+        delete backgroundLayers['damagedPath'];
+    }
+
+};
+
+var loadDamagedPath = function (id) {
+    if (backgroundLayers['damagedPath']) {
+        clearDamagedPath();
+    }
+
+    loadGeoJSON(DATA_DIR + id + '_damage.geojson',
+        function (data) {
+            var path = L.geoJson(data, {
+                onEachFeature: function (feature, layer) {
+                    var popupString = "<button onclick='clearDamagedPath()'>Clear</button>";
+                    layer.bindPopup(popupString);
+                },
+                style: {
+                    color: "#0b0",
+                    weight: 6,
+                    opacity: 0.25
+                }
+            });
+            path.addTo(map);
+            backgroundLayers['damagedPath'] = path;
+        });
+};
+
+var damagePopup = function (feature, layer) {
+    // does this feature have a property named popupContent?
+    if (feature.properties) {
+        var popupString = "<table><tr>";
+        for (var key in feature.properties) {
+            popupString += "<td>" + feature.properties[key] + "</td>";
+        }
+
+        if (feature.id || feature.geometry) {
+            popupString += "</tr><tr>"
+        }
+
+        if (feature.id) {
+            popupString += "<td><button onclick='loadDamagedPath(" + feature.id + ")'>Reroutes</button></td>";
+        }
+
+        popupString += "</tr></table>";
+        layer.bindPopup(popupString);
+    }
+};
+
 var loadTargets = function () {
     if (!backgroundLayers['targets']) {
         loadGeoJSON(DATA_DIR + 'damage.geojson',
@@ -529,12 +592,13 @@ var loadTargets = function () {
                 var maxCriticality = midPoint * 2;
 
                 var path = L.geoJson(data, {
-                    onEachFeature: pathPopup,
+                    // TODO: call for the adjustments here
+                    onEachFeature: damagePopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
-                            .range(["#00FF00",  "#FFFF00", "#FF0000"]);
+                            .range(["#00FF00", "#FFFF00", "#FF0000"]);
                         return {
                             "color": color(criticality),
                             "weight": 12,
@@ -555,6 +619,7 @@ var loadTargets = function () {
 loadSources();
 loadSinks();
 loadRangeRings();
+loadPaths();
 
 // Default controls
 var bridgeButton = L.easyButton('fa-road', function (btn, map) {

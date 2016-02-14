@@ -1,6 +1,6 @@
-package com.spartango.infra.graph.types;
+package com.spartango.infra.core.graph;
 
-import com.spartango.infra.geom.ShapeUtils;
+import com.spartango.infra.utils.ShapeUtils;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.osm.type.WayStub;
 import org.neo4j.graphdb.*;
@@ -93,7 +93,7 @@ public class NeoNode {
         try (Transaction tx = graphDb.beginTx()) {
             relationshipTo = neoNode.createRelationshipTo(otherNode.neoNode, type);
             way.getTags().forEach(relationshipTo::setProperty);
-//            final double distance = ShapeUtils.calculateLength(way.getNodes());
+//            final double distance = ShapeUtils.calculateLength(way.getNodesById());
 //            relationshipTo.setProperty("distance", String.valueOf(distance));
             tx.success();
         }

@@ -1,5 +1,6 @@
-package com.spartango.infra.osm;
+package com.spartango.infra.core;
 
+import com.spartango.infra.osm.type.EntityStub;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.osm.type.RelationStub;
 import com.spartango.infra.osm.type.WayStub;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Author: spartango
@@ -42,7 +44,7 @@ public class OSMIndex {
         desiredRelations = database.getTreeSet("desiredRelations");
     }
 
-    public List<NodeStub> getNodes(Way target) {
+    public List<NodeStub> getNodesById(Way target) {
         return target.getWayNodes()
                      .stream()
                      .filter(wayNode -> nodes.containsKey(wayNode.getNodeId()))
@@ -164,12 +166,20 @@ public class OSMIndex {
     }
 
 
-    public Map<Long, RelationStub> getRelations() {
+    public Map<Long, RelationStub> getRelationsById() {
         return relations;
     }
 
-    public Map<Long, WayStub> getWays() {
+    public Collection<RelationStub> getRelations() {
+        return relations.values();
+    }
+
+    public Map<Long, WayStub> getWaysById() {
         return ways;
+    }
+
+    public Collection<WayStub> getWays() {
+        return ways.values();
     }
 
     public WayStub getWay(long id) {
@@ -196,9 +206,12 @@ public class OSMIndex {
         return relations.get(id);
     }
 
-
-    public Map<Long, NodeStub> getNodes() {
+    public Map<Long, NodeStub> getNodesById() {
         return nodes;
+    }
+
+    public Collection<NodeStub> getNodes() {
+        return nodes.values();
     }
 
     public Set<Long> getDesiredNodes() {
@@ -223,7 +236,43 @@ public class OSMIndex {
         } else {
             return false;
         }
+    }
 
+    public Stream<NodeStub> streamNodesForTag(String key, String value) {
+        return filterByTag(getNodes(), key, value);
+    }
+
+    public Stream<NodeStub> streamNodesForTag(String key) {
+        return filterByTag(getNodes(), key);
+    }
+
+    public Stream<WayStub> streamWaysForTag(String key, String value) {
+        return filterByTag(getWays(), key, value);
+
+    }
+
+    public Stream<WayStub> streamWaysForTag(String key) {
+        return filterByTag(getWays(), key);
+    }
+
+    public Stream<RelationStub> streamRelationsForTag(String key, String value) {
+        return filterByTag(getRelations(), key, value);
+
+    }
+
+    public Stream<RelationStub> streamRelationsForTag(String key) {
+        return filterByTag(getRelations(), key);
+    }
+
+    public static <T extends EntityStub> Stream<T> filterByTag(Collection<T> entities, String key) {
+        return entities.stream()
+                       .filter(entity -> entity.getTags().containsKey(key));
+    }
+
+    public static <T extends EntityStub> Stream<T> filterByTag(Collection<T> entities, String key, String value) {
+        return entities.stream()
+                       .filter(entity -> entity.getTags().containsKey(key)
+                                         && entity.getTag(key).equals(value));
     }
 
 }

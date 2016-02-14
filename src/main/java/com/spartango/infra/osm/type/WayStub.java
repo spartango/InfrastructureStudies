@@ -1,6 +1,6 @@
 package com.spartango.infra.osm.type;
 
-import com.spartango.infra.osm.OSMIndex;
+import com.spartango.infra.core.OSMIndex;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 

@@ -2,10 +2,10 @@ package com.spartango.infra.deploy;
 
 import com.irislabs.sheet.SheetEntry;
 import com.irislabs.sheet.SheetWriter;
-import com.spartango.infra.framework.WaySeeker;
-import com.spartango.infra.geom.ShapeUtils;
+import com.spartango.infra.targeting.seek.WaySeeker;
+import com.spartango.infra.utils.ShapeUtils;
 import com.spartango.infra.osm.type.NodeStub;
-import com.spartango.infra.osm.TagUtils;
+import com.spartango.infra.utils.OSMTagUtils;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
@@ -58,9 +58,9 @@ public class BridgeMain {
 
         WaySeeker seeker = new WaySeeker(TARGET_PATH, DB_PATH) {
             @Override protected boolean isTarget(Way entity) {
-                boolean rail = TagUtils.hasTag(entity, "railway");
-                boolean bridge = TagUtils.hasTag(entity, "bridge");
-                boolean tunnel = TagUtils.hasTag(entity, "tunnel");
+                boolean rail = OSMTagUtils.hasTag(entity, "railway");
+                boolean bridge = OSMTagUtils.hasTag(entity, "bridge");
+                boolean tunnel = OSMTagUtils.hasTag(entity, "tunnel");
                 return rail && bridge;
             }
 

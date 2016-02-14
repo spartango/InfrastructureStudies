@@ -1,4 +1,4 @@
-package com.spartango.infra.osm;
+package com.spartango.infra.utils;
 
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  * Date: 9/1/15
  * Time: 16:51.
  */
-public class TagUtils {
+public class OSMTagUtils {
     public static boolean hasTag(Entity entity, String key, String value) {
         return entity.getTags().stream().filter(tagEquals(key, value)).findAny().isPresent();
     }

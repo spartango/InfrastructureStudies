@@ -1,4 +1,4 @@
-package com.spartango.infra.geom;
+package com.spartango.infra.utils;
 
 import com.spartango.infra.osm.type.NodeStub;
 import org.geotools.referencing.GeodeticCalculator;

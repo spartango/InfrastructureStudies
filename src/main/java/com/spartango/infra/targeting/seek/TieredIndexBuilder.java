@@ -1,9 +1,6 @@
-package com.spartango.infra.framework;
+package com.spartango.infra.targeting.seek;
 
-import com.spartango.infra.osm.OSMIndex;
-import com.spartango.infra.osm.type.NodeStub;
-import com.spartango.infra.osm.type.RelationStub;
-import com.spartango.infra.osm.type.WayStub;
+import com.spartango.infra.core.OSMIndex;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
@@ -12,42 +9,70 @@ import org.openstreetmap.osmosis.core.task.v0_6.Sink;
 import org.openstreetmap.osmosis.pbf2.v0_6.PbfReader;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Author: spartango
  * Date: 9/6/15
  * Time: 11:45.
  */
-public abstract class TieredSeeker {
-    private static final int WORKERS = 1;
+public abstract class TieredIndexBuilder {
+    private static final int    WORKERS         = 1;
+    private static final String DEFAULT_PB_PATH = "test.osm.pbf";
 
-    private final String   dbPath;
-    private final String   pbfPath;
-    private final OSMIndex index;
-    private final DB       database;
+    private String pbfPath;
+    private DB     database;
 
-    protected TieredSeeker(String pbfPath, String dbPath) {
-        this.pbfPath = pbfPath;
-        this.dbPath = dbPath;
+    private Predicate<Entity> isTarget;
 
-        // Build up node index
-        database = DBMaker.newFileDB(new File(dbPath))
-                          .mmapFileEnable()
-                          .closeOnJvmShutdown()
-                          .make();
-
-        index = new OSMIndex(database);
+    public TieredIndexBuilder() {
+        // Defaults
+        this.pbfPath = DEFAULT_PB_PATH;
+        this.database = DBMaker.newMemoryDB().closeOnJvmShutdown().make();
+        this.isTarget = (x) -> false;
     }
 
-    public void run() {
+    public TieredIndexBuilder(String pbfPath,
+                              DB database,
+                              Predicate<Entity> targetIdentifier) {
+        this.database = database;
+        this.isTarget = targetIdentifier;
+        this.pbfPath = pbfPath;
+    }
+
+    public TieredIndexBuilder setPbfPath(String pbfPath) {
+        this.pbfPath = pbfPath;
+        return this;
+    }
+
+    public TieredIndexBuilder setDatabase(DB database) {
+        this.database = database;
+        return this;
+    }
+
+    public TieredIndexBuilder setDatabasePath(String dbPath) {
+        this.database = DBMaker.newFileDB(new File(dbPath))
+                               .mmapFileEnable()
+                               .closeOnJvmShutdown()
+                               .make();
+        return this;
+    }
+
+    public TieredIndexBuilder setTargetIdentifier(Predicate<Entity> isTarget) {
+        this.isTarget = isTarget;
+        return this;
+    }
+
+    public OSMIndex build() {
+        final OSMIndex index = new OSMIndex(database);
+
         // First Pass: Which relations do we want and what do they depend on?
         PbfReader targetReader = new PbfReader(new File(pbfPath), WORKERS);
         targetReader.setSink(new Sink() {
             @Override public void process(EntityContainer entityContainer) {
                 final Entity entity = entityContainer.getEntity();
-                if (isTarget(entity)) {
+                if (isTarget.test(entity)) {
                     // Capture the ways and nodes it wants
                     index.addEntity(entity);
                     if (entity instanceof Relation) {
@@ -75,7 +100,7 @@ public abstract class TieredSeeker {
             }
 
             @Override public void complete() {
-                System.out.println("Targeting pass complete: " + index.getRelations().size() + " relations found");
+                System.out.println("Targeting pass complete: " + index.getRelationsById().size() + " relations found");
             }
 
             @Override public void release() {
@@ -154,33 +179,13 @@ public abstract class TieredSeeker {
         index.populateWays();
 
         System.out.println("Seeking complete: "
-                           + getNodes().size()
+                           + index.getNodes().size()
                            + " nodes, "
-                           + getWays().size()
+                           + index.getWays().size()
                            + " ways, and "
-                           + getRelations().size()
+                           + index.getRelations().size()
                            + " relations");
-    }
 
-    protected abstract boolean isTarget(Entity entity);
-
-    public Collection<RelationStub> getRelations() {
-        return index.getRelations().values();
-    }
-
-    public Collection<WayStub> getWays() {
-        return index.getWays().values();
-    }
-
-    public Collection<NodeStub> getNodes() {
-        return index.getNodes().values();
-    }
-
-    public OSMIndex getIndex() {
         return index;
-    }
-
-    public DB getDatabase() {
-        return database;
     }
 }
