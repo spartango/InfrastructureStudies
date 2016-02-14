@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.spartango.infra.io.Writer.*;
 
@@ -42,7 +42,7 @@ public class TraverseMain {
     private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
 
     // Damage equivalent to a track extension
-    private static final long BRIDGE_LIMIT = 100;
+    private static final long BRIDGE_LIMIT = 10000;
 
     private static GraphDatabaseService graphDb;
     private static DB                   database;
@@ -132,26 +132,27 @@ public class TraverseMain {
         HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
         final long damageStartTime = System.currentTimeMillis();
-        // Simulate Damage, get the changes
-        final Map<Set<NodeStub>, Double> resilienceScores =
-                targeter.deltaStream()
-                        .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
-                                                    PATH
-                                                    + OUTPUT_PATH
-                                                    + railFlow.getDamagedNodes().hashCode()
-                                                    + "_damage.geojson"))
-                        .peek((x) -> System.out.println("Calculated damaged flow after "
-                                                        + (System.currentTimeMillis() - damageStartTime)
-                                                        + "ms"))
-                        .collect(Collectors.toMap(
-                                RailFlow::getDamagedNodes,
-                                deltaFlow -> {
-                                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
-                                    return deltaFlow.getTotalCost() - baseCost;
-                                }));
 
-        // Write the resilience scores
-        writeSegments(resilienceScores, DAMAGE_GEOJSON);
+        final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
+        // Simulate Damage, get the changes
+        targeter.deltaStream()
+                .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
+                                            PATH
+                                            + OUTPUT_PATH
+                                            + railFlow.getDamagedNodes().hashCode()
+                                            + "_damage.geojson"))
+                .peek((x) -> System.out.println("Calculated damaged flow after "
+                                                + (System.currentTimeMillis() - damageStartTime)
+                                                + "ms"))
+                .forEach(deltaFlow -> {
+                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
+                    double deltaCost = deltaFlow.getTotalCost() - baseCost;
+
+                    resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
+
+                    // Write the resilience scores in progress
+                    writeSegments(resilienceScores, DAMAGE_GEOJSON);
+                });
 
         System.out.println("Finished damage analysis");
 
