@@ -493,7 +493,7 @@ var loadSegments = function () {
 
                 var minCriticality = d3_array.min(criticalityData);
                 var maxCriticality = d3_array.max(criticalityData);
-                var midPoint = d3_array.median(criticalityData);
+                var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
 
                 var path = L.geoJson(data, {
                     filter: function (feature) {
@@ -584,9 +584,8 @@ var loadTargets = function () {
                 });
 
                 var minCriticality = d3_array.min(criticalityData);
-                //var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = d3_array.median(criticalityData);
-                var maxCriticality = (midPoint - minCriticality) + midPoint;
+                var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
