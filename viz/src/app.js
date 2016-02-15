@@ -222,11 +222,11 @@ var loadSAMs = function () {
         loadGeoJSON('background/SAMs.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
+                    return L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "m"});
                 }
             });
 
-            var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "s"});
             //var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
@@ -292,10 +292,10 @@ var loadSecondArtillery = function () {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
+                    return L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -672,7 +672,7 @@ var loadTargets = function () {
 };
 
 // Default layers
-loadRangeRings();
+//loadRangeRings();
 loadSources();
 loadSinks();
 loadPaths();
@@ -689,19 +689,6 @@ var bridgeButton = L.easyButton('fa-road', function (btn, map) {
     loadSegments();
 });
 
-L.easyBar([
-    L.easyButton('fa-crosshairs', function (btn, map) {
-        allBridges = false;
-        loadSegments();
-    }),
-    L.easyButton('fa-fire', function (btn, map) {
-        loadTargets();
-    })]).addTo(map);
-
-L.easyButton('fa-warning', function (btn, map) {
-    loadRangeRings();
-}).addTo(map);
-
 // Advanced controls
 var portButton = L.easyButton('fa-ship', function (btn, map) {
     loadPorts();
@@ -709,7 +696,7 @@ var portButton = L.easyButton('fa-ship', function (btn, map) {
 var aviationButton = L.easyButton('fa-plane', function (btn, map) {
     loadAviation();
 });
-var nuclearButton = L.easyButton('fa-rocket', function (btn, map) {
+var nuclearButton = L.easyButton('fa-bomb', function (btn, map) {
     loadSecondArtillery();
 });
 
@@ -717,28 +704,52 @@ var stationButton = L.easyButton('fa-train', function (btn, map) {
     loadStations();
 });
 
-var SAMButton = L.easyButton('fa-warning', function (btn, map) {
+var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
     loadSAMs();
 });
 
 var flowButton = L.easyButton('fa-exchange', function (btn, map) {
     loadAnimation();
 });
+
+var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
+    loadRangeRings();
+});
+var priorityButton = L.easyButton('fa-crosshairs', function (btn, map) {
+    if (allBridges && backgroundLayers['segments']) {
+        // unload the layer to be reloaded
+        loadSegments();
+    }
+
+    allBridges = false;
+    // Load or unload the layer
+    loadSegments();
+});
+var damageButton = L.easyButton('fa-fire', function (btn, map) {
+    loadTargets();
+});
+
+L.easyBar([
+    flowButton,
+    bridgeButton,
+    priorityButton,
+    damageButton,
+]).addTo(map);
+
 var advancedMode = false;
 L.easyButton('fa-building', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
         L.easyBar([
+            rangeRingButton,
             portButton,
-            aviationButton,
-            nuclearButton,
             stationButton,
+            aviationButton,
             SAMButton,
-            bridgeButton,
-            flowButton
+            nuclearButton
         ], {
-            position: 'topright'
+            position: 'topleft'
         }).addTo(map);
         layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
         layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
@@ -748,5 +759,5 @@ L.easyButton('fa-building', function (btn) {
         layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
     }
 }, {
-    position: 'topright'
+    position: 'topleft'
 }).addTo(map);
