@@ -36,12 +36,24 @@ public class RandomNodeLoader implements NodeLoader {
         return this;
     }
 
-    @Override public List<NeoNode> load() {
+    @Override public List<NeoNode> loadGraphNodes() {
         // Make a copy so we can randomize the order
         final List<NodeStub> shuffled = new ArrayList<>(network.getStations());
         Collections.shuffle(shuffled);
         return shuffled.parallelStream()
                        .map(station -> network.getGraphNode(station.getId()))
+                       .filter(Optional::isPresent)
+                       .limit(count)
+                       .map(Optional::get)
+                       .collect(Collectors.toList());
+    }
+
+    @Override public List<NodeStub> loadNodes() {
+        // Make a copy so we can randomize the order
+        final List<NodeStub> shuffled = new ArrayList<>(network.getStations());
+        Collections.shuffle(shuffled);
+        return shuffled.parallelStream()
+                       .map(station -> network.getNode(station.getId()))
                        .filter(Optional::isPresent)
                        .limit(count)
                        .map(Optional::get)

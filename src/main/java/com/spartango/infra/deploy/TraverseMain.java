@@ -3,6 +3,7 @@ package com.spartango.infra.deploy;
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.core.graph.NeoNode;
+import com.spartango.infra.io.Writer;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.damage.HistogramTargeter;
 import com.spartango.infra.targeting.load.NodeIdLoader;
@@ -21,8 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.spartango.infra.io.Writer.*;
-
 /**
  * Author: spartango
  * Date: 10/6/15
@@ -30,16 +29,11 @@ import static com.spartango.infra.io.Writer.*;
  */
 public class TraverseMain {
     private static final String PATH          = "data/";
-//    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
+    //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
 
-    private static final String OUTPUT_PATH      = "testing/";
-    private static final String SOURCES_GEOJSON  = PATH + OUTPUT_PATH + "sources.geojson";
-    private static final String SINKS_GEOJSON    = PATH + OUTPUT_PATH + "sinks.geojson";
-    private static final String SEGMENTS_GEOJSON = PATH + OUTPUT_PATH + "bridges.geojson";
-    private static final String BASELINE_GEOJSON = PATH + OUTPUT_PATH + "baseline.geojson";
-    private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
+    private static final String OUTPUT_PATH = "testing/";
 
     private static final long BRIDGE_LIMIT = 5000;
     private static GraphDatabaseService graphDb;
@@ -48,6 +42,7 @@ public class TraverseMain {
         // Read the rail network files
         System.out.println("Loading existing data...");
         final RailNetwork railNet = loadNetwork();
+        final Writer writer = new Writer(PATH + OUTPUT_PATH);
 
         long startTime = System.currentTimeMillis();
 
@@ -68,7 +63,7 @@ public class TraverseMain {
                                       339089288L,
                                       582373939L,
                                       3499304147L,
-                                      2987122176L)).load();
+                                      2987122176L)).loadGraphNodes();
 
         final List<NeoNode> sinks = new NodeIdLoader(railNet)
                 .addIds(Arrays.asList(1582348731L,
@@ -87,7 +82,7 @@ public class TraverseMain {
                                       2279127731L,
                                       2999345286L,
                                       1584384382L,
-                                      2451329911L)).load();
+                                      2451329911L)).loadGraphNodes();
 
         System.out.println("Loaded "
                            + sources.size()
@@ -98,10 +93,10 @@ public class TraverseMain {
                            + "ms");
 
         // Write sources
-        writeStations(sources, SOURCES_GEOJSON);
+        writer.writeStationNodes("sources", sources);
 
         // Write sinks
-        writeStations(sinks, SINKS_GEOJSON);
+        writer.writeStationNodes("sinks", sinks);
 
         startTime = System.currentTimeMillis();
         System.out.println("Calculating baseline...");
@@ -114,27 +109,23 @@ public class TraverseMain {
                            + "ms");
 
         // Write the baseline flow
-        writeFlow(baselineFlow, BASELINE_GEOJSON);
+        writer.writeFlow("baseline", baselineFlow);
 
         // Histogram the segments, only including bridges
         final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
 
         // Write the histogram of bridges (criticality)
-        writeHistogram(histogram, SEGMENTS_GEOJSON);
+        writer.writeSharedSegments("bridges", histogram);
 
         // Rank targets with the histogram
         HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
         final long damageStartTime = System.currentTimeMillis();
-
         final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
         // Simulate Damage, get the changes
         targeter.deltaStream()
-                .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
-                                            PATH
-                                            + OUTPUT_PATH
-                                            + railFlow.getDamagedNodes().hashCode()
-                                            + "_damage.geojson"))
+                .peek(railFlow -> writer.writeFlow(railFlow.getDamagedNodes().hashCode() + "_damage",
+                                                   railFlow))
                 .peek((x) -> System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
                                                                                     - damageStartTime) + "ms"))
                 .forEach(deltaFlow -> {
@@ -143,7 +134,7 @@ public class TraverseMain {
                     resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
 
                     // Write the resilience scores in progress
-                    writeSegments(resilienceScores, DAMAGE_GEOJSON);
+                    writer.writeHistogram("damage", resilienceScores);
                 });
 
         System.out.println("Finished damage analysis");

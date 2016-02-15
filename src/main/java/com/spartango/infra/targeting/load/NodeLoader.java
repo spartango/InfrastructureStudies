@@ -1,6 +1,7 @@
 package com.spartango.infra.targeting.load;
 
 import com.spartango.infra.core.graph.NeoNode;
+import com.spartango.infra.osm.type.NodeStub;
 
 import java.util.List;
 
@@ -10,5 +11,6 @@ import java.util.List;
  * Time: 19:21.
  */
 public interface NodeLoader {
-    public List<NeoNode> load();
+    public List<NodeStub> loadNodes();
+    public List<NeoNode> loadGraphNodes();
 }
