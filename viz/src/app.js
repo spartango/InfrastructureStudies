@@ -420,11 +420,14 @@ var loadPaths = function () {
     }
 };
 
+var fastAnimation = false;
 var loadAnimation = function () {
     if (!backgroundLayers['animation']) {
         loadGeoJSON(DATA_DIR + 'baseline.geojson',
             function (data) {
                 var animatedMarkers = [];
+                var completed = 0;
+
                 data.features.forEach(function (feature) {
                     // Create a little animated disk
                     var durations = [];
@@ -433,16 +436,16 @@ var loadAnimation = function () {
                         var point = turf.point(coord);
                         if (last) {
                             var distance = turf.distance(last, point); // km
-                            var time = distance * 10; // 100 km/s
+                            var time = distance * (fastAnimation ? 3 : 10); // 100 km/s
                             durations.push(time);
                         }
                         last = point;
                         return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
                     }).reverse();
                     durations.reverse();
-                    var duration = /*(Math.random() + 1) */ 10000;
+
                     var aMarker = L.Marker.movingMarker(latlngs, durations, {
-                        loop: true,
+                        loop: !fastAnimation,
                         autostart: true,
                         icon: new L.DivIcon({
                             html: '<div></div>',
@@ -450,6 +453,20 @@ var loadAnimation = function () {
                             iconSize: new L.Point(10, 10)
                         })
                     });
+                    if (fastAnimation) {
+                        aMarker.on('end', function () {
+                            //console.log("Finished " + completed);
+                            completed++;
+                            aMarker.pause();
+                            if (completed >= animatedMarkers.length) {
+                                console.log("Restarting all animations " + completed);
+                                completed = 0;
+                                animatedMarkers.forEach(function (m) {
+                                    m.start();
+                                });
+                            }
+                        });
+                    }
                     animatedMarkers.push(aMarker);
                 });
 
@@ -557,7 +574,7 @@ var loadSegments = function () {
 
                 var path = L.geoJson(data, {
                     filter: function (feature) {
-                        return allBridges || feature.properties.criticality >= midPoint;
+                        return allBridges || feature.properties.criticality >= 2;
                     },
                     //onEachFeature: pathPopup,
                     style: function (feature) {
@@ -565,7 +582,7 @@ var loadSegments = function () {
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                        var weight = allBridges ? 4 : 8;
+                        var weight = allBridges ? 4 : 6;
                         return {
                             "color": color(criticality),
                             "weight": weight,
@@ -657,8 +674,8 @@ var loadTargets = function () {
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
                         return {
                             "color": color(criticality),
-                            "weight": 12,
-                            "opacity": 0.8
+                            "weight": 8,
+                            "opacity": 0.66
                         }
                     }
                 });
@@ -676,6 +693,7 @@ var loadTargets = function () {
 loadSources();
 loadSinks();
 loadPaths();
+loadAnimation();
 
 // Default controls
 var bridgeButton = L.easyButton('fa-road', function (btn, map) {
@@ -715,7 +733,7 @@ var flowButton = L.easyButton('fa-exchange', function (btn, map) {
 var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
     loadRangeRings();
 });
-var priorityButton = L.easyButton('fa-crosshairs', function (btn, map) {
+var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
     if (allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
         loadSegments();
@@ -725,32 +743,63 @@ var priorityButton = L.easyButton('fa-crosshairs', function (btn, map) {
     // Load or unload the layer
     loadSegments();
 });
-var damageButton = L.easyButton('fa-fire', function (btn, map) {
+var damageButton = L.easyButton('fa-crosshairs', function (btn, map) {
     loadTargets();
+});
+
+var fastButton = L.easyButton('fa-bolt', function (btn, map) {
+    if (backgroundLayers['animation']) {
+        // unload the layer to be reloaded
+        loadAnimation();
+    }
+
+    fastAnimation = !fastAnimation;
+    // Load or unload the layer
+    loadAnimation();
+}, {
+    position: 'topright'
 });
 
 L.easyBar([
     flowButton,
-    bridgeButton,
     priorityButton,
-    damageButton,
+    damageButton
 ]).addTo(map);
 
+var enableDrawing = function () {
+    drawnItems = L.featureGroup().addTo(map);
+    map.addControl(new L.Control.Draw({
+        position: 'bottomleft',
+        edit: {
+            featureGroup: drawnItems
+        }
+    }));
+    map.on('draw:created', function (event) {
+        var layer = event.layer;
+        drawnItems.addLayer(layer);
+    });
+};
+
 var advancedMode = false;
-L.easyButton('fa-building', function (btn) {
+L.easyButton('fa-cog', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
+        enableDrawing();
         L.easyBar([
+            bridgeButton,
             rangeRingButton,
             portButton,
             stationButton,
             aviationButton,
             SAMButton,
-            nuclearButton
+            nuclearButton,
         ], {
-            position: 'topleft'
+            position: 'topright'
         }).addTo(map);
+
+        fastButton.addTo(map);
+
         layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
         layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
         layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
@@ -759,5 +808,5 @@ L.easyButton('fa-building', function (btn) {
         layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
     }
 }, {
-    position: 'topleft'
+    position: 'topright'
 }).addTo(map);
