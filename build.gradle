@@ -35,6 +35,6 @@ dependencies {
 }
 
 // Location of main (for running)
-mainClassName = ""
+mainClassName = "com.spartango.infra.deploy.TraverseMain"
 
 defaultTasks 'build'
