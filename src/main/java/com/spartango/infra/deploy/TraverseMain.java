@@ -120,9 +120,9 @@ public class TraverseMain {
         // Rank targets with the histogram
         HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
+        // Simulate Damage, get the changes
         final long damageStartTime = System.currentTimeMillis();
         final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
-        // Simulate Damage, get the changes
         targeter.deltaStream()
                 .peek(railFlow -> writer.writeFlow(railFlow.getDamagedNodes().hashCode() + "_damage",
                                                    railFlow))
