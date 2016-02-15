@@ -1,4 +1,4 @@
-opackage com.spartango.infra.deploy;
+package com.spartango.infra.deploy;
 
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
@@ -93,29 +93,23 @@ public class TraverseMain {
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
 
-        // Write sources
+        // Write sources & sinks
         writer.writeStationNodes("sources", sources);
-
-        // Write sinks
         writer.writeStationNodes("sinks", sinks);
 
+        // Calculate the baseline flow from these sources and sinks
         startTime = System.currentTimeMillis();
         System.out.println("Calculating baseline...");
 
-        // Calculate the baseline flow from these sources and sinks
         RailFlow baselineFlow = new RailFlow(railNet, sources, sinks);
+        writer.writeFlow("baseline", baselineFlow);
 
         System.out.println("Calculated baseline flow in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
 
-        // Write the baseline flow
-        writer.writeFlow("baseline", baselineFlow);
-
         // Histogram the segments, only including bridges
         final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
-
-        // Write the histogram of bridges (criticality)
         writer.writeSharedSegments("bridges", histogram);
 
         // Rank targets with the histogram

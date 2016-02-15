@@ -23,8 +23,8 @@ public class RailFlow {
     protected final Set<NodeStub>       damagedNodes;
 
     protected final RailNetwork                       railNetwork;
-    protected final Map<NodeStub, List<WeightedPath>> paths;
-    protected final double                            totalCost;
+    protected       Map<NodeStub, List<WeightedPath>> paths;
+    protected       double                            totalCost;
 
     public RailFlow(RailNetwork railNetwork,
                     Collection<NeoNode> sources,
@@ -40,8 +40,8 @@ public class RailFlow {
         this.sinks = sinks;
         this.sources = sources;
         this.damagedNodes = damagedNodes;
-        this.paths = calculatePaths();
-        this.totalCost = calculateCost();
+        this.paths = null;
+        this.totalCost = -1;
     }
 
     protected Map<NodeStub, List<WeightedPath>> calculatePaths() {
@@ -65,18 +65,18 @@ public class RailFlow {
     }
 
     protected double calculateCost() {
-        return paths.values()
-                    .stream()
-                    .flatMap(List::stream)
-                    .mapToDouble(WeightedPath::weight)
-                    .sum();
+        return getPaths().values()
+                         .stream()
+                         .flatMap(List::stream)
+                         .mapToDouble(WeightedPath::weight)
+                         .sum();
     }
 
     public double calculateCost(Collection<NeoNode> targetSources) {
         return targetSources.stream()
                             .map(NeoNode::getOsmNode)
-                            .filter(paths::containsKey)
-                            .map(paths::get)
+                            .filter(getPaths()::containsKey)
+                            .map(getPaths()::get)
                             .flatMap(List::stream)
                             .mapToDouble(WeightedPath::weight)
                             .sum();
@@ -101,7 +101,7 @@ public class RailFlow {
         // Histogram
         Map<Set<NodeStub>, Set<NodeStub>> histogram = new HashMap<>();
 
-        paths.forEach((source, paths) -> paths.forEach(path -> {
+        getPaths().forEach((source, relPaths) -> relPaths.forEach(path -> {
             // For each path
             if (path == null) {
                 return;
@@ -137,6 +137,10 @@ public class RailFlow {
     }
 
     public Map<NodeStub, List<WeightedPath>> getPaths() {
+        if (paths == null) {
+            paths = calculatePaths();
+            totalCost = calculateCost();
+        }
         return paths;
     }
 
@@ -149,6 +153,10 @@ public class RailFlow {
     }
 
     public double getTotalCost() {
+        if (paths == null) {
+            getPaths();
+        }
+
         return totalCost;
     }
 
