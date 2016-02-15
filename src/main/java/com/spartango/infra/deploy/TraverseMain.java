@@ -1,4 +1,4 @@
-opackage com.spartango.infra.deploy;
+package com.spartango.infra.deploy;
 
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
