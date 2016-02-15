@@ -433,7 +433,7 @@ var loadAnimation = function () {
                         var point = turf.point(coord);
                         if (last) {
                             var distance = turf.distance(last, point); // km
-                            var time = distance * 5; // 200 km/s
+                            var time = distance * 10; // 100 km/s
                             durations.push(time);
                         }
                         last = point;
@@ -750,4 +750,3 @@ L.easyButton('fa-building', function (btn) {
 }, {
     position: 'topright'
 }).addTo(map);
-

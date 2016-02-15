@@ -30,7 +30,7 @@ import static com.spartango.infra.io.Writer.*;
  */
 public class TraverseMain {
     private static final String PATH          = "data/";
-    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
+//    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
 
@@ -41,14 +41,8 @@ public class TraverseMain {
     private static final String BASELINE_GEOJSON = PATH + OUTPUT_PATH + "baseline.geojson";
     private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
 
-    // Damage equivalent to a track extension
-    private static final long BRIDGE_LIMIT = 10000;
-
+    private static final long BRIDGE_LIMIT = 5000;
     private static GraphDatabaseService graphDb;
-    private static DB                   database;
-
-    private static OSMIndex index;
-    private static OSMGraph graph;
 
     public static void main(String[] args) {
         // Read the rail network files
@@ -59,41 +53,41 @@ public class TraverseMain {
 
         // Load up the sources and sinks
         final List<NeoNode> sources = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(3195094191l,
-                                      2874005142l,
-                                      1681825138l,
-                                      2971189978l,
-                                      269838555l,
-                                      2051979297l,
-                                      2699872473l,
-                                      3048742262l,
-                                      3476981835l,
-                                      843052502l,
-                                      270146375l,
-                                      1658989377l,
-                                      339089288l,
-                                      582373939l,
-                                      3499304147l,
-                                      2987122176l)).load();
+                .addIds(Arrays.asList(3195094191L,
+                                      2874005142L,
+                                      1681825138L,
+                                      2971189978L,
+                                      269838555L,
+                                      2051979297L,
+                                      2699872473L,
+                                      3048742262L,
+                                      3476981835L,
+                                      843052502L,
+                                      270146375L,
+                                      1658989377L,
+                                      339089288L,
+                                      582373939L,
+                                      3499304147L,
+                                      2987122176L)).load();
 
         final List<NeoNode> sinks = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(1582348731l,
-                                      677180563l,
-                                      2023044210l,
-                                      2333085945l,
-                                      525377519l,
-                                      843121428l,
-                                      1577895082l,
-                                      2483530943l,
-                                      2651768079l,
-                                      661025343l,
-                                      3662634093l,
-                                      1642904934l,
-                                      3019467507l,
-                                      2279127731l,
-                                      2999345286l,
-                                      1584384382l,
-                                      2451329911l)).load();
+                .addIds(Arrays.asList(1582348731L,
+                                      677180563L,
+                                      2023044210L,
+                                      2333085945L,
+                                      525377519L,
+                                      843121428L,
+                                      1577895082L,
+                                      2483530943L,
+                                      2651768079L,
+                                      661025343L,
+                                      3662634093L,
+                                      1642904934L,
+                                      3019467507L,
+                                      2279127731L,
+                                      2999345286L,
+                                      1584384382L,
+                                      2451329911L)).load();
 
         System.out.println("Loaded "
                            + sources.size()
@@ -173,15 +167,15 @@ public class TraverseMain {
         graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(NeoNode.OSM_ID);
 
         // MapDB
-        database = DBMaker.newFileDB(new File(DB_PATH))
-                          .mmapFileEnable()
-                          .closeOnJvmShutdown()
-                          .make();
+        final DB database = DBMaker.newFileDB(new File(DB_PATH))
+                                   .mmapFileEnable()
+                                   .closeOnJvmShutdown()
+                                   .make();
 
 
         // Load up the pre-built indices
-        index = new OSMIndex(database);
-        graph = new OSMGraph(graphDb);
+        final OSMIndex index = new OSMIndex(database);
+        final OSMGraph graph = new OSMGraph(graphDb);
 
         return new RailNetwork(graph, index, database);
     }
