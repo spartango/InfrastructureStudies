@@ -1,1 +1,7 @@
 #map { height: 720px; }
+
+.flow-marker {
+    background-clip: padding-box;
+    border-radius: 5px;
+    background-color: rgba(0, 200, 238, 0.6);
+}

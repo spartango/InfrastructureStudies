@@ -222,11 +222,11 @@ var loadSAMs = function () {
         loadGeoJSON('background/SAMs.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "m"});
+                    return L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "m"});
                 }
             });
 
-            var icon = L.MakiMarkers.icon({icon: "triangle", color: "#fb0", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "s"});
             //var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
@@ -292,10 +292,10 @@ var loadSecondArtillery = function () {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
             var markers = new L.MarkerClusterGroup({
                 iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "m"});
+                    return L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "m"});
                 }
             });
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#f30", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -397,53 +397,130 @@ var loadPath = function (id) {
         });
 };
 
-
 var loadPaths = function () {
-    loadGeoJSON(DATA_DIR + 'baseline.geojson',
-        function (data) {
-            var path = L.geoJson(data, {
-                //onEachFeature: pathPopup
-                style: {
-                    "weight": 4,
-                    "opacity": 0.5
-                }
+    if (!backgroundLayers['paths']) {
+        loadGeoJSON(DATA_DIR + 'baseline.geojson',
+            function (data) {
+                var path = L.geoJson(data, {
+                    style: {
+                        "weight": 4,
+                        "opacity": 0.5
+                    }
+                });
+
+                path.addTo(map);
+                backgroundLayers['paths'] = path;
+
+                map.fitBounds(path.getBounds());
+                //hash = new L.Hash(map);
             });
-            path.addTo(map);
+    } else {
+        map.removeLayer(backgroundLayers['paths']);
+        delete backgroundLayers['paths'];
+    }
+};
+
+var fastAnimation = false;
+var loadAnimation = function () {
+    if (!backgroundLayers['animation']) {
+        loadGeoJSON(DATA_DIR + 'baseline.geojson',
+            function (data) {
+                var animatedMarkers = [];
+                var completed = 0;
+
+                data.features.forEach(function (feature) {
+                    // Create a little animated disk
+                    var durations = [];
+                    var last = null;
+                    var latlngs = feature.geometry.coordinates.map(function (coord) {
+                        var point = turf.point(coord);
+                        if (last) {
+                            var distance = turf.distance(last, point); // km
+                            var time = distance * (fastAnimation ? 3 : 10); // 100 km/s
+                            durations.push(time);
+                        }
+                        last = point;
+                        return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
+                    }).reverse();
+                    durations.reverse();
+
+                    var aMarker = L.Marker.movingMarker(latlngs, durations, {
+                        loop: !fastAnimation,
+                        autostart: true,
+                        icon: new L.DivIcon({
+                            html: '<div></div>',
+                            className: 'flow-marker',
+                            iconSize: new L.Point(10, 10)
+                        })
+                    });
+                    if (fastAnimation) {
+                        aMarker.on('end', function () {
+                            //console.log("Finished " + completed);
+                            completed++;
+                            aMarker.pause();
+                            if (completed >= animatedMarkers.length) {
+                                console.log("Restarting all animations " + completed);
+                                completed = 0;
+                                animatedMarkers.forEach(function (m) {
+                                    m.start();
+                                });
+                            }
+                        });
+                    }
+                    animatedMarkers.push(aMarker);
+                });
+
+                animatedMarkers.forEach(function (m) {
+                    m.addTo(map);
+                });
+
+                backgroundLayers['animation'] = animatedMarkers;
+            });
+    } else {
+        backgroundLayers['animation'].forEach(function (m) {
+            map.removeLayer(m);
         });
+        delete backgroundLayers['animation'];
+    }
 };
 
 var loadSources = function () {
-    loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
-        //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        //markers.addLayer(geoJsonLayer);
-        map.addLayer(geoJsonLayer);
-        map.fitBounds(geoJsonLayer.getBounds());
-
-        hash = new L.Hash(map);
-    })
+    if (!backgroundLayers['sources']) {
+        loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
+            var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: stationPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            map.addLayer(geoJsonLayer);
+            backgroundLayers['sources'] = geoJsonLayer;
+        })
+    } else {
+        map.removeLayer(backgroundLayers['sources']);
+        delete backgroundLayers['sources'];
+    }
 };
 
 var loadSinks = function () {
-    loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
-        //var markers = new L.MarkerClusterGroup();
-        var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        //markers.addLayer(geoJsonLayer);
-        map.addLayer(geoJsonLayer);
-        //map.fitBounds(geoJsonLayer.getBounds());
-    })
+    if (!backgroundLayers['sinks']) {
+        loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
+            var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+            var geoJsonLayer = L.geoJson(data, {
+                onEachFeature: stationPopup,
+                pointToLayer: function (feature, latlng) {
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            map.addLayer(geoJsonLayer);
+            backgroundLayers['sinks'] = geoJsonLayer;
+            //map.fitBounds(geoJsonLayer.getBounds());
+        })
+    } else {
+        map.removeLayer(backgroundLayers['sinks']);
+        delete backgroundLayers['sinks'];
+    }
 };
 
 var loadRangeRings = function () {
@@ -492,15 +569,12 @@ var loadSegments = function () {
                 });
 
                 var minCriticality = d3_array.min(criticalityData);
-                //var maxCriticality = d3_array.max(criticalityData);
-
-                //var criticalityRange = maxCriticality - minCriticality;
-                var midPoint = d3_array.median(criticalityData);
-                var maxCriticality = midPoint * 2;
+                var maxCriticality = d3_array.max(criticalityData);
+                var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
 
                 var path = L.geoJson(data, {
                     filter: function (feature) {
-                        return allBridges || feature.properties.criticality >= midPoint;
+                        return allBridges || feature.properties.criticality >= 2;
                     },
                     //onEachFeature: pathPopup,
                     style: function (feature) {
@@ -508,7 +582,7 @@ var loadSegments = function () {
                         var color = d3_scale.scaleLinear()
                             .domain([minCriticality, midPoint, maxCriticality])
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                        var weight = criticality < midPoint || allBridges ? 4 : 8;
+                        var weight = allBridges ? 4 : 6;
                         return {
                             "color": color(criticality),
                             "weight": weight,
@@ -587,9 +661,8 @@ var loadTargets = function () {
                 });
 
                 var minCriticality = d3_array.min(criticalityData);
-                //var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = d3_array.median(criticalityData);
-                var maxCriticality = midPoint * 2;
+                var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
@@ -601,8 +674,8 @@ var loadTargets = function () {
                             .range(["#00FF00", "#FFFF00", "#FF0000"]);
                         return {
                             "color": color(criticality),
-                            "weight": 12,
-                            "opacity": 0.8
+                            "weight": 8,
+                            "opacity": 0.66
                         }
                     }
                 });
@@ -616,10 +689,11 @@ var loadTargets = function () {
 };
 
 // Default layers
+//loadRangeRings();
 loadSources();
 loadSinks();
-loadRangeRings();
 loadPaths();
+loadAnimation();
 
 // Default controls
 var bridgeButton = L.easyButton('fa-road', function (btn, map) {
@@ -633,19 +707,6 @@ var bridgeButton = L.easyButton('fa-road', function (btn, map) {
     loadSegments();
 });
 
-L.easyBar([
-    L.easyButton('fa-crosshairs', function (btn, map) {
-        allBridges = false;
-        loadSegments();
-    }),
-    L.easyButton('fa-fire', function (btn, map) {
-        loadTargets();
-    })]).addTo(map);
-
-L.easyButton('fa-warning', function (btn, map) {
-    loadRangeRings();
-}).addTo(map);
-
 // Advanced controls
 var portButton = L.easyButton('fa-ship', function (btn, map) {
     loadPorts();
@@ -653,7 +714,7 @@ var portButton = L.easyButton('fa-ship', function (btn, map) {
 var aviationButton = L.easyButton('fa-plane', function (btn, map) {
     loadAviation();
 });
-var nuclearButton = L.easyButton('fa-rocket', function (btn, map) {
+var nuclearButton = L.easyButton('fa-bomb', function (btn, map) {
     loadSecondArtillery();
 });
 
@@ -661,25 +722,84 @@ var stationButton = L.easyButton('fa-train', function (btn, map) {
     loadStations();
 });
 
-var SAMButton = L.easyButton('fa-warning', function (btn, map) {
+var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
     loadSAMs();
 });
 
+var flowButton = L.easyButton('fa-exchange', function (btn, map) {
+    loadAnimation();
+});
+
+var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
+    loadRangeRings();
+});
+var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
+    if (allBridges && backgroundLayers['segments']) {
+        // unload the layer to be reloaded
+        loadSegments();
+    }
+
+    allBridges = false;
+    // Load or unload the layer
+    loadSegments();
+});
+var damageButton = L.easyButton('fa-crosshairs', function (btn, map) {
+    loadTargets();
+});
+
+var fastButton = L.easyButton('fa-bolt', function (btn, map) {
+    if (backgroundLayers['animation']) {
+        // unload the layer to be reloaded
+        loadAnimation();
+    }
+
+    fastAnimation = !fastAnimation;
+    // Load or unload the layer
+    loadAnimation();
+}, {
+    position: 'topright'
+});
+
+L.easyBar([
+    flowButton,
+    priorityButton,
+    damageButton
+]).addTo(map);
+
+var enableDrawing = function () {
+    drawnItems = L.featureGroup().addTo(map);
+    map.addControl(new L.Control.Draw({
+        position: 'bottomleft',
+        edit: {
+            featureGroup: drawnItems
+        }
+    }));
+    map.on('draw:created', function (event) {
+        var layer = event.layer;
+        drawnItems.addLayer(layer);
+    });
+};
+
 var advancedMode = false;
-L.easyButton('fa-building', function (btn) {
+L.easyButton('fa-cog', function (btn) {
     if (!advancedMode) {
         btn.removeFrom(map);
         advancedMode = true;
+        enableDrawing();
         L.easyBar([
             bridgeButton,
+            rangeRingButton,
             portButton,
-            aviationButton,
-            nuclearButton,
             stationButton,
-            SAMButton
+            aviationButton,
+            SAMButton,
+            nuclearButton,
         ], {
             position: 'topright'
         }).addTo(map);
+
+        fastButton.addTo(map);
+
         layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
         layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
         layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
@@ -690,4 +810,3 @@ L.easyButton('fa-building', function (btn) {
 }, {
     position: 'topright'
 }).addTo(map);
-

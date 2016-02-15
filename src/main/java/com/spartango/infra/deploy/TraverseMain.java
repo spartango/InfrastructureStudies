@@ -3,6 +3,7 @@ package com.spartango.infra.deploy;
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.core.graph.NeoNode;
+import com.spartango.infra.io.Writer;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.damage.HistogramTargeter;
 import com.spartango.infra.targeting.load.NodeIdLoader;
@@ -19,9 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.spartango.infra.io.Writer.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Author: spartango
@@ -30,70 +29,61 @@ import static com.spartango.infra.io.Writer.*;
  */
 public class TraverseMain {
     private static final String PATH          = "data/";
-    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
+    //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
 
-    private static final String OUTPUT_PATH      = "testing/";
-    private static final String SOURCES_GEOJSON  = PATH + OUTPUT_PATH + "sources.geojson";
-    private static final String SINKS_GEOJSON    = PATH + OUTPUT_PATH + "sinks.geojson";
-    private static final String SEGMENTS_GEOJSON = PATH + OUTPUT_PATH + "bridges.geojson";
-    private static final String BASELINE_GEOJSON = PATH + OUTPUT_PATH + "baseline.geojson";
-    private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
+    private static final String OUTPUT_PATH = "testing/";
 
-    // Damage equivalent to a track extension
-    private static final long BRIDGE_LIMIT = 100;
+    private static final long BRIDGE_LIMIT = 5000;
 
     private static GraphDatabaseService graphDb;
-    private static DB                   database;
-
-    private static OSMIndex index;
-    private static OSMGraph graph;
 
     public static void main(String[] args) {
         // Read the rail network files
         System.out.println("Loading existing data...");
         final RailNetwork railNet = loadNetwork();
+        final Writer writer = new Writer(PATH + OUTPUT_PATH);
 
         long startTime = System.currentTimeMillis();
 
         // Load up the sources and sinks
         final List<NeoNode> sources = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(3195094191l,
-                                      2874005142l,
-                                      1681825138l,
-                                      2971189978l,
-                                      269838555l,
-                                      2051979297l,
-                                      2699872473l,
-                                      3048742262l,
-                                      3476981835l,
-                                      843052502l,
-                                      270146375l,
-                                      1658989377l,
-                                      339089288l,
-                                      582373939l,
-                                      3499304147l,
-                                      2987122176l)).load();
+                .addIds(Arrays.asList(3195094191L,
+                                      2874005142L,
+                                      1681825138L,
+                                      2971189978L,
+                                      269838555L,
+                                      2051979297L,
+                                      2699872473L,
+                                      3048742262L,
+                                      3476981835L,
+                                      843052502L,
+                                      270146375L,
+                                      1658989377L,
+                                      339089288L,
+                                      582373939L,
+                                      3499304147L,
+                                      2987122176L)).loadGraphNodes();
 
         final List<NeoNode> sinks = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(1582348731l,
-                                      677180563l,
-                                      2023044210l,
-                                      2333085945l,
-                                      525377519l,
-                                      843121428l,
-                                      1577895082l,
-                                      2483530943l,
-                                      2651768079l,
-                                      661025343l,
-                                      3662634093l,
-                                      1642904934l,
-                                      3019467507l,
-                                      2279127731l,
-                                      2999345286l,
-                                      1584384382l,
-                                      2451329911l)).load();
+                .addIds(Arrays.asList(1582348731L,
+                                      677180563L,
+                                      2023044210L,
+                                      2333085945L,
+                                      525377519L,
+                                      843121428L,
+                                      1577895082L,
+                                      2483530943L,
+                                      2651768079L,
+                                      661025343L,
+                                      3662634093L,
+                                      1642904934L,
+                                      3019467507L,
+                                      2279127731L,
+                                      2999345286L,
+                                      1584384382L,
+                                      2451329911L)).loadGraphNodes();
 
         System.out.println("Loaded "
                            + sources.size()
@@ -103,55 +93,46 @@ public class TraverseMain {
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
 
-        // Write sources
-        writeStations(sources, SOURCES_GEOJSON);
+        // Write sources & sinks
+        writer.writeStationNodes("sources", sources);
+        writer.writeStationNodes("sinks", sinks);
 
-        // Write sinks
-        writeStations(sinks, SINKS_GEOJSON);
-
+        // Calculate the baseline flow from these sources and sinks
         startTime = System.currentTimeMillis();
         System.out.println("Calculating baseline...");
 
-        // Calculate the baseline flow from these sources and sinks
         RailFlow baselineFlow = new RailFlow(railNet, sources, sinks);
+        writer.writeFlow("baseline", baselineFlow);
 
         System.out.println("Calculated baseline flow in "
                            + (System.currentTimeMillis() - startTime)
                            + "ms");
 
-        // Write the baseline flow
-        writeFlow(baselineFlow, BASELINE_GEOJSON);
-
         // Histogram the segments, only including bridges
         final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
-
-        // Write the histogram of bridges (criticality)
-        writeHistogram(histogram, SEGMENTS_GEOJSON);
+        writer.writeSharedSegments("bridges", histogram);
 
         // Rank targets with the histogram
         HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
-        final long damageStartTime = System.currentTimeMillis();
         // Simulate Damage, get the changes
-        final Map<Set<NodeStub>, Double> resilienceScores =
-                targeter.deltaStream()
-                        .peek(railFlow -> writeFlow(railFlow, // Write the altered paths
-                                                    PATH
-                                                    + OUTPUT_PATH
-                                                    + railFlow.getDamagedNodes().hashCode()
-                                                    + "_damage.geojson"))
-                        .peek((x) -> System.out.println("Calculated damaged flow after "
-                                                        + (System.currentTimeMillis() - damageStartTime)
-                                                        + "ms"))
-                        .collect(Collectors.toMap(
-                                RailFlow::getDamagedNodes,
-                                deltaFlow -> {
-                                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
-                                    return deltaFlow.getTotalCost() - baseCost;
-                                }));
+        final long damageStartTime = System.currentTimeMillis();
+        final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
+        targeter.deltaStream()
+                .peek((x) -> System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
+                                                                                    - damageStartTime) + "ms"))
+                .forEach(deltaFlow -> {
+                    // Write the adjusted flow
+                    writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow);
 
-        // Write the resilience scores
-        writeSegments(resilienceScores, DAMAGE_GEOJSON);
+                    // Calculate the cost of adjustment
+                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
+                    double deltaCost = deltaFlow.getTotalCost() - baseCost;
+                    resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
+
+                    // Write the resilience scores in progress
+                    writer.writeHistogram("damage", resilienceScores);
+                });
 
         System.out.println("Finished damage analysis");
 
@@ -174,15 +155,15 @@ public class TraverseMain {
         graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(NeoNode.OSM_ID);
 
         // MapDB
-        database = DBMaker.newFileDB(new File(DB_PATH))
-                          .mmapFileEnable()
-                          .closeOnJvmShutdown()
-                          .make();
+        final DB database = DBMaker.newFileDB(new File(DB_PATH))
+                                   .mmapFileEnable()
+                                   .closeOnJvmShutdown()
+                                   .make();
 
 
         // Load up the pre-built indices
-        index = new OSMIndex(database);
-        graph = new OSMGraph(graphDb);
+        final OSMIndex index = new OSMIndex(database);
+        final OSMGraph graph = new OSMGraph(graphDb);
 
         return new RailNetwork(graph, index, database);
     }

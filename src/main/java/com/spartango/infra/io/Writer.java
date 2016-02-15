@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -30,18 +31,71 @@ import java.util.stream.StreamSupport;
  * Time: 17:02.
  */
 public class Writer {
-    public static GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+    public static final String GEOJSON = ".geojson";
 
-    public static void writeHistogram(Map<Set<NodeStub>, Set<NodeStub>> histogram, String filePath) {
-        final Map<Set<NodeStub>, Double> counted = histogram.entrySet()
-                                                            .stream()
-                                                            .collect(Collectors.toMap(Map.Entry::getKey,
-                                                                                      entry -> (double) entry.getValue()
-                                                                                                             .size()));
-        writeSegments(counted, filePath);
+    private GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+
+    private String rootPath;
+
+    public Writer(String rootPath) {
+        this.rootPath = rootPath;
+        if (!rootPath.endsWith("/")) {
+            this.rootPath += "/";
+        }
     }
 
-    public static void writeSegments(Map<Set<NodeStub>, Double> histogram, String filePath) {
+    public void writeStationNodes(String name, Collection<NeoNode> stations) {
+        writeStations(name, stations.stream().map(NeoNode::getOsmNode));
+    }
+
+    public void writeStations(String name, Collection<NodeStub> stations) {
+        writeStations(name, stations.stream());
+    }
+
+    public void writeStations(String name, Stream<NodeStub> stations) {
+        String path = rootPath + name + GEOJSON;
+
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.setName("Station");
+        builder.add("the_geom", Point.class);
+        builder.add("id", Long.class);
+        builder.add("name", String.class);
+        builder.add("name:en", String.class);
+        builder.add("railway", String.class);
+
+        // build the type
+        final SimpleFeatureType stationType = builder.buildFeatureType();
+        SimpleFeatureBuilder stationFeatureBuilder = new SimpleFeatureBuilder(stationType);
+        final List<SimpleFeature> stationFeatures = new LinkedList<>();
+
+        stations.forEach(startNode -> {
+            final Point startPoint = geometryFactory.createPoint(new Coordinate(
+                    startNode.getLongitude(),
+                    startNode.getLatitude()));
+            stationFeatureBuilder.add(startPoint);
+            stationFeatureBuilder.add(startNode.getId());
+            stationFeatureBuilder.add(startNode.getTag("name"));
+            stationFeatureBuilder.add(startNode.getTag("name:en"));
+            stationFeatureBuilder.add(startNode.getTag("railway"));
+            final SimpleFeature startFeature = stationFeatureBuilder.buildFeature(String.valueOf(startNode.getId()));
+            stationFeatures.add(startFeature);
+        });
+
+        writeFeature(path, stationType, stationFeatures);
+    }
+
+    public void writeSharedSegments(String name, Map<Set<NodeStub>, Set<NodeStub>> histogram) {
+        Map<Set<NodeStub>, Double> counted = histogram.entrySet()
+                                                      .stream()
+                                                      .collect(Collectors.toMap(
+                                                              Map.Entry::getKey,
+                                                              entry -> (double) entry.getValue().size()));
+        writeHistogram(name, counted);
+    }
+
+    public void writeHistogram(String name, Map<Set<NodeStub>, Double> histogram) {
+        String filePath = rootPath + name + GEOJSON;
+
         // Feature type definitions
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Segment");
@@ -79,9 +133,11 @@ public class Writer {
         writeFeature(filePath, linkType, linkFeatures);
     }
 
-    public static void write(Collection<WeightedPath> paths,
-                             String filePath,
-                             RailNetwork railNetwork) {
+    public void writePaths(String name,
+                           Collection<WeightedPath> paths,
+                           RailNetwork railNetwork) {
+        String filePath = rootPath + name + GEOJSON;
+
         // Setup schema
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
@@ -103,51 +159,9 @@ public class Writer {
         writeFeature(filePath, linkType, linkFeatures);
     }
 
-    public static void writeFeature(String filePath, SimpleFeatureType linkType, List<SimpleFeature> linkFeatures) {
-        try {
-            FeatureJSON featureJSON = new FeatureJSON();
-            featureJSON.setEncodeFeatureCollectionCRS(false);
-            featureJSON.setEncodeFeatureBounds(false);
+    public void writeFlow(String name, RailFlow flow) {
+        String filePath = rootPath + name + GEOJSON;
 
-            final ListFeatureCollection linkCollection = new ListFeatureCollection(linkType, linkFeatures);
-            featureJSON.writeFeatureCollection(linkCollection,
-                                               new File(filePath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void writeStations(Collection<NeoNode> stations, String path) {
-        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-        builder.setName("Station");
-        builder.add("the_geom", Point.class);
-        builder.add("id", Long.class);
-        builder.add("name", String.class);
-        builder.add("name:en", String.class);
-        builder.add("railway", String.class);
-
-        // build the type
-        final SimpleFeatureType stationType = builder.buildFeatureType();
-        SimpleFeatureBuilder stationFeatureBuilder = new SimpleFeatureBuilder(stationType);
-        final List<SimpleFeature> stationFeatures = new LinkedList<>();
-
-        stations.stream().map(NeoNode::getOsmNode).forEach(startNode -> {
-            final Point startPoint = geometryFactory.createPoint(new Coordinate(
-                    startNode.getLongitude(),
-                    startNode.getLatitude()));
-            stationFeatureBuilder.add(startPoint);
-            stationFeatureBuilder.add(startNode.getId());
-            stationFeatureBuilder.add(startNode.getTag("name"));
-            stationFeatureBuilder.add(startNode.getTag("name:en"));
-            stationFeatureBuilder.add(startNode.getTag("railway"));
-            final SimpleFeature startFeature = stationFeatureBuilder.buildFeature(String.valueOf(startNode.getId()));
-            stationFeatures.add(startFeature);
-        });
-
-        writeFeature(path, stationType, stationFeatures);
-    }
-
-    public static void writeFlow(RailFlow flow, String filePath) {
         final RailNetwork railNetwork = flow.getRailNetwork();
 
         // Setup schema
@@ -174,9 +188,23 @@ public class Writer {
         writeFeature(filePath, linkType, linkFeatures);
     }
 
-    private static SimpleFeature buildGeometry(RailNetwork railNetwork,
-                                               SimpleFeatureBuilder linkFeatureBuilder,
-                                               WeightedPath path) {
+    private void writeFeature(String filePath, SimpleFeatureType linkType, List<SimpleFeature> linkFeatures) {
+        try {
+            FeatureJSON featureJSON = new FeatureJSON();
+            featureJSON.setEncodeFeatureCollectionCRS(false);
+            featureJSON.setEncodeFeatureBounds(false);
+
+            final ListFeatureCollection linkCollection = new ListFeatureCollection(linkType, linkFeatures);
+            featureJSON.writeFeatureCollection(linkCollection,
+                                               new File(filePath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private SimpleFeature buildGeometry(RailNetwork railNetwork,
+                                        SimpleFeatureBuilder linkFeatureBuilder,
+                                        WeightedPath path) {
         try (Transaction tx = railNetwork.beginGraphTx()) {
             final List<Coordinate> coordinateList =
                     StreamSupport.stream(path.nodes().spliterator(), false)

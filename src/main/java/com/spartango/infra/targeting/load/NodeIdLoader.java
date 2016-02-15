@@ -1,6 +1,7 @@
 package com.spartango.infra.targeting.load;
 
 import com.spartango.infra.core.graph.NeoNode;
+import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.network.RailNetwork;
 
 import java.util.ArrayList;
@@ -33,9 +34,17 @@ public class NodeIdLoader implements NodeLoader {
         return this;
     }
 
-    public List<NeoNode> load() {
+    public List<NeoNode> loadGraphNodes() {
         return ids.parallelStream()
                   .map(railNetwork::getGraphNode)
+                  .filter(Optional::isPresent)
+                  .map(Optional::get)
+                  .collect(Collectors.toList());
+    }
+
+    public List<NodeStub> loadNodes() {
+        return ids.parallelStream()
+                  .map(railNetwork::getNode)
                   .filter(Optional::isPresent)
                   .map(Optional::get)
                   .collect(Collectors.toList());

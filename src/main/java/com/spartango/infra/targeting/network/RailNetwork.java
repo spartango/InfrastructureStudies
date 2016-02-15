@@ -37,6 +37,13 @@ public class RailNetwork {
         this.database = database;
     }
 
+    public Optional<NodeStub> getNode(long id) {
+        if (!getIndex().hasNode(id)) {
+            return Optional.empty();
+        }
+        return Optional.of(getIndex().getNode(id));
+    }
+
     public Optional<NeoNode> getGraphNode(long id) {
         return graph.getNode(id);
     }
