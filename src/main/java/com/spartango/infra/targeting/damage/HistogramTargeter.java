@@ -2,6 +2,7 @@ package com.spartango.infra.targeting.damage;
 
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.network.RailFlow;
+import com.spartango.infra.utils.ShapeUtils;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -31,22 +32,27 @@ public class HistogramTargeter {
     }
 
     public Stream<RailFlow> targetStream() {
-        return histogram.entrySet()
-                        .stream()
-                        .sorted(ENTRY_COMPARATOR) // Sort by criticality
-                        .limit(limit)
-                        .map(entry -> baseFlow.damage(entry.getKey()));
+        return sortedStream().map(entry -> baseFlow.damage(entry.getKey()));
     }
 
     public Stream<RailFlow> deltaStream() {
-        return histogram.entrySet()
-                        .stream()
-                        .sorted(ENTRY_COMPARATOR) // Sort by criticality
-                        .limit(limit)
-                        .map(entry -> baseFlow.damageDelta(entry.getKey(), entry.getValue()));
+        return sortedStream().map(entry -> baseFlow.damageDelta(entry.getKey(), entry.getValue()));
     }
 
-    private static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> ENTRY_COMPARATOR =
-            Comparator.comparingInt((Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) -> entry.getValue().size())
+    private Stream<Map.Entry<Set<NodeStub>, Set<NodeStub>>> sortedStream() {
+        return histogram.entrySet()
+                        .stream()
+                        .sorted(HISTOGRAM_COMPARATOR.thenComparing(LENGTH_COMPARATOR)) // Sort by criticality then length
+                        .limit(limit);
+    }
+
+    public static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> LENGTH_COMPARATOR =
+            Comparator.comparingDouble(
+                    (Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) -> ShapeUtils.calculateLength(entry.getKey()))
+                      .reversed();
+
+    private static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> HISTOGRAM_COMPARATOR =
+            Comparator.comparingInt(
+                    (Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) -> entry.getValue().size())
                       .reversed();
 }
