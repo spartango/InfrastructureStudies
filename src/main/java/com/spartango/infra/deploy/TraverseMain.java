@@ -1,4 +1,4 @@
-package com.spartango.infra.deploy;
+opackage com.spartango.infra.deploy;
 
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
@@ -42,6 +42,7 @@ public class TraverseMain {
     private static final String DAMAGE_GEOJSON   = PATH + OUTPUT_PATH + "damage.geojson";
 
     private static final long BRIDGE_LIMIT = 5000;
+
     private static GraphDatabaseService graphDb;
 
     public static void main(String[] args) {
