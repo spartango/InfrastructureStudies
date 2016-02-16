@@ -421,9 +421,16 @@ var loadPaths = function () {
 };
 
 var fastAnimation = false;
-var loadAnimation = function () {
+var clearAnimation = function () {
+    backgroundLayers['animation'].forEach(function (m) {
+        map.removeLayer(m);
+    });
+    delete backgroundLayers['animation'];
+};
+
+var loadAnimation = function (flowName) {
     if (!backgroundLayers['animation']) {
-        loadGeoJSON(DATA_DIR + 'baseline.geojson',
+        loadGeoJSON(DATA_DIR + flowName + '.geojson',
             function (data) {
                 var animatedMarkers = [];
                 var completed = 0;
@@ -477,10 +484,7 @@ var loadAnimation = function () {
                 backgroundLayers['animation'] = animatedMarkers;
             });
     } else {
-        backgroundLayers['animation'].forEach(function (m) {
-            map.removeLayer(m);
-        });
-        delete backgroundLayers['animation'];
+        clearAnimation();
     }
 };
 
@@ -605,6 +609,10 @@ var clearDamagedPath = function () {
         delete backgroundLayers['damagedPath'];
     }
 
+    if (backgroundLayers['animation']) {
+        // Clear any existing animation
+        clearAnimation();
+    }
 };
 
 var loadDamagedPath = function (id) {
@@ -612,22 +620,29 @@ var loadDamagedPath = function (id) {
         clearDamagedPath();
     }
 
-    loadGeoJSON(DATA_DIR + id + '_damage.geojson',
-        function (data) {
-            var path = L.geoJson(data, {
-                onEachFeature: function (feature, layer) {
-                    var popupString = "<button onclick='clearDamagedPath()'>Clear</button>";
-                    layer.bindPopup(popupString);
-                },
-                style: {
-                    color: "#0b0",
-                    weight: 6,
-                    opacity: 0.25
-                }
-            });
-            path.addTo(map);
-            backgroundLayers['damagedPath'] = path;
+    if (backgroundLayers['animation']) {
+        // Clear any existing animation
+        clearAnimation();
+    }
+
+    var flowName = id + '_damage';
+    loadGeoJSON(DATA_DIR + flowName + '.geojson', function (data) {
+        var path = L.geoJson(data, {
+            onEachFeature: function (feature, layer) {
+                var popupString = "<button onclick='clearDamagedPath()'>Clear</button>";
+                layer.bindPopup(popupString);
+            },
+            style: {
+                color: "#0b0",
+                weight: 6,
+                opacity: 0.25
+            }
         });
+        path.addTo(map);
+        backgroundLayers['damagedPath'] = path;
+    });
+
+    loadAnimation(flowName);
 };
 
 var damagePopup = function (feature, layer) {
@@ -693,7 +708,7 @@ var loadTargets = function () {
 loadSources();
 loadSinks();
 loadPaths();
-loadAnimation();
+loadAnimation('baseline');
 
 // Default controls
 var bridgeButton = L.easyButton('fa-road', function (btn, map) {
@@ -727,7 +742,7 @@ var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
 });
 
 var flowButton = L.easyButton('fa-exchange', function (btn, map) {
-    loadAnimation();
+    loadAnimation('baseline');
 });
 
 var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
@@ -750,12 +765,12 @@ var damageButton = L.easyButton('fa-crosshairs', function (btn, map) {
 var fastButton = L.easyButton('fa-bolt', function (btn, map) {
     if (backgroundLayers['animation']) {
         // unload the layer to be reloaded
-        loadAnimation();
+        loadAnimation('baseline');
     }
 
     fastAnimation = !fastAnimation;
     // Load or unload the layer
-    loadAnimation();
+    loadAnimation('baseline');
 }, {
     position: 'topright'
 });
