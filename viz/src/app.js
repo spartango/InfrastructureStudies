@@ -439,46 +439,65 @@ var loadAnimation = function (flowName) {
                     // Create a little animated disk
                     var durations = [];
                     var last = null;
+                    var sumTime = 0;
                     var latlngs = feature.geometry.coordinates.map(function (coord) {
                         var point = turf.point(coord);
                         if (last) {
                             var distance = turf.distance(last, point); // km
                             var time = distance * (fastAnimation ? 3 : 10); // 100 km/s
                             durations.push(time);
+                            sumTime += time;
                         }
                         last = point;
                         return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
                     }).reverse();
                     durations.reverse();
 
-                    var aMarker = L.Marker.movingMarker(latlngs, durations, {
-                        loop: !fastAnimation,
-                        autostart: true,
-                        icon: new L.DivIcon({
-                            html: '<div></div>',
-                            className: 'flow-marker',
-                            iconSize: new L.Point(10, 10)
-                        })
-                    });
-                    if (fastAnimation) {
-                        aMarker.on('end', function () {
-                            //console.log("Finished " + completed);
-                            completed++;
-                            aMarker.pause();
-                            if (completed >= animatedMarkers.length) {
-                                console.log("Restarting all animations " + completed);
-                                completed = 0;
-                                animatedMarkers.forEach(function (m) {
-                                    m.start();
-                                });
-                            }
+                    var frequency = sumTime > 12000 ? Math.round(sumTime / 12000) : 1;
+                    for (var i = 0; i < frequency; i++) {
+                        var aMarker = L.Marker.movingMarker(latlngs, durations, {
+                            loop: !fastAnimation,
+                            //autostart: true,
+                            icon: new L.DivIcon({
+                                html: '<div></div>',
+                                className: 'flow-marker',
+                                iconSize: new L.Point(10, 10)
+                            })
                         });
+
+                        if (fastAnimation) {
+                            aMarker.on('end', function () {
+                                //console.log("Finished " + completed);
+                                completed++;
+                                if (completed >= animatedMarkers.length) {
+                                    console.log("Restarting all animations " + completed);
+                                    completed = 0;
+                                    animatedMarkers.forEach(function (m) {
+                                        m.start();
+                                    });
+                                }
+                            });
+                        }
+
+                        aMarker.delayedStart = function (marker, delay) {
+                            return function () {
+                                if (!fastAnimation && delay > 0) {
+                                    setTimeout(function () {
+                                        console.log("Started after " + delay);
+                                        marker.start();
+                                    }, delay);
+                                } else {
+                                    marker.start();
+                                }
+                            }
+                        }(aMarker, i * 12000);
+                        animatedMarkers.push(aMarker);
                     }
-                    animatedMarkers.push(aMarker);
                 });
 
                 animatedMarkers.forEach(function (m) {
                     m.addTo(map);
+                    m.delayedStart();
                 });
 
                 backgroundLayers['animation'] = animatedMarkers;
