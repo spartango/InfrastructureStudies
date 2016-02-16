@@ -742,6 +742,7 @@ var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
 });
 
 var flowButton = L.easyButton('fa-exchange', function (btn, map) {
+    loadPaths();
     loadAnimation('baseline');
 });
 
