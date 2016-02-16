@@ -397,11 +397,36 @@ var loadPath = function (id) {
         });
 };
 
+var preferredPaths = function (data) {
+    // Keep track of starts and ends
+    var preferredPaths = {};
+    // For each path
+    data.features.forEach(function (path) {
+        // Get the start and end pair
+        var start = path.geometry.coordinates[0];
+        var end = path.geometry.coordinates[path.geometry.coordinates.length - 1];
+        var pair = JSON.stringify(start);
+        var cost = path.properties.cost;
+        var current = preferredPaths[pair];
+        if (!current || current.properties.cost < cost) {
+            // If the cost is less than the current path for that pair, save it
+            preferredPaths[pair] = path;
+        }
+    });
+
+    // Collect the preferred paths
+    var preferred = Object.keys(preferredPaths).map(function (key) {
+        return preferredPaths[key];
+    });
+    return turf.featurecollection(preferred);
+};
+
 var loadPaths = function () {
     if (!backgroundLayers['paths']) {
         loadGeoJSON(DATA_DIR + 'baseline.geojson',
             function (data) {
-                var path = L.geoJson(data, {
+                var preferred = preferredPaths(data);
+                var path = L.geoJson(preferred, {
                     style: {
                         "weight": 4,
                         "opacity": 0.5
@@ -431,9 +456,10 @@ var clearAnimation = function () {
 var loadAnimation = function (flowName) {
     if (!backgroundLayers['animation']) {
         loadGeoJSON(DATA_DIR + flowName + '.geojson',
-            function (data) {
+            function (rawdata) {
                 var animatedMarkers = [];
                 var completed = 0;
+                var data = preferredPaths(rawdata);
 
                 data.features.forEach(function (feature) {
                     // Create a little animated disk
