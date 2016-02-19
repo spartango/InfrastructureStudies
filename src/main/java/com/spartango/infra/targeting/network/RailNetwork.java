@@ -48,6 +48,10 @@ public class RailNetwork {
         return graph.getNode(id);
     }
 
+    public Optional<NeoNode> getGraphNode(NodeStub nodeStub) {
+        return graph.getNode(nodeStub.getId());
+    }
+
     public Collection<NodeStub> getStations() {
         final Set<NodeStub> stations = database.getHashSet("stations");
         if (stations.isEmpty()) {
