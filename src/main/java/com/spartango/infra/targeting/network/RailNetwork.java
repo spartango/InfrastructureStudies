@@ -130,7 +130,6 @@ public class RailNetwork {
         return index;
     }
 
-
     public Transaction beginGraphTx() {
         return this.graph.getGraphDb().beginTx();
     }

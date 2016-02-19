@@ -16,11 +16,15 @@ import java.util.stream.Collectors;
  * Time: 10:00.
  */
 public class RailFlow {
-    private static final double DAMAGE_COST = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
+    private static final double DAMAGE_COST  = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
+    private static final Double DEFAULT_FLOW = 1.0;
 
-    protected final Collection<NeoNode> sources;
-    protected final Collection<NeoNode> sinks;
-    protected final Set<NodeStub>       damagedNodes;
+    protected final Collection<NeoNode>        sources;
+    protected final Collection<NeoNode>        sinks;
+    protected final Set<NodeStub>              damagedNodes;
+
+    // Order matters
+    protected final Map<List<NeoNode>, Double> flowRates;
 
     protected final RailNetwork                       railNetwork;
     protected       Map<NodeStub, List<WeightedPath>> paths;
@@ -40,8 +44,17 @@ public class RailFlow {
         this.sinks = sinks;
         this.sources = sources;
         this.damagedNodes = damagedNodes;
+
+        // Initialize all flows
+        flowRates = new HashMap<>();
+        sinks.forEach(sink -> sources.forEach(source -> flowRates.put(Arrays.asList(source, sink), DEFAULT_FLOW)));
+
         this.paths = null;
         this.totalCost = -1;
+    }
+
+    public void setFlowRate(NeoNode source, NeoNode sink, double flow) {
+        flowRates.put(Arrays.asList(source, sink), flow);
     }
 
     protected Map<NodeStub, List<WeightedPath>> calculatePaths() {

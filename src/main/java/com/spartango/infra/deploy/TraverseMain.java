@@ -119,10 +119,8 @@ public class TraverseMain {
         final long damageStartTime = System.currentTimeMillis();
         final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
         targeter.deltaStream()
-                .peek((x) -> {
-                    System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
-                                                                           - damageStartTime) + "ms");
-                })
+                .peek((x) -> System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
+                                                                                    - damageStartTime) + "ms"))
                 .forEach(deltaFlow -> {
                     // Write the adjusted flow
                     writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow);
