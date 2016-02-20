@@ -44,6 +44,10 @@ public class OSMIndex {
         desiredRelations = database.getTreeSet("desiredRelations");
     }
 
+    public void commit() {
+        database.commit();
+    }
+
     public List<NodeStub> getNodesById(Way target) {
         return target.getWayNodes()
                      .stream()
@@ -113,6 +117,13 @@ public class OSMIndex {
     public void addNode(NodeStub target) {
         final long id = target.getId();
         nodes.putIfAbsent(id, target);
+        desiredNodes.remove(id);
+        database.commit();
+    }
+
+    public void updateNode(NodeStub target) {
+        final long id = target.getId();
+        nodes.put(id, target);
         desiredNodes.remove(id);
         database.commit();
     }
