@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class RailNetwork {
 
     public static final  double DISTANCE_SCALE = (1 / 185000.0); // l of fuel per meter-ton from 436mpg
-    public static final  double SLOPE_SCALE    = 0.8 * DISTANCE_SCALE;
+    public static final  double SLOPE_SCALE    = 0.8 * DISTANCE_SCALE; // Up to 80% more for terrain
     public static final  double DAMAGE_COST    = 2400000 * DISTANCE_SCALE; // 2,400,000m @ 100km/hr = 24 hours of delay
     private static final double MAX_SLOPE      = 2.0;
 
@@ -164,7 +164,7 @@ public class RailNetwork {
             final Optional<Double> endEle = getElevation(end);
 
             if (startEle.isPresent() && endEle.isPresent()) {
-                double slope = (endEle.get() - startEle.get()) / distance; // Ruling grade
+                double slope = Math.abs((endEle.get() - startEle.get()) / distance); // Ruling grade, uphill & downhill are the same
                 double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
                 return distance * scaledSlope * SLOPE_SCALE;
             }

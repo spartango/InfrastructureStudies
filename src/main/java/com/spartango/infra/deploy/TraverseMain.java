@@ -34,10 +34,8 @@ public class TraverseMain {
     //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
-
-    private static final String OUTPUT_PATH = "testing/";
-
-    private static final long BRIDGE_LIMIT = 2000;
+    private static final String OUTPUT_PATH = "elevation/";
+    private static final long BRIDGE_LIMIT = 100;
 
     private static GraphDatabaseService graphDb;
 
