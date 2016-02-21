@@ -30,7 +30,6 @@ public class GeonamesSource implements ElevationSource {
     }
 
     @Override public Optional<Double> getElevation(double latitude, double longitude) {
-        // Request
         String urlString = BASE_URL
                            + sourceName + "?"
                            + "&lat=" + latitude

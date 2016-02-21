@@ -1,8 +1,8 @@
 package com.spartango.infra.deploy;
 
+import com.aol.cyclops.sequence.SequenceM;
 import com.spartango.infra.core.OSMIndex;
-import com.spartango.infra.elevation.ElevationSource;
-import com.spartango.infra.elevation.GeonamesSource;
+import com.spartango.infra.elevation.MapzenSource;
 import com.spartango.infra.osm.type.NodeStub;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -10,7 +10,7 @@ import org.mapdb.DBMaker;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -45,23 +45,32 @@ public class ElevationMain {
         final long total = memNodes.size();
         System.out.println("Fetching elevation for " + total + " nodes");
 
-        ElevationSource elevationSource = new GeonamesSource(GeonamesSource.SRTM, "spartango");
+        MapzenSource elevationSource = new MapzenSource("elevation-FFeA06k");
+
+        //new GeonamesSource(GeonamesSource.SRTM, "spartango");
+
         final AtomicInteger count = new AtomicInteger();
-        memNodes.parallelStream()
-                .filter(node -> (node.getTag("ele") == null) || (Double.parseDouble(node.getTag("ele")) == -32768))
-                .forEach(node -> {
-                    long startTime = System.currentTimeMillis();
-                    Optional<Double> elevation = elevationSource.getElevation(node.getLatitude(), node.getLongitude());
-                    elevation.ifPresent(value -> {
-                        node.putTag("ele", String.valueOf(value));
-                        System.out.println("Got Elevation: " + elevation
-                                           + " for #" + node.getId()
-                                           + " -> " + count.incrementAndGet()
-                                           + "/" + total
-                                           + " in " + (System.currentTimeMillis() - startTime) + "ms");
-                        index.updateNode(node);
-                    });
-                });
+        SequenceM.fromStream(memNodes.stream())
+                 .filter(node -> (node.getTag("ele") == null) || (Double.parseDouble(node.getTag("ele")) == -32768))
+                 .batchBySize(120)
+                 .forEach(batch -> {
+                     long startTime = System.currentTimeMillis();
+                     final Map<NodeStub, Double> elevations = elevationSource.getElevations(batch);
+                     elevations.forEach((key, value) -> {
+                         key.putTag("ele", String.valueOf(value));
+                         System.out.println("Got Elevation: " + value
+                                            + " for #" + key.getId()
+                                            + " -> " + count.incrementAndGet()
+                                            + "/" + total
+                                            + " in " + (System.currentTimeMillis() - startTime) + "ms");
+                         index.updateNode(key);
+                     });
+                     try {
+                         Thread.sleep(400);
+                     } catch (InterruptedException e) {
+                         e.printStackTrace();  //TODO handle e
+                     }
+                 });
         System.out.println("Fetched elevation for " + count + " nodes");
 
     }
