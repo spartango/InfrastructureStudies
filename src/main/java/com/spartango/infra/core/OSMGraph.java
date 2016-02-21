@@ -162,21 +162,14 @@ public class OSMGraph {
         return length;
     }
 
-    public double linkGrade(Relationship relationship, RailNetwork network) {
-        double grade = 0;
+    public double linkElevationChange(Relationship relationship, RailNetwork network) {
+        double elevation = 0;
         try (Transaction tx = graphDb.beginTx()) {
-            if (relationship.hasProperty("grade")) {
-                grade = Double.parseDouble(String.valueOf(relationship.getProperty("grade")));
+            if (relationship.hasProperty("elevationChange")) {
+                elevation = Double.parseDouble(String.valueOf(relationship.getProperty("elevationChange")));
             } else {
                 final NeoNode start = network.getGraphNode(relationship.getStartNode());
                 final NeoNode end = network.getGraphNode(relationship.getEndNode());
-
-                double distance;
-                if (relationship.hasProperty("distance")) {
-                    distance = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
-                } else {
-                    distance = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
-                }
 
                 // TODO: Fix getting elevations from the index
                 final Optional<Double> startEle = network.getElevation(start);
@@ -184,13 +177,13 @@ public class OSMGraph {
 
                 if (startEle.isPresent() && endEle.isPresent()) {
                     // Ruling grade, uphill & downhill are the same
-                    grade = Math.abs((endEle.get() - startEle.get()) / distance);
-                    relationship.setProperty("grade", String.valueOf(grade));
+                    elevation = endEle.get() - startEle.get();
+                    relationship.setProperty("elevationChange", String.valueOf(elevation));
                 }
             }
             tx.success();
         }
-        return grade;
+        return elevation;
     }
 
     public GraphDatabaseService getGraphDb() {

@@ -154,7 +154,7 @@ public class RailNetwork {
     }
 
     protected double elevationCost(double distance, Relationship relationship) {
-        final double slope = graph.linkGrade(relationship, this);
+        final double slope = Math.abs(graph.linkElevationChange(relationship, this) / distance);
 
         double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
         return distance * scaledSlope * SLOPE_SCALE;
