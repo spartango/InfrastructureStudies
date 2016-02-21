@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.lang.System.currentTimeMillis;
+
 /**
  * Author: spartango
  * Date: 10/6/15
@@ -35,7 +37,7 @@ public class TraverseMain {
 
     private static final String OUTPUT_PATH = "testing/";
 
-    private static final long BRIDGE_LIMIT = 5000;
+    private static final long BRIDGE_LIMIT = 2000;
 
     private static GraphDatabaseService graphDb;
 
@@ -45,7 +47,7 @@ public class TraverseMain {
         final RailNetwork railNet = loadNetwork();
         final Writer writer = new Writer(PATH + OUTPUT_PATH);
 
-        long startTime = System.currentTimeMillis();
+        long startTime = currentTimeMillis();
 
         // Load up the sources and sinks
         final List<NeoNode> sources = new NodeIdLoader(railNet)
@@ -86,27 +88,22 @@ public class TraverseMain {
                                       2451329911L)).loadGraphNodes();
 
         System.out.println("Loaded "
-                           + sources.size()
-                           + " sources and "
-                           + sinks.size()
-                           + " sinks in "
-                           + (System.currentTimeMillis() - startTime)
-                           + "ms");
+                           + sources.size() + " sources and "
+                           + sinks.size() + " sinks in "
+                           + (currentTimeMillis() - startTime) + "ms");
 
         // Write sources & sinks
         writer.writeStationNodes("sources", sources);
         writer.writeStationNodes("sinks", sinks);
 
         // Calculate the baseline flow from these sources and sinks
-        startTime = System.currentTimeMillis();
+        startTime = currentTimeMillis();
         System.out.println("Calculating baseline...");
 
         RailFlow baselineFlow = new RailFlow(railNet, sources, sinks);
         writer.writeFlow("baseline", baselineFlow);
 
-        System.out.println("Calculated baseline flow in "
-                           + (System.currentTimeMillis() - startTime)
-                           + "ms");
+        System.out.println("Calculated baseline in " + (currentTimeMillis() - startTime) + "ms");
 
         // Histogram the segments, only including bridges
         final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
@@ -116,15 +113,13 @@ public class TraverseMain {
         HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
 
         // Simulate Damage, get the changes
-        final long damageStartTime = System.currentTimeMillis();
+        final long damageStartTime = currentTimeMillis();
         final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
         targeter.deltaStream()
-                .peek((x) -> System.out.println("Calculated damaged flow after " + (System.currentTimeMillis()
-                                                                                    - damageStartTime) + "ms"))
+                .peek((x) -> System.out.println("Calculated damage in " +
+                                                (currentTimeMillis() - damageStartTime) + "ms"))
+                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
                 .forEach(deltaFlow -> {
-                    // Write the adjusted flow
-                    writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow);
-
                     // Calculate the cost of adjustment
                     double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
                     double deltaCost = deltaFlow.getTotalCost() - baseCost;

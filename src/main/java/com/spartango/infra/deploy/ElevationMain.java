@@ -23,7 +23,6 @@ public class ElevationMain {
     private static final String PATH        = "data/";
     //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH     = PATH + "rail.db";
-    private static final String ELE_DB_PATH = PATH + "rail_e.db";
 
     public static void main(String[] args) {
         // MapDB

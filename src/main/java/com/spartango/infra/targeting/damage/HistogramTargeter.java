@@ -6,6 +6,7 @@ import com.spartango.infra.utils.ShapeUtils;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -40,19 +41,31 @@ public class HistogramTargeter {
     }
 
     private Stream<Map.Entry<Set<NodeStub>, Set<NodeStub>>> sortedStream() {
+        Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> ELEVATION_COMPARATOR =
+                Comparator.comparingDouble((Map.Entry<Set<NodeStub>, Set<NodeStub>> entry)
+                                                   -> entry.getKey() // The bridge pair
+                                                           .stream()
+                                                           .map(baseFlow.getRailNetwork()::getElevation)
+                                                           .filter(Optional::isPresent)
+                                                           .mapToDouble(Optional::get)
+                                                           .average()
+                                                           .orElse(0.0))
+                          .reversed(); // Highest first
+
         return histogram.entrySet()
                         .stream()
-                        .sorted(HISTOGRAM_COMPARATOR.thenComparing(LENGTH_COMPARATOR)) // Sort by criticality then length
+                        .sorted(HISTOGRAM_COMPARATOR.thenComparing(ELEVATION_COMPARATOR)
+                                                    .thenComparing(LENGTH_COMPARATOR))
                         .limit(limit);
     }
 
-    public static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> LENGTH_COMPARATOR =
+    protected static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> LENGTH_COMPARATOR =
             Comparator.comparingDouble(
                     (Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) -> ShapeUtils.calculateLength(entry.getKey()))
-                      .reversed();
+                      .reversed(); // Longest first
 
-    private static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> HISTOGRAM_COMPARATOR =
+    protected static final Comparator<Map.Entry<Set<NodeStub>, Set<NodeStub>>> HISTOGRAM_COMPARATOR =
             Comparator.comparingInt(
                     (Map.Entry<Set<NodeStub>, Set<NodeStub>> entry) -> entry.getValue().size())
-                      .reversed();
+                      .reversed(); // Most shared first
 }

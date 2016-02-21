@@ -160,7 +160,6 @@ public class OSMGraph {
         }
         return length;
     }
-
     public GraphDatabaseService getGraphDb() {
         return graphDb;
     }
