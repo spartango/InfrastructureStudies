@@ -56,15 +56,19 @@ public class ElevationMain {
                  .forEach(batch -> {
                      long startTime = System.currentTimeMillis();
                      final Map<NodeStub, Double> elevations = elevationSource.getElevations(batch);
-                     elevations.forEach((key, value) -> {
-                         key.putTag("ele", String.valueOf(value));
-                         System.out.println("Got Elevation: " + value
-                                            + " for #" + key.getId()
-                                            + " -> " + count.incrementAndGet()
-                                            + "/" + total
-                                            + " in " + (System.currentTimeMillis() - startTime) + "ms");
-                         index.updateNode(key);
-                     });
+                     final List<NodeStub> updated = elevations.entrySet()
+                                                          .stream()
+                                                          .map(entry -> {
+                                                              System.out.println("Got Elevation: " + entry.getValue()
+                                                                                 + " for #" + entry.getKey().getId()
+                                                                                 + " -> " + count.incrementAndGet()
+                                                                                 + "/" + total
+                                                                                 + " in " + (System.currentTimeMillis() - startTime) + "ms");
+                                                              entry.getKey()
+                                                                   .putTag("ele", String.valueOf(entry.getValue()));
+                                                              return entry.getKey();
+                                                          }).collect(Collectors.toList());
+                     index.updateNodes(updated);
                      try {
                          Thread.sleep(400);
                      } catch (InterruptedException e) {

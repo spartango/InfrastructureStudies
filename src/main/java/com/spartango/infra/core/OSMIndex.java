@@ -128,6 +128,15 @@ public class OSMIndex {
         database.commit();
     }
 
+    public void updateNodes(Collection<NodeStub> targets) {
+        targets.forEach(target -> {
+            final long id = target.getId();
+            nodes.put(id, target);
+            desiredNodes.remove(id);
+        });
+        database.commit();
+    }
+
     public void addRelation(Relation target) {
         final long id = target.getId();
         relations.putIfAbsent(id, new RelationStub(target));

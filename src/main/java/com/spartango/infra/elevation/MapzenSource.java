@@ -53,10 +53,12 @@ public class MapzenSource implements ElevationSource {
         String urlString = BASE_URL
                            + "{\"range\":false,\"shape\":[";
 
-        urlString += nodes.stream().map(node -> "{"
-                                                + "\"lat\":" + node.getLatitude()
-                                                + ",\"lon\":" + node.getLongitude()
-                                                + "}").collect(Collectors.joining(","));
+        urlString += nodes.stream()
+                          .map(node -> "{"
+                                       + "\"lat\":" + node.getLatitude()
+                                       + ",\"lon\":" + node.getLongitude()
+                                       + "}")
+                          .collect(Collectors.joining(","));
 
         urlString += "]}&api_key=" + key;
         final HashMap<NodeStub, Double> result = new HashMap<>();
@@ -66,7 +68,12 @@ public class MapzenSource implements ElevationSource {
             for (int i = 0; i < nodes.size(); i++) {
                 try {
                     final double height = json.get("height").get(i).asDouble();
-                    result.put(nodes.get(i), height);
+                    final NodeStub nodeStub = nodes.get(i);
+                    // Ensure that it's the same point
+//                    if (json.get("shape").get(i).get("lat").asDouble() == nodeStub.getLatitude()
+//                        && json.get("shape").get(i).get("lon").asDouble() == nodeStub.getLongitude()) {
+                    result.put(nodeStub, height);
+//                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
