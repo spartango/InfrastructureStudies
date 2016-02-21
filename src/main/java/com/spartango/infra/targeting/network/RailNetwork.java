@@ -154,25 +154,10 @@ public class RailNetwork {
     }
 
     protected double elevationCost(double distance, Relationship relationship) {
-        // Fetch the elevations at the ends
-        try (Transaction tx = beginGraphTx()) {
-            final NeoNode start = getGraphNode(relationship.getStartNode());
-            final NeoNode end = getGraphNode(relationship.getEndNode());
-            tx.success();
+        final double slope = graph.linkGrade(relationship, this);
 
-            // TODO: Fix getting elevations from the index
-            final Optional<Double> startEle = getElevation(start);
-            final Optional<Double> endEle = getElevation(end);
-
-            if (startEle.isPresent() && endEle.isPresent()) {
-                // Ruling grade, uphill & downhill are the same
-                double slope = Math.abs((endEle.get() - startEle.get()) / distance);
-                double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
-                return distance * scaledSlope * SLOPE_SCALE;
-            }
-
-        }
-        return 0;
+        double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
+        return distance * scaledSlope * SLOPE_SCALE;
     }
 
     protected double distanceCost(double distance, Relationship relationship) {

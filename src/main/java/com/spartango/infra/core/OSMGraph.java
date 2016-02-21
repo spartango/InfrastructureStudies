@@ -2,6 +2,7 @@ package com.spartango.infra.core;
 
 import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.osm.type.NodeStub;
+import com.spartango.infra.targeting.network.RailNetwork;
 import com.spartango.infra.utils.ShapeUtils;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
@@ -160,6 +161,38 @@ public class OSMGraph {
         }
         return length;
     }
+
+    public double linkGrade(Relationship relationship, RailNetwork network) {
+        double grade = 0;
+        try (Transaction tx = graphDb.beginTx()) {
+            if (relationship.hasProperty("grade")) {
+                grade = Double.parseDouble(String.valueOf(relationship.getProperty("grade")));
+            } else {
+                final NeoNode start = network.getGraphNode(relationship.getStartNode());
+                final NeoNode end = network.getGraphNode(relationship.getEndNode());
+
+                double distance;
+                if (relationship.hasProperty("distance")) {
+                    distance = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
+                } else {
+                    distance = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
+                }
+
+                // TODO: Fix getting elevations from the index
+                final Optional<Double> startEle = network.getElevation(start);
+                final Optional<Double> endEle = network.getElevation(end);
+
+                if (startEle.isPresent() && endEle.isPresent()) {
+                    // Ruling grade, uphill & downhill are the same
+                    grade = Math.abs((endEle.get() - startEle.get()) / distance);
+                    relationship.setProperty("grade", String.valueOf(grade));
+                }
+            }
+            tx.success();
+        }
+        return grade;
+    }
+
     public GraphDatabaseService getGraphDb() {
         return graphDb;
     }
