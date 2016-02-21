@@ -4,7 +4,6 @@ import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.network.RailFlow;
 import com.spartango.infra.targeting.network.RailNetwork;
-import com.spartango.infra.utils.ShapeUtils;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -106,7 +105,7 @@ public class Writer {
         rBuilder.setName("Rail Segment");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("criticality", Double.class);
-        rBuilder.add("length", Double.class);
+//        rBuilder.add("length", Double.class);
         rBuilder.add("elevations", String.class);
 
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
@@ -132,8 +131,8 @@ public class Writer {
             linkFeatureBuilder.add(criticality);
 
             // Calculate the distance
-            final double distance = ShapeUtils.calculateLength(pair);
-            linkFeatureBuilder.add(distance);
+//            final double distance = ShapeUtils.calculateLength(pair);
+//            linkFeatureBuilder.add(distance);
 
             // Calculate the elevation string
             String elevationString = "[" + pair.stream()
@@ -161,8 +160,8 @@ public class Writer {
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("cost", Double.class);
-        rBuilder.add("length", Double.class);
-        rBuilder.add("elevations", String.class);
+//        rBuilder.add("length", Double.class);
+//        rBuilder.add("elevations", String.class);
 
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
@@ -187,8 +186,8 @@ public class Writer {
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("cost", Double.class);
-        rBuilder.add("length", Double.class);
-        rBuilder.add("elevations", String.class);
+//        rBuilder.add("length", Double.class);
+//        rBuilder.add("elevations", String.class);
 
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
@@ -241,17 +240,17 @@ public class Writer {
             linkFeatureBuilder.add(lineString);
             linkFeatureBuilder.add(path.weight());
 
-            // Calculate the distance
-            final double distance = ShapeUtils.calculateLength(nodes);
-            linkFeatureBuilder.add(distance);
+//            // Calculate the distance
+//            final double distance = ShapeUtils.calculateLength(nodes);
+//            linkFeatureBuilder.add(distance);
 
             // Calculate the elevation string
-            String elevationString = "[" + nodes.stream()
-                                                .map(network::getElevation)
-                                                .map(ele -> ele.orElse(0.0))
-                                                .map(String::valueOf)
-                                                .collect(Collectors.joining(",")) + "]";
-            linkFeatureBuilder.add(elevationString);
+//            String elevationString = "[" + nodes.stream()
+//                                                .map(network::getElevation)
+//                                                .map(ele -> ele.orElse(0.0))
+//                                                .map(String::valueOf)
+//                                                .collect(Collectors.joining(",")) + "]";
+//            linkFeatureBuilder.add(elevationString);
 
             return linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
         }
