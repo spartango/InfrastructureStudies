@@ -52,10 +52,11 @@ public class ElevationMain {
         final AtomicInteger count = new AtomicInteger();
         SequenceM.fromStream(memNodes.stream())
                  .filter(node -> (node.getTag("ele") == null) || (Double.parseDouble(node.getTag("ele")) == -32768))
-                 .batchBySize(120)
+                 .batchBySize(125)
                  .forEach(batch -> {
                      long startTime = System.currentTimeMillis();
                      final Map<NodeStub, Double> elevations = elevationSource.getElevations(batch);
+                     long endTime = System.currentTimeMillis();
                      final List<NodeStub> updated = elevations.entrySet()
                                                           .stream()
                                                           .map(entry -> {
@@ -63,14 +64,14 @@ public class ElevationMain {
                                                                                  + " for #" + entry.getKey().getId()
                                                                                  + " -> " + count.incrementAndGet()
                                                                                  + "/" + total
-                                                                                 + " in " + (System.currentTimeMillis() - startTime) + "ms");
+                                                                                 + " in " + (endTime - startTime) + "ms");
                                                               entry.getKey()
                                                                    .putTag("ele", String.valueOf(entry.getValue()));
                                                               return entry.getKey();
                                                           }).collect(Collectors.toList());
                      index.updateNodes(updated);
                      try {
-                         Thread.sleep(400);
+                         Thread.sleep(500);
                      } catch (InterruptedException e) {
                          e.printStackTrace();  //TODO handle e
                      }
