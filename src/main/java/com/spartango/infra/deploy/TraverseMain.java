@@ -45,7 +45,7 @@ public class TraverseMain {
         // Read the rail network files
         System.out.println("Loading existing data...");
         final RailNetwork railNet = loadNetwork();
-        final Writer writer = new Writer(PATH + OUTPUT_PATH);
+        final Writer writer = new Writer(PATH + OUTPUT_PATH, railNet);
 
         long startTime = currentTimeMillis();
 
