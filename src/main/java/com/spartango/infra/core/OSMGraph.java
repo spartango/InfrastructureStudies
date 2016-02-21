@@ -168,9 +168,8 @@ public class OSMGraph {
             if (relationship.hasProperty("elevationChange")) {
                 elevation = Double.parseDouble(String.valueOf(relationship.getProperty("elevationChange")));
             } else {
-                final NeoNode start = network.getGraphNode(relationship.getStartNode());
-                final NeoNode end = network.getGraphNode(relationship.getEndNode());
-
+                final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
+                final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
                 // TODO: Fix getting elevations from the index
                 final Optional<Double> startEle = network.getElevation(start);
                 final Optional<Double> endEle = network.getElevation(end);
