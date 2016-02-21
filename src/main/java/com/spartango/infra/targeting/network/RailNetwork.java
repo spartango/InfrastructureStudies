@@ -157,19 +157,20 @@ public class RailNetwork {
         // Fetch the elevations at the ends
         try (Transaction tx = beginGraphTx()) {
             final NeoNode start = getGraphNode(relationship.getStartNode());
-            final NeoNode end = getGraphNode(relationship.getStartNode());
+            final NeoNode end = getGraphNode(relationship.getEndNode());
+            tx.success();
 
             // TODO: Fix getting elevations from the index
             final Optional<Double> startEle = getElevation(start);
             final Optional<Double> endEle = getElevation(end);
 
             if (startEle.isPresent() && endEle.isPresent()) {
-                double slope = Math.abs((endEle.get() - startEle.get()) / distance); // Ruling grade, uphill & downhill are the same
+                // Ruling grade, uphill & downhill are the same
+                double slope = Math.abs((endEle.get() - startEle.get()) / distance);
                 double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
                 return distance * scaledSlope * SLOPE_SCALE;
             }
 
-            tx.success();
         }
         return 0;
     }

@@ -69,9 +69,7 @@ public class RailFlow {
                     .map(neoDestination -> railNetwork.calculatePath(station,
                                                                      neoDestination,
                                                                      damagedNodes))
-                    .filter(path -> path != null
-                                    && path.length()
-                                       != 0)
+                    .filter(path -> path != null && path.length() != 0)
                     .collect(Collectors.toList());
     }
 
