@@ -1,7 +1,7 @@
 /**
  * Created by spartango on 10/2/15.
  */
-var DATA_DIR = "testing/";
+var DATA_DIR = "elevation/";
 
 // Setup Map
 var layer;
@@ -340,27 +340,20 @@ var loadSecondArtillery = function () {
 var stationPopup = function (feature, layer) {
     // does this feature have a property named popupContent?
     if (feature.properties) {
-        var popupString = "<table><tr>";
+        var popupString = "<table>";
         for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
-        }
-
-        if (feature.properties.id || feature.geometry) {
-            popupString += "</tr><tr>"
+            popupString += "<tr><td>" + key + "</td> <td>" + feature.properties[key] + "</td></tr>";
         }
 
         if (feature.geometry) {
-            popupString += "<td><button onclick='map.setView({lat:"
+            popupString += "<tr><td><button onclick='map.setView({lat:"
                 + feature.geometry.coordinates[1]
                 + ", lng:"
                 + feature.geometry.coordinates[0]
-                + "}, 16)'>Zoom</button></td>"
-        }
-        if (false && feature.properties.id) {
-            popupString += "<td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
+                + "}, 16)'>Zoom</button></td></tr>"
         }
 
-        popupString += "</tr></table>";
+        popupString += "</table>";
         layer.bindPopup(popupString);
     }
 };
@@ -679,9 +672,9 @@ var damagePopup = function (feature, layer) {
             popupString += "</tr><tr>"
         }
 
-        if (feature.id) {
-            popupString += "<td><button onclick='loadDamagedPath(" + feature.id + ")'>Reroutes</button></td>";
-        }
+        //if (feature.id) {
+        //    popupString += "<td><button onclick='loadDamagedPath(" + feature.id + ")'>Reroutes</button></td>";
+        //}
 
         popupString += "</tr></table>";
         layer.bindPopup(popupString);

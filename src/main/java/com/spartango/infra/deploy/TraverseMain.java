@@ -116,7 +116,7 @@ public class TraverseMain {
         targeter.deltaStream()
                 .peek((x) -> System.out.println("Calculated damage in " +
                                                 (currentTimeMillis() - damageStartTime) + "ms"))
-                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
+//                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
                 .forEach(deltaFlow -> {
                     // Calculate the cost of adjustment
                     double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());

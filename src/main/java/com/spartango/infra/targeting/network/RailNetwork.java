@@ -24,10 +24,10 @@ import java.util.stream.Collectors;
  */
 public class RailNetwork {
 
-    public static final  double DISTANCE_SCALE = (1 / 185000.0); // l of fuel per meter-ton from 436mpg
-    public static final  double SLOPE_SCALE    = 0.8 * DISTANCE_SCALE; // Up to 80% more for terrain
+    public static final  double DISTANCE_SCALE = 1.0d;//(1 / 185000.0); // l of fuel per meter-ton from 436mpg
+    public static final  double SLOPE_SCALE    = 0.5 * DISTANCE_SCALE; // Up to 80% more for terrain
     public static final  double DAMAGE_COST    = 2400000 * DISTANCE_SCALE; // 2,400,000m @ 100km/hr = 24 hours of delay
-    private static final double MAX_SLOPE      = 2.0;
+    private static final double MAX_SLOPE      = 0.02;
 
     // Indices
     private final OSMGraph graph;
