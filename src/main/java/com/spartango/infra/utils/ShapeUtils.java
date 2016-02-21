@@ -1,12 +1,10 @@
 package com.spartango.infra.utils;
 
-import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.osm.type.NodeStub;
 import org.geotools.referencing.GeodeticCalculator;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.stream.Collectors;
 
 /**
  * Author: spartango
@@ -14,12 +12,6 @@ import java.util.stream.Collectors;
  * Time: 22:21.
  */
 public class ShapeUtils {
-    public static double calculateLength(Collection<NeoNode> path) {
-        return calculateLength(path.stream()
-                                   .map(NeoNode::getOsmNode)
-                                   .collect(Collectors.toList()));
-    }
-
     public static double calculateLength(Collection<NodeStub> path) {
         final Iterator<NodeStub> iterator = path.iterator();
         double sum = 0;
