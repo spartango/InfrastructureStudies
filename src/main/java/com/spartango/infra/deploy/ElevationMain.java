@@ -46,37 +46,33 @@ public class ElevationMain {
         System.out.println("Fetching elevation for " + total + " nodes");
 
         MapzenSource elevationSource = new MapzenSource("elevation-FFeA06k");
-
-        //new GeonamesSource(GeonamesSource.SRTM, "spartango");
-
         final AtomicInteger count = new AtomicInteger();
-        SequenceM.fromStream(memNodes.stream())
+        SequenceM.fromList(memNodes)
                  .filter(node -> (node.getTag("ele") == null) || (Double.parseDouble(node.getTag("ele")) == -32768))
                  .batchBySize(125)
                  .forEach(batch -> {
                      long startTime = System.currentTimeMillis();
                      final Map<NodeStub, Double> elevations = elevationSource.getElevations(batch);
-                     long endTime = System.currentTimeMillis();
                      final List<NodeStub> updated = elevations.entrySet()
-                                                          .stream()
-                                                          .map(entry -> {
-                                                              System.out.println("Got Elevation: " + entry.getValue()
-                                                                                 + " for #" + entry.getKey().getId()
-                                                                                 + " -> " + count.incrementAndGet()
-                                                                                 + "/" + total
-                                                                                 + " in " + (endTime - startTime) + "ms");
-                                                              entry.getKey()
-                                                                   .putTag("ele", String.valueOf(entry.getValue()));
-                                                              return entry.getKey();
-                                                          }).collect(Collectors.toList());
+                                                              .stream()
+                                                              .map(entry -> {
+                                                                  entry.getKey()
+                                                                       .putTag("ele", String.valueOf(entry.getValue()));
+                                                                  return entry.getKey();
+                                                              }).collect(Collectors.toList());
                      index.updateNodes(updated);
+                     long endTime = System.currentTimeMillis();
+                     System.out.print("\rGot elevations for " + updated.size()
+                                      + " -> " + count.addAndGet(updated.size())
+                                      + "/" + total
+                                      + " in " + (endTime - startTime) + "ms");
                      try {
                          Thread.sleep(500);
                      } catch (InterruptedException e) {
                          e.printStackTrace();  //TODO handle e
                      }
                  });
-        System.out.println("Fetched elevation for " + count + " nodes");
+        System.out.println("\nFetched elevation for " + count + " nodes");
 
     }
 }
