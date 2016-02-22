@@ -387,7 +387,7 @@ var pathPopup = function (feature, layer) {
     if (feature.properties) {
         var popupString = "<table>";
         for (var key in feature.properties) {
-            popupString += "<tr><td>"+key+"</td><td>" + feature.properties[key] + "</td></tr>";
+            popupString += "<tr><td>" + key + "</td><td>" + feature.properties[key] + "</td></tr>";
         }
         popupString += "</table>";
         layer.bindPopup(popupString);
@@ -817,3 +817,18 @@ L.easyButton('fa-cog', function (btn) {
 }, {
     position: 'topright'
 }).addTo(map);
+
+var refreshTargets = function () {
+    setTimeout(function () {
+        if (backgroundLayers['targets']) {
+            console.log("Refreshing target layer")
+            loadTargets(); // Unload the layer
+            loadTargets(); // Reload the layer
+        }
+
+        // Schedule another run in 200s
+        refreshTargets();
+    }, 200000);
+};
+
+refreshTargets();

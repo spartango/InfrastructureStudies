@@ -107,13 +107,11 @@ public class OSMGraph {
     public long getNodeCount() {
         final long nodeCount;
         try (Transaction tx = graphDb.beginTx()) {
-
             nodeCount = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                     GlobalGraphOperations.at(graphDb)
                                          .getAllNodes()
                                          .iterator(),
-                    Spliterator.DISTINCT),
-                                             false)
+                    Spliterator.DISTINCT), false)
                                      .count();
             tx.success();
         }

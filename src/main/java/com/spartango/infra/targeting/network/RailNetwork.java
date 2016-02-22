@@ -5,7 +5,6 @@ import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.osm.type.WayStub;
-import com.spartango.infra.utils.ShapeUtils;
 import org.mapdb.DB;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Node;
@@ -51,14 +50,24 @@ public class RailNetwork {
 
     public double lengthEstimate(Node start, Node end) {
         // Get node IDs
-        final long startId = Long.parseLong(start.getProperty(NeoNode.OSM_ID).toString());
-        final long endId = Long.parseLong(end.getProperty(NeoNode.OSM_ID).toString());
+//        final long startId = Long.parseLong(start.getProperty(NeoNode.OSM_ID).toString());
+//        final long endId = Long.parseLong(end.getProperty(NeoNode.OSM_ID).toString());
+//
+//        // Look up the nodes in MapDB because it's faster than Neo4J and all we need is lat/long
+//        final NodeStub startNode = index.getNode(startId);
+//        final NodeStub endNode = index.getNode(endId);
+//
+//        final double distance = ShapeUtils.calculateDistance(startNode, endNode);
+//        double distanceCost = distanceCost(distance);
 
-        // Look up the nodes in MapDB because it's faster than Neo4J and all we need is lat/long
-        final NodeStub startNode = index.getNode(startId);
-        final NodeStub endNode = index.getNode(endId);
-
-        return ShapeUtils.calculateDistance(startNode, endNode);
+//        final Optional<Double> startElevation = getElevationWithIndex(startNode);
+//        final Optional<Double> endElevation = getElevationWithIndex(endNode);
+//
+//        final double elevationChange = startElevation.isPresent() && endElevation.isPresent() ?
+//                                       endElevation.get() - startElevation.get() :
+//                                       0.0;
+//        double elevationCost = elevationCost(distance, elevationChange);
+        return 1;
     }
 
     public NeoNode getGraphNode(Node node) {
@@ -142,10 +151,11 @@ public class RailNetwork {
         double distance = graph.linkLength(relationship);
 
         // Flat land travel cost
-        double distancePrice = distanceCost(distance, relationship);
+        double distancePrice = distanceCost(distance);
 
         // Elevation cost
-        double elevationPrice = elevationCost(distance, relationship);
+        double elevationChange = graph.linkElevationChange(relationship, this);
+        double elevationPrice = elevationCost(distance, elevationChange);
 
         // Cost incurred by waiting for repairs on the track
         double damagePrice = damageCost(relationship, damagedNodes);
@@ -153,14 +163,13 @@ public class RailNetwork {
         return distancePrice + elevationPrice + damagePrice;
     }
 
-    protected double elevationCost(double distance, Relationship relationship) {
-        double elevation = graph.linkElevationChange(relationship, this);
-        double slope = Math.abs(elevation / distance);
+    protected double elevationCost(double distance, double elevationChange) {
+        double slope = Math.abs(elevationChange / distance);
         double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
         return distance * scaledSlope * SLOPE_SCALE;
     }
 
-    protected double distanceCost(double distance, Relationship relationship) {
+    protected double distanceCost(double distance) {
         return distance * DISTANCE_SCALE;
     }
 
