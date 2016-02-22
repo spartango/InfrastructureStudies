@@ -171,7 +171,63 @@ var layerControl = L.control.layers(baseMaps, overlayMaps);
 layerControl.addTo(map);
 L.control.scale().addTo(map);
 
-var backgroundLayers = {};
+var defaultColor = "white";
+var typeColors = {
+    "port": "#00b",
+    "SAM": "#fb0",
+    "airbase": "#f70",
+    "station": "#00C8EE",
+    "nuclear": "#f30"
+};
+
+var clusterIcon = function (cluster) {
+    var radius = 36;
+    var strokeLength = 2 * 3.141592 * radius;
+    var colorCount = {};
+    var childCount = cluster.getChildCount();
+    var inInterval = false;
+
+    cluster.getAllChildMarkers().forEach(function (el) {
+        var type = el.feature.properties.type;
+        var color = typeColors[type] ? typeColors[type] : defaultColor;
+        if (colorCount.hasOwnProperty(color))
+            colorCount[color]++;
+        else
+            colorCount[color] = 1;
+    });
+
+
+    var textOpacity = 1;
+
+    var dashoffsetSum = 0;
+    var svgHtml = `<svg width="100%" height="100%" viewbox="0 0 100 100"> \
+        <circle cx="50" cy="50" r="` + radius + `" fill="black" fill-opacity="0.5"/>`
+
+    for (var color in colorCount) {
+        svgHtml = svgHtml + `<circle cx="50" cy="50" r="` + radius + `" fill="transparent" stroke-width="10" stroke=` +
+            color + ` stroke-dasharray=` + strokeLength + ` stroke-dashoffset="` + dashoffsetSum + `" stroke-opacity="` + textOpacity + `" />`
+        currLength = (1.0 * colorCount[color] / childCount) * strokeLength;
+        dashoffsetSum += currLength;
+    }
+
+    var textX = 40;
+    var fontSize = 32;
+    if (childCount >= 10) {
+        textX = 30;
+    }
+    if (childCount >= 100) {
+        textX = 20;
+    }
+    if (childCount >= 1000) {
+        textX = 10;
+        fontSize = 28;
+    }
+
+    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: `+fontSize+`px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
+        </svg>`;
+
+    return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
+};
 
 var loadGeoJSON = function (path, callback) {
     loadingControl.addLoader(path);
@@ -186,6 +242,12 @@ var loadGeoJSON = function (path, callback) {
     };
     xhr.send();
 };
+
+var backgroundLayers = {};
+
+var backgroundMarkers = new L.MarkerClusterGroup({
+    iconCreateFunction: clusterIcon
+}).addTo(map);
 
 var showRoutes = function (id) {
     loadGeoJSON(DATA_DIR + '20_' + id + '_path.geojson',
@@ -222,24 +284,21 @@ var infraPopup = function (feature, layer) {
 var loadPorts = function () {
     if (!backgroundLayers['ports']) {
         loadGeoJSON('background/WPI.geojson', function (data) {
-            var markers = new L.MarkerClusterGroup({
-                iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "m"});
-                }
+            data.features.forEach(function (feature) {
+                feature.properties.type = "port";
             });
-            var icon = L.MakiMarkers.icon({icon: "ferry", color: "#00b", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "harbor", color: typeColors["port"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
                     return L.marker(latlng, {icon: icon});
                 }
             });
-            markers.addLayer(geoJsonLayer);
-            backgroundLayers['ports'] = markers;
-            map.addLayer(markers);
+            backgroundMarkers.addLayer(geoJsonLayer);
+            backgroundLayers['ports'] = geoJsonLayer;
         });
     } else {
-        map.removeLayer(backgroundLayers['ports']);
+        backgroundMarkers.removeLayer(backgroundLayers['ports']);
         delete backgroundLayers['ports'];
     }
 };
@@ -247,13 +306,11 @@ var loadPorts = function () {
 var loadSAMs = function () {
     if (!backgroundLayers['sams']) {
         loadGeoJSON('background/SAMs.geojson', function (data) {
-            var markers = new L.MarkerClusterGroup({
-                iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "m"});
-                }
+            data.features.forEach(function (feature) {
+                feature.properties.type = "SAM";
             });
 
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: "#fb0", size: "s"});
+            var icon = L.MakiMarkers.icon({icon: "rocket", color: typeColors["SAM"], size: "s"});
             //var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
@@ -276,13 +333,12 @@ var loadSAMs = function () {
             //    max: 3,
             //    data: heatPoints
             //});
-            markers.addLayer(geoJsonLayer);
-            map.addLayer(markers);
-            backgroundLayers['sams'] = markers;
+            backgroundMarkers.addLayer(geoJsonLayer);
+            backgroundLayers['sams'] = geoJsonLayer;
             backgroundLayers['heat'] = heatmapLayer;
         });
     } else {
-        map.removeLayer(backgroundLayers['sams']);
+        backgroundMarkers.removeLayer(backgroundLayers['sams']);
         //map.removeLayer(backgroundLayers['heat']);
         delete backgroundLayers['sams'];
         delete backgroundLayers['heat'];
@@ -292,24 +348,22 @@ var loadSAMs = function () {
 var loadAviation = function () {
     if (!backgroundLayers['aviation']) {
         loadGeoJSON('background/ChineseMilitaryAviation.geojson', function (data) {
-            var markers = new L.MarkerClusterGroup({
-                iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "m"});
-                }
+            data.features.forEach(function (feature) {
+                feature.properties.type = "airbase";
             });
-            var icon = L.MakiMarkers.icon({icon: "airport", color: "#f70", size: "s"});
+
+            var icon = L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
                     return L.marker(latlng, {icon: icon});
                 }
             });
-            markers.addLayer(geoJsonLayer);
-            map.addLayer(markers);
-            backgroundLayers['aviation'] = markers;
+            backgroundMarkers.addLayer(geoJsonLayer);
+            backgroundLayers['aviation'] = geoJsonLayer;
         });
     } else {
-        map.removeLayer(backgroundLayers['aviation']);
+        backgroundMarkers.removeLayer(backgroundLayers['aviation']);
         delete backgroundLayers['aviation'];
     }
 };
@@ -317,12 +371,11 @@ var loadAviation = function () {
 var loadSecondArtillery = function () {
     if (!backgroundLayers['missiles']) {
         loadGeoJSON('background/2AOperationalSites.geojson', function (data) {
-            var markers = new L.MarkerClusterGroup({
-                iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "m"});
-                }
+            data.features.forEach(function (feature) {
+                feature.properties.type = "nuclear";
             });
-            var icon = L.MakiMarkers.icon({icon: "danger", color: "#f30", size: "s"});
+
+            var icon = L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -332,12 +385,11 @@ var loadSecondArtillery = function () {
                     return L.marker(latlng, {icon: icon});
                 }
             });
-            markers.addLayer(geoJsonLayer);
-            map.addLayer(markers);
-            backgroundLayers['missiles'] = markers;
+            backgroundMarkers.addLayer(geoJsonLayer);
+            backgroundLayers['missiles'] = geoJsonLayer;
         });
     } else {
-        map.removeLayer(backgroundLayers['missiles']);
+        backgroundMarkers.removeLayer(backgroundLayers['missiles']);
         delete backgroundLayers['missiles'];
     }
 };
@@ -366,24 +418,22 @@ var stationPopup = function (feature, layer) {
 var loadStations = function () {
     if (!backgroundLayers['stations']) {
         loadGeoJSON('background/stations.geojson', function (data) {
-            var markers = new L.MarkerClusterGroup({
-                iconCreateFunction: function (cluster) {
-                    return L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "m"});
-                }
+            data.features.forEach(function (feature) {
+                feature.properties.type = "station";
             });
-            var icon = L.MakiMarkers.icon({icon: "rail", color: "#00b", size: "s"});
+
+            var icon = L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
                     return L.marker(latlng, {icon: icon});
                 }
             });
-            markers.addLayer(geoJsonLayer);
-            map.addLayer(markers);
-            backgroundLayers['stations'] = markers;
+            backgroundMarkers.addLayer(geoJsonLayer);
+            backgroundLayers['stations'] = geoJsonLayer;
         })
     } else {
-        map.removeLayer(backgroundLayers['stations']);
+        backgroundMarkers.removeLayer(backgroundLayers['stations']);
         delete backgroundLayers['stations'];
     }
 };
@@ -736,7 +786,7 @@ var bridgeButton = L.easyButton('fa-road', function (btn, map) {
 });
 
 // Advanced controls
-var portButton = L.easyButton('fa-ship', function (btn, map) {
+var portButton = L.easyButton('fa-anchor', function (btn, map) {
     loadPorts();
 });
 var aviationButton = L.easyButton('fa-plane', function (btn, map) {
@@ -792,7 +842,7 @@ L.easyBar([
     flowButton,
     priorityButton,
     damageButton
-]).addTo(map);
+]);
 
 var enableDrawing = function () {
     drawnItems = L.featureGroup().addTo(map);
@@ -815,9 +865,9 @@ L.easyButton('fa-cogs', function (btn) {
         portButton,
         stationButton,
         aviationButton,
+        nuclearButton,
         SAMButton,
-        rangeRingButton,
-        nuclearButton
+        rangeRingButton
     ], {
         position: 'topright'
     }).addTo(map);
@@ -836,7 +886,7 @@ L.easyButton('fa-pencil', function (btn) {
     btn.removeFrom(map);
     enableDrawing();
 }, {
-    position: 'bottomleft'
+    position: 'topleft'
 }).addTo(map);
 
 var refreshTargets = function () {
