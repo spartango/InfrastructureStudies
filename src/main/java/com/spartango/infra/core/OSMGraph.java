@@ -36,7 +36,6 @@ public class OSMGraph {
         AIR_LINK
     }
 
-
     private GraphDatabaseService graphDb;
 
     public OSMGraph(GraphDatabaseService graphDb) {

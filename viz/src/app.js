@@ -828,7 +828,7 @@ var refreshTargets = function () {
 
         // Schedule another run in 200s
         refreshTargets();
-    }, 200000);
+    }, 60000);
 };
 
 refreshTargets();
