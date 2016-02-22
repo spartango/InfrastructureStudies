@@ -144,7 +144,7 @@ var MapQuestOpen_HybridOverlay = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.
 
 var baseMaps = {
     "Streets": CartoDB_Positron,
-    //"Dark": CartoDB_DarkMatter,
+    "Dark": CartoDB_DarkMatter,
     "Physical": mapboxLayer,
     //"Physical": Esri_WorldPhysical,
     //"Topo": Esri_WorldTopoMap,
@@ -712,12 +712,16 @@ var loadTargets = function () {
     }
 };
 
+var loadFlows = function () {
+    loadPaths();
+    loadAnimation('baseline');
+};
+
 // Default layers
 //loadRangeRings();
 loadSources();
 loadSinks();
-loadPaths();
-loadAnimation('baseline');
+loadFlows();
 
 // Default controls
 var bridgeButton = L.easyButton('fa-road', function (btn, map) {
@@ -751,8 +755,7 @@ var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
 });
 
 var flowButton = L.easyButton('fa-exchange', function (btn, map) {
-    loadPaths();
-    loadAnimation('baseline');
+    loadFlows();
 });
 
 var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
@@ -839,7 +842,7 @@ L.easyButton('fa-pencil', function (btn) {
 var refreshTargets = function () {
     setTimeout(function () {
         if (backgroundLayers['targets']) {
-            console.log("Refreshing target layer")
+            console.log("Refreshing target layer");
             loadTargets(); // Unload the layer
             loadTargets(); // Reload the layer
         }
