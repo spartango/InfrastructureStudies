@@ -1,0 +1,35 @@
+{
+  "name": "Leaflet.MovingMarker",
+  "description": "A Leaflet plug-in to create moving marker",
+  "main": [
+    "MovingMarker.js"
+  ],
+  "dependencies": {
+    "leaflet": "~0.7.2"
+  },
+  "devDependencies": {},
+  "license": "MIT",
+  "ignore": [
+    "examples",
+    "LICENSE",
+    ".jshintrc",
+    "**/*.txt",
+    ".gitignore",
+    ".jshintignore",
+    ".jshintrc",
+    "*.md",
+    ".gitattributes",
+    "bower.json"
+  ],
+  "homepage": "https://github.com/ewoken/Leaflet.MovingMarker",
+  "_release": "2c63c8cd32",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "2c63c8cd32f571fcb765839641d6e6a1bf5ee1fd"
+  },
+  "_source": "git://github.com/ewoken/Leaflet.MovingMarker.git",
+  "_target": "*",
+  "_originalSource": "Leaflet.MovingMarker",
+  "_direct": true
+}

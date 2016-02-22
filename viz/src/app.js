@@ -6,7 +6,7 @@ function resize() {
     $('#map').css("margin-top", -21);
 }
 
-var DATA_DIR = "elevation/";
+var DATA_DIR = "testing/";
 
 // Setup Map
 var layer;

@@ -1,0 +1,1663 @@
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<title>milsymbol API - spatial illusions</title>
+
+<link rel="stylesheet" href="../spatialillusions.com.css" />
+<script src="../dist/milsymbol.js"></script>
+
+</head>
+<body>
+
+
+<div class="heading">
+	<a href="http://spatialillusions.com">SPATIAL ILLUSIONS</a>
+	<span class="bannerLinks">
+	<!--<a href="MS.symbolLibrary/index.html">MS.symbol.js</a>
+	<a href="ForceTracker/index.html">Force Tracker</a>-->
+
+	</span>
+	<svg class="logo"
+		viewBox="50 50 100 100"
+		width="30"
+		height="30"> 
+		<path
+			style="fill:none;stroke:#ffffff;stroke-width:3px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+			d="m 105,50 25,15 m -40,20 50,10 m -80,-25 0,35 0,25 45,0 15,15 M 110,80 75,70 l 0,50 45,-25 10,35 20,-35 -20,-30 z m -30,65 20,5 20,-5 20,-15 m -50,15 -10,0 -20,-15 m 90,-35 -10,35 -10,0 -10,15 -30,0 m 45,-80 15,30 -10,0 m -10,-35 5,5 -5,0 m -25,-15 25,10 0,5 m -70,5 20,-15 20,5 M 75,70 60,70 50,105 m 10,25 -10,-25 10,0 m 45,25 -15,15 -30,-15 15,-10 m 25,-60 30,5 10,30 M 75,70 100,60 110,80 m 30,15 -10,35 -25,0 m 15,-35 20,0 -30,-15 -20,5 30,10 -15,35 L 75,120 90,85 75,70 60,105 75,120 m 25,-60 5,-10 -25,5 -5,15">
+				<animateTransform 
+				attributeType="xml"
+				attributeName="transform" type="rotate"
+				from="0 100 100" to="360 100 100"
+				begin="0" dur="60s" 
+				fill="freeze"
+				repeatCount="indefinite"
+				/>
+		</path>
+	</svg>
+</div>
+
+<div class="body">
+
+	<h1>milsymbol API Documentation - 0.5</h1>
+milsymbol 0.5 introduces a new API for the milsymbol library. This API is designed to make the library even more flexible and make it easy to extend the markers with custom code. It also exposes most information about the markers that used to be hidden in the code, and the milsybmol library now uses the milsymbol API to create itself. All information around the base symbol is added using the MS.addMarkerParts() method, and all information used to build the symbols are exposed through the API.<br>
+This combined makes it possible for you to access all parts of the milsymbol library and redefine, modify and expand the functionality in milsymbol, and that is kind of awesome.<br>
+	<h2>milsymbol Documentation</h2>
+		If you don't know what milsymbol is you should start with reading the <a href="../index.html">milsymbol introduction</a>, and before you start coding you might should have a look at the <a href="../license.txt">license</a>, but it is a BSD license so it shouldn't be any problems for your project.<br>
+<ul>
+<li><h3><a href="#globalmilsymbol">Global milsymbol</a></h3></li>
+
+<li><h3><a href="#symbolobject">Creating symbols with the Symbol Object</a></h3></li>
+
+<ul>
+<li><a href="#symbolmethods">Symbol Methods</a></li>
+<li><a href="#symboloptions">Symbol Options</a></li>
+<li><a href="#symbolproperties">Symbol Properties</a></li>
+</ul>
+
+<li><h3><a href="#propertiesobject">Properties object</a></h3></li>
+<li><h3><a href="#JSONgeometry">JSON geometry</a></h3></li>
+<li><h3><a href="#dashobject">Dash object</a></h3></li>
+<li><h3><a href="#colorobject">Color object</a></h3></li>
+<li><h3><a href="#symbolcolorsobject">Symbol colors object</a></h3></li>
+<li><h3><a href="#boundingboxobject">Bounding box object</a></h3></li>
+<li><h3><a href="#buildingblockobject">Building block object</a></h3></li>
+<!--<li><h3><a href="#extendingmilsymbol">Extending milsymbol</a></h3></li>-->
+</ul>
+<h2 id="globalmilsymbol">Global milsymbol</h2>
+The global class for milsymbol is <b>MS</b>, so if you want to use the setStandard method, you will call it by using <b>MS.setStandard(</b>"APP6"<b>)</b>. If you need to know the version of milsymbol you are using you can get it from MS.version.
+
+<h3>Global Properties</h3>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Option
+</td>
+<td>Type
+</td>
+<td>Default
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>version</b></td>
+<td>String
+</td>
+<td><i>current version</i><br></td>
+<td>
+<small>Get the current version of milsymbol</small>
+</td>
+</tr>
+
+<tr>
+<td><b>autoSVG</b></td>
+<td>bool
+</td>
+<td><i>true</i><br></td>
+<td>
+<small>Gets or sets if milsymbol should generate SVG output by default, if you only plan on using Canvas you can set this to false.</small>
+</td>
+</tr>
+</table>
+
+
+<h3>Global Methods</h3>
+
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Methods
+</td>
+<td>Returns
+</td>
+<td>Description
+</td>
+</tr>
+
+
+<tr>
+<td><b>symbol(</b><br>&lt;String&gt;<i><small> SIDC</small></i>,<br>&lt;Symbol options&gt;<i><small> options?</small></i><b>)<br></b></td>
+<td><i><a href="#symbolobject">Symbol object</a></i><br></td>
+<td>
+<small> Creates a new symbol object using the SIDC provided.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>setStandard(</b><br>&lt;String&gt;<i><small>"2525" or "APP6"</small></i><b>)</b><br>
+</b></td>
+<td><i>String</i><br></td>
+<td>
+<small>Sometimes APP6 and 2525 differ in symbols. Default we are using 2525 symbology, but you can select to follow APP6 instead. (All possible SIDC will have some kind of symbol no matter setting, so you will always get a symbol.)</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>getDashArrays()</b></td>
+<td><i><a href="#dashobject">Dash object</a></i><br></td>
+<td>
+<small>Gets the dash-arrays used in dashed symbols.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>setDashArrays()</b></td>
+<td><i><a href="#dashobject">Dash object</a></i><br></td>
+<td>
+<small>Sets the dash-arrays used in dashed symbols.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>getHqStafLength()</b></td>
+<td><i>Number</i><br></td>
+<td>
+<small>This method gets the setting for how long the HQ staf should be, default it is one octagon (100) long.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>setHqStafLength(</b>&lt;Number&gt;<b>)</b></td>
+<td><i>Number</i><br></td>
+<td>
+<small> This method gets the setting for how long the HQ staf should be, you can set it to any number, but would recommend to keep it between 50 - 150.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>colorMode(</b><br>&lt;String&gt;<i><small> Civilian color</small></i>, &lt;String&gt;<i><small> Friend color</small></i>, &lt;String&gt;<i><small> Hostile color</small></i>, &lt;String&gt;<i><small> Neutral color</small></i>, &lt;String&gt;<i><small> Unknown color</small></i><b>)</b></td>
+<td><i><a href="#colorobject">Color object</a></i><br></td>
+<td>
+<small>Creates a new color mode from an array of colors.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>getColorMode(</b><br>&lt;String&gt;<i><small>Name of color mode</small></i><b>)</b><br></td>
+<td><i><a href="#colorobject">Color object</a></i><br></td>
+<td>
+<small>Gets an color mode that has been registred with a name.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>setColorMode(</b><br>&lt;String&gt;<i><small>Name of color mode</small></i>,&lt;<a href="#colorobject">Color object</a>&gt;<i><small></small></i><b>)</b><br></td>
+<td><i><a href="#colorobject">Color object</a></i><br></td>
+<td>
+<small>Register a color mode with a name.</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>buildingBlock(</b><br>&lt;String&gt;<i><small> <a href="#JSONgeometry">JSON geometry</a></small></i>,</b><br>&lt;String&gt;<i><small> <a href="#JSONgeometry">JSON geometry</a></small></i>,&lt;<a href="#boundingboxobject">Bounding box object</a>&gt;<i><small> Bounding Box</small></i><b>)</b></td>
+<td><i><a href="#buildingblockobject">Building block object</a></i><br></td>
+<td>
+<small>Creates an object with two SVG geometry that creates a part of a milsymbol marker, and the bounding box for that geometry. The first SVG geometry is inserted before existing code and the second after.</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>bbox()<br></b></td>
+<td><i><a href="#boundingboxobject">Bounding box object</a></i><br></td>
+<td>
+<small>Initiates a basic bounding box for a geometry covering the symbol octagon.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>bboxMax(</b><a href="#boundingboxobject">Bounding box object</a>, <a href="#boundingboxobject">Bounding box object</a><b>)<br></b></td>
+<td><i><a href="#boundingboxobject">Bounding box object</a></i><br></td>
+<td>
+<small>The max bounds of two bounding boxes.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>getMarkerParts(</b><b>)<br></b></td>
+<td><i>Array</i><br></td>
+<td>
+<small>Returns an array of functions where each function returns a building block for a marker.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>addMarkerParts(</b>function<b>)<br></b></td>
+<td><i>Array</i><br></td>
+<td>
+<small>Adds a new function that returns a building block for a marker. This function will be added at the end of the marker parts array and therefor rendered on top of all other parts of the marker. This is an easy way to <a href="#extendingmilsymbol">extend milsymbol</a>.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>setMarkerParts(</b><br>Array of functions<b>)<br></b></td>
+<td><i>Array</i><br></td>
+<td>
+<small>Sets a new array of function where each function returns a building block for a marker. You can use this if you want to add custom code between existing marker parts when you are <a href="#extendingmilsymbol">extending milsymbol</a>.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>translate(</b><br>&lt;Number&gt;<i><small> x</small></i>,&lt;Number&gt;<i><small> y</small></i>,&lt;String&gt;<i><small> <a href="#JSONgeometry">JSON geometry</a></small></i><b>)<br></b></td>
+<td><i><a href="#JSONgeometry">JSON geometry</a></i><br></td>
+<td>
+<small>Moves the JSON geometry in x,y direction.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>scale(</b><br>&lt;Number&gt;<i><small> Scale factor</small></i>,&lt;String&gt;<i><small> <a href="#JSONgeometry">JSON geometry</a></small></i><b>)<br></b></td>
+<td><i><a href="#JSONgeometry">JSON geometry</a></i><br></td>
+<td>
+<small> Scales the JSON geometry.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>rotate(</b><br>&lt;Number&gt;<i><small> Degrees</small></i>,&lt;String&gt;<i><small> <a href="#JSONgeometry">JSON geometry</a></small></i><b>)<br></b></td>
+<td><i><a href="#JSONgeometry">JSON geometry</a></i><br></td>
+<td>
+<small> Rotates the JSON geometry.</small>
+</td>
+</tr>
+
+
+</table>
+
+<h2 id="symbolobject">Creating symbols with the Symbol Object</h2>
+
+<h3 id="symbolmethods">Symbol Methods</h3>
+
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Methods
+</td>
+<td>Returns
+</td>
+<td>Description
+</td>
+</tr>
+
+
+<tr>
+<td><b>getProperties()<br>
+</b></td>
+<td><i><a href="#propertiesobject">Properties object</a></i><br></td>
+<td>
+<small>
+This will update and return the Properties Object for the current marker.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>getColors()<br>
+</b></td>
+<td><i><a href="#symbolcolorsobject">Symbol colors object</a></i><br></td>
+<td>
+<small>
+This will return an object with several named properties, where each property is a <a href="#colorobject">Color object</a>. This represent all colors that can be used for the current marker.<br>
+</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>getMarker()<br>
+</b></td>
+<td><i>this</i><br></td>
+<td>
+<small>
+When the getMarker() method is called, all properties of the Symbol Object is updated (getMarker() calls getProperties() and getColors()) and a marker is composed by all marker parts. When this is done the Symbol Object itself is returned.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>setOptions(</b><br>&lt;Symbol options&gt;<i><small> options?</small></i><b>)<br>
+</b></td>
+<td><i>this</i><br></td>
+<td>
+<small>
+If you want to change the options of an existing symbol at the same time as you want to request it as a new marker, you can use setOptions(<br>&lt;Symbol options&gt;<i><small> options?</small></i>) to update the options.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>asDOM()<br>
+</b></td>
+<td><i>DOM element</i><br></td>
+<td>
+<small>
+Parses the XML and returns a DOM element.</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>asImage()<br>
+</b></td>
+<td><i>Base 64 string</i><br></td>
+<td>
+<small>
+Base 64 encodes the XML and returns the output as a SVG image stream that can be set as the source attribute on a image element.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>asCanvas()<br>
+</b></td>
+<td><i>canvas element</i><br></td>
+<td>
+<small>
+Draws the marker to a canvas element using native draw instructions and returns the canvas element.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>asSVG()<br>
+</b></td>
+<td><i>SVG XML string</i><br></td>
+<td>
+<small>
+This will return the SVG XML string and it will also be stored in the XML property, if autoSVG is set to true the will be called automatically when you call getMarker.</small><br>
+</td>
+</tr>
+</table>
+
+You create a symbol by initiating it with a SIDC, and optionally an object literal with symbol options described below. Once you have initiated your Symbol Object, you can call the getMaker() method to create a symbol marker.<br>
+Where the SIDC is a complete, <i>letter based</i> or <i>number based</i>, or at least the first 3 chars of a letter based SIDC.<br>
+
+<code>//Include milsymbol.js<br>
+&lt;script src="../dist/milsymbol.js"&gt;&lt;/script&gt;<br>
+&lt;script&gt;<br>
+//Create a symbol using letter based SIDC and print the marker<br>
+document.write(new MS.symbol("SFG-UCI----D").getMarker().XML);<br>
+&lt;/script&gt;</code>
+
+<center>
+
+<script>
+	//Just a quick display of the symbol above
+	document.write(new MS.symbol("SFG-UCI----D").getMarker().XML);
+</script>
+
+</center>
+<br>
+Using number based SIDC is as easy as using letter based.<br>
+<code>//Include milsymbol.js<br>
+&lt;script src="../dist/milsymbol.js"&gt;&lt;/script&gt;<br>
+&lt;script&gt;<br>
+//Create a symbol using number based SIDC and print the marker<br>
+document.write(new MS.symbol(10031000141211000000).getMarker().XML);<br>
+&lt;/script&gt;</code>
+
+<center>
+
+<script>
+	//Just a quick display of the symbol above
+	document.write(new MS.symbol(10031000141211000000).getMarker().XML);
+</script>
+
+</center>
+<br>
+<h3 id="symboloptions">Symbol Options</h3>
+
+
+<b>Basic symbol options</b>
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Option
+</td>
+<td>Type
+</td>
+<td>Default
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>fill</b>
+</td>
+<td>Boolean
+</td>
+<td><i>true</i>
+</td>
+<td><small>Should your symbol be filled with color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>fillOpacity</b>
+</td>
+<td>Number
+</td>
+<td><i>1</i>
+</td>
+<td><small>The opacity of the symbol fill color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>frame</b>
+</td>
+<td>Boolean
+</td>
+<td><i>true</i>
+</td>
+<td><small>Should your symbol have a frame.<br>
+	All symbols support to be unframed, not just the ones specified in 2525B.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>icon</b>
+</td>
+<td>Boolean
+</td>
+<td><i>true</i>
+</td>
+<td><small>Should your symbol have an icon.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>strokeWidth</b>
+</td>
+<td>Real
+</td>
+<td><i>3</i>
+</td>
+<td><small>The stroke width of the symbol.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>size</b></td>
+<td>Number
+</td>
+<td><i>100</i><br></td>
+<td>
+<small>The L value for your symbol, where the L value is the width of the icon octagon. </small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>colorMode</b></td>
+<td><a href="#colorobject">Color object</a>
+</td>
+<td><i>"Light" <a href="#colorobject">Color object</a></i><br></td>
+<td>
+<small>This is the option for setting what <a href="#colorobject">Color object</a> to use for the fill of the symbols. You can use MS.colorMode to create a new color mode, or MS.getColorMode to get an existing color mode.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>monoColor</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>A color that is either a keyword or a numerical RGB specification. If you set this the symbol will be monochrome and unfilled using the color provided.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>civilianColor</b></td>
+<td>Boolean
+</td>
+<td><i>true</i><br></td>
+<td>
+<small>2525C specifics purple as an optional color for civilian symbols. Of corse we like color so we set this as default. </small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>infoFields</b></td>
+<td>Boolean
+</td>
+<td><i>true</i><br></td>
+<td>
+<small>If you have set some text fields and direction but don't want them to be displayed you can set infoFields to false. This makes it possible to initiate the object with all information you got but not display it.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>infoSize</b></td>
+<td>Number
+</td>
+<td><i>40</i><br></td>
+<td>
+<small>The size of the text fields surrounding the symbol.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>alternateMedal</b></td>
+<td>Boolean
+</td>
+<td><i>false</i><br></td>
+<td>
+<small>MIL-STD-2525D lets you choose between MEDAL and alternate MEDAL icons for mine warefare symbols, the default in milsymbol is using MEDAL icons, but you can change this using setting this property to true.</small><br>
+</td>
+</tr>
+
+</table>
+
+Symbol options can be included when you initiate the symbol, or modified at any time once you have created your symbol.<br>
+
+<code>
+mySymbol = new MS.symbol("SFG-UCI----D",{size:30,fill:false});<br>
+document.write(mySymbol.getMarker().XML);<br>
+</code><br>
+<center>
+<script>
+	mySymbol = new MS.symbol("SFG-UCI----D",{size:30,fill:false});
+	document.write(mySymbol.getMarker().XML);
+</script>
+</center>
+<br>
+<code>
+mySymbol = new MS.symbol("SFG-UCI----D");<br>
+mySymbol.size = 30;<br>
+mySymbol.fill = false;<br>
+document.write(mySymbol.getMarker().XML);<br>
+</code><br>
+<center>
+<script>
+	mySymbol = new MS.symbol("SFG-UCI----D");
+	mySymbol.size = 30;
+	mySymbol.fill = false;
+	document.write(mySymbol.getMarker().XML);
+</script>
+</center>
+<br>
+<b>Information fields Options</b>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Option
+</td>
+<td>Type
+</td>
+<td>Default
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>quantity</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID C<br>A text modifier in an equipment symbol that identifies the number of items present. 9 Characters</small>
+</td>
+</tr>
+
+<tr>
+<td><b>reinforcedReduced</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID F<br>A text modifier in a unit symbol that displays (+) for reinforced, (-) for reduced, (±) reinforced and reduced. 3 Characters</small>
+</td>
+</tr>
+
+<tr>
+<td><b>staffComments</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID G<br>A text modifier for units, equipment and installations; content is implementation specific. 20 Characters</small>
+</td>
+</tr>
+
+<tr>
+<td><b>additionalInformation</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID H<br>A text modifier for units, equipment, and installations; content is implementation specific. 20 Characters</small>
+</td>
+</tr>
+
+<tr>
+<td><b>evaluationRating</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID J<br>A text modifier for units, equipment, and installations that consists of a one-letter reliability rating and a one-number credibility rating. 2 Characters</small>
+</td>
+</tr>
+
+<tr>
+<td><b>combatEffectiveness</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID K<br>A text modifier for units and installations that indicates unit effectiveness or installation capability. 5 Characters</small>	
+</td>
+</tr>
+
+<tr>
+<td><b>signatureEquipment</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID L<br>A text modifier for hostile equipment; "!" indicates detectable electronic signatures. 1 Characters</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>higherFormation</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID M<br>A text modifier for units that indicates number or title of higher echelon command (corps are designated by Roman numerals). 21 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>hostile</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID N<br>A text modifier for equipment; letters "ENY" denote hostile symbols. 3 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>iffSif</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID P<br>A text modifier displaying IFF/SIF Identification modes and codes. 5 Characters</small>	<br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>direction</b></td>
+<td>Number
+</td>
+<td><i>undefined</i><br></td>
+<td>
+<small>FeildID Q, at the moment all directions should be in degrees and not in mils. Set to an empty string to remove the direction arrow.</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>sigint</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID R2<br>M = Mobile, S = Static, or U = Uncertain.</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>uniqueDesignation</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID T<br>A text modifier for units, equipment, and installations that uniquely identifies a particular symbol or track number. Identifies acquisitions number when used with SIGINT symbology. 21 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>type</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID V<br>A text modifier for equipment that indicates types of equipment. 24 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>dtg</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID W<br>A text modifier for units, equipment, and installations that displays DTG format: DDHHMMSSZMONYYYY or "O/O" for on order. 16 Characters</small>	<br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>altitudeDepth</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID X<br>A text modifier for units, equipment, and installations, that displays either altitude flight level, depth for submerged objects; or height of equipment or structures on the ground. 14 Characters</small>	<br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>location</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID Y<br>A text modifier for units, equipment, and installations that displays a symbol's location in degrees, minutes, and seconds (or in UTM or other applicable display format). 19 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>speed</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID Z<br>A text modifier for units and equipment that displays velocity as set forth in MIL-STD-6040. 8 Characters</small>	<br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>specialHeadquarters</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID AA<br>A text modifier for units; indicator is contained inside the frame; contains the name of the special C2 Headquarters. 9 Characters</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>platformType</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID AD<br>"ELNOT" or "CENOT"</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>equipmentTeardownTime</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID AE<br>Equipment teardown time in minutes.</small><br>
+</td>
+</tr>
+
+
+<tr>
+<td><b>commonIdentifier</b></td>
+<td>String
+</td>
+<td><i>""</i><br></td>
+<td>
+<small>FeildID AF<br>Example: "Hawk" for Hawk SAM system.</small><br>
+</td>
+</tr>
+
+</table>
+
+
+<br>
+<code>
+mySymbol = new MS.symbol("SFG-UCI----D");<br>
+mySymbol.size = 30;<br>
+mySymbol.uniqueDesignation = "Hello World";<br>
+document.write(mySymbol.getMarker().XML);<br>
+</code><br>
+<center>
+<script>
+	mySymbol = new MS.symbol("SFG-UCI----D");
+	mySymbol.size = 30;
+	mySymbol.uniqueDesignation = "Hello World";
+	document.write(mySymbol.getMarker().XML);
+</script>
+</center>
+<br>
+
+
+It is possible at any time to update properties for your symbol and request a new rendition.</br>
+<code>var sym = new MS.symbol("SFG-UCA----G",{size:50});<br>
+document.write(sym.getMarker().XML);<br>
+document.write("&lt;br&gt;");<br>
+sym.size = 30;<br>
+sym.uniqueDesignation = "Hello World";<br>
+document.write(sym.getMarker().XML);<br>
+</code><br>
+<center>
+<script>var sym = new MS.symbol("SFG-UCA----G",{size:50});
+document.write(sym.getMarker().XML);
+document.write("<br>");
+sym.size = 29;
+sym.uniqueDesignation = "Hello World";
+document.write(sym.getMarker().XML);
+</script>
+</center>
+<br>
+<h3 id="symbolproperties">Symbol Properties</h3>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Description
+</td>
+</tr>
+<tr>
+<td><b>
+bbox </b></td>
+<td> <a href="#boundingboxobject">Bounding box object</a></td>
+<td>
+<small>Contains the bounding box of the current marker<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+colors </b></td>
+<td> Colors Property</td>
+<td>
+<small>Contains the colors for the current marker<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+height </b></td>
+<td> Number					</td>
+<td>
+<small>Height of the current marker<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+markerAnchor </b></td>
+<td> {x:Number,y:Number}	</td>
+<td>
+<small>The anchor point for the current marker, this is usually the center of the octagon, but for headquarters it's the end of the staf. The coordinates are measured from the top left corner of the marker.<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+octagonAnchor </b></td>
+<td> {x:Number,y:Number}	</td>
+<td>
+<small>The anchor point for the octagon for the current marker. The coordinates are measured from the top left corner of the marker.<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+properties </b></td>
+<td> <a href="#propertiesobject">Properties object</a>				</td>
+<td>
+<small>Properties of the current marker<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+width </b></td>
+<td> Number					</td>
+<td>
+<small>Width of the current marker<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+XML </b></td>
+<td> String						</td>
+<td>
+<small>XML-string for the current marker<br>
+</small>
+</td>
+</tr>
+</table>
+
+
+
+<h2 id="propertiesobject">Properties object</h2>
+
+The properties object describes a lot of different properties for the current marker. This basically tells you everything you might need to know about your current marker and depends on the SIDC for the symbol and the symbol options that you have set.<br>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Description
+</td>
+</tr>
+<tr>
+<td><b>
+activity		</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it an Activity<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+affiliation	</b></td>
+<td>String		</td>
+<td>
+<small>Affiliation it is shown as (Friend/Hostile...) for example a Faker Hostile, will be shown with the shape of Friends.<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+baseAffilation</b></td>
+<td>String		</td>
+<td>
+<small>Affiliation it belongs to (Friend/Hostile...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+baseDimension	</b></td>
+<td>String		</td>
+<td>
+<small>Dimension it belongs to (Air/Ground...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+baseGeometry	</b></td>
+<td> buildingBlock Object		</td>
+<td>
+<small>Geometry is a combination of dimension and affiliation (AirFriend/GroundHostile...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+civilian		</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it Civilian<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+condition		</b></td>
+<td>String		</td>
+<td>
+<small>What condition is it in<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+context		</b></td>
+<td>String		</td>
+<td>
+<small>Context of the symbol (Reality/Exercise...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+dimension		</b></td>
+<td>String		</td>
+<td>
+<small>Dimension it is shown as (Air/Ground...) for example Ground Equipment is shown with the same shape as Sea.<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+dimensionUnknown</b></td>
+<td> Bool	</td>
+<td>
+<small>Is the dimension unknown<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+echelon		</b></td>
+<td>String		</td>
+<td>
+<small>What echelon (Platoon/Company...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+faker			</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it a Faker<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+fenintDummy	</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it a feint/dummy<br>
+</small>
+</td>
+</tr>
+
+
+<tr>
+<td><b>
+fill			</b></td>
+<td> Bool		</td>
+<td>
+<small>Standard says it should be filled<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+frame			</b></td>
+<td> Bool		</td>
+<td>
+<small>Standard says it should be framed<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+functionid		</b></td>
+<td>String 		</td>
+<td>
+<small>Part of SIDC referring to the icon.<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+headquarters	</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it a Headquarters<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+iconBottom	</b></td>
+<td> Number		</td>
+<td>
+<small>The bottom of the icon, this is only set for equipment symbols.<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+installation	</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it an Instalation<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+joker			</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it a Joker<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+mobility		</b></td>
+<td>String		</td>
+<td>
+<small>What mobility (Tracked/Sled...)<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+notpresent	</b></td>
+<td>String		</td>
+<td>
+<small>Is it Anticipated or Pending<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+numberSIDC	</b></td>
+<td> Bool	</td>
+<td>
+<small>Is the SIDC number based<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+space			</b></td>
+<td> Bool	</td>
+<td>
+<small>Is it in Space<br>
+</small>
+</td>
+</tr>
+
+<tr>
+<td><b>
+taskForce		</b></td>
+<td> Bool		</td>
+<td>
+<small>Is it a task force<br>
+
+</small>
+</td>
+</tr>
+</table>
+
+
+<h2 id="JSONgeometry">JSON geometry</h2>
+
+A JSON geometry is an object representing a geometry.<br>
+For example:<br>
+<code>{type:'path',d:'M25,50 l150,0 0,100 -150,0 z'}</code> <br>
+This is the JSON geometry representing the base geometry for a Ground Friend marker.<br> If you are creating your own JSON geometries for usage in milsymbol, they should have the origo at 100,100, and the hight and width of the icon octagon is 100.<br>
+
+
+<h2 id="dashobject">Dash object</h2>
+
+The stroke-dasharray attribute controls the pattern of dashes and gaps used to stroke paths on a SVG geometry. Each property on the Dash object represent a stroke-dasharray used in milsymbol.<br>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Default
+</td>
+<td>Description
+</td>
+</tr>
+<tr>
+<td><b>pending</b>
+</td>
+<td>String
+</td>
+<td><i>"4,4"</i>
+</td>
+<td><small>The value for the stroke-dasharray used for markers with a pending status.</small>
+</td>
+</tr>
+<tr>
+<td><b>anticipated</b>
+</td>
+<td>String
+</td>
+<td><i>"8,12"</i>
+</td>
+<td><small>The value for the stroke-dasharray used for markers with a anticipated status.</small>
+</td>
+</tr>
+<tr>
+<td><b>feintDummy</b>
+</td>
+<td>String
+</td>
+<td><i>"8,8"</i>
+</td>
+<td><small>The value for the stroke-dasharray used for the feint/dummy modifier.</small>
+</td>
+</tr>
+</table>
+		
+<h2 id="colorobject">Color object</h2>
+
+A color object represents a set of colors with one color for each affiliation, a registred color object will have a name, this is called a color mode, so that you will be able to get it using <b>MS.getColorMode()</b>. The following named color objects are present when milsymbol is initiated.<br>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Color mode name
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>Light</b>
+</td>
+<td><small>Light fill colors.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Medium</b>
+</td>
+<td><small>Medium fill colors.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Dark</b>
+</td>
+<td><small>Dark fill colors.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>FrameColor</b>
+</td>
+<td><small>Frame colors for unfilled symbols.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>IconColor</b>
+</td>
+<td><small>Icon colors for unfilled and unframed symbols.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Black</b>
+</td>
+<td><small>This is all black.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>White</b>
+</td>
+<td><small>This is all white.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>OffWhite</b>
+</td>
+<td><small>This is off white, used for white parts of icons.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>None</b>
+</td>
+<td><small>This is no color, used to turn colors off.</small>
+</td>
+</tr>
+</table>
+
+The color object itself has one property for each affiliation color, where colors for civilian markers is set as a separate affiliation.
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>Civilian</b>
+</td>
+<td>String
+</td>
+<td><small>A color that is either a keyword or a numerical RGB specification.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Friend</b>
+</td>
+<td>String
+</td>
+<td><small>A color that is either a keyword or a numerical RGB specification.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Hostile</b>
+</td>
+<td>String
+</td>
+<td><small>A color that is either a keyword or a numerical RGB specification.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Neutral</b>
+</td>
+<td>String
+</td>
+<td><small>A color that is either a keyword or a numerical RGB specification.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>Unknown</b>
+</td>
+<td>String
+</td>
+<td><small>A color that is either a keyword or a numerical RGB specification.</small>
+</td>
+</tr>
+
+</table>
+You can use MS.colorMode() to create a new color mode, and MS.setColorMode() to register it with a new or existing name.<br>
+
+<h2 id="symbolcolorsobject">Symbol colors object</h2>
+
+The symbol colors object represent the <a href="#colorobject">Color object</a>s used for different parts of the current marker. All affiliations are still present for each color since some icons use colors form affiliation other than their own.<br>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>fillColor</b>
+</td>
+<td><small>Marker fill color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>frameColor</b>
+</td>
+<td><small>Marker frame color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>iconColor</b>
+</td>
+<td><small>Icon color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>iconFillColor</b>
+</td>
+<td><small>Icon fill color.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>none</b>
+</td>
+<td><small>Transparent parts of the marker.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>black</b>
+</td>
+<td><small>Black parts of the marker.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>white</b>
+</td>
+<td><small>White parts of the marker.</small>
+</td>
+</tr>
+
+</table>
+
+
+<h2 id="boundingboxobject">Bounding box object</h2>
+The boundig box object tells you the dimensions for a marker or a building block object. This helps you calculate where to place different symbol modifiers or the dimensions of a building block that you want to add to the marker.<br>
+<h3>Bounding box Methods</h3>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Methods
+</td>
+<td>Returns
+</td>
+<td>Description
+</td>
+</tr>
+
+
+<tr>
+<td><b>height()<br>
+</b></td>
+<td><i>Number</i><br></td>
+<td>
+<small>
+This will get the height of the bouding box.</small><br>
+</td>
+</tr>
+
+<tr>
+<td><b>width()<br>
+</b></td>
+<td><i>Number</i><br></td>
+<td>
+<small>
+This will get the width of the bouding box.</small><br>
+</td>
+</tr>
+
+</table>
+
+<h3>Bounding box Properties</h3>
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>x1</b>
+</td>
+<td>Number
+</td>
+<td><small>The x value of the top left corner of the bounding box.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>y1</b>
+</td>
+<td>Number
+</td>
+<td><small>The y value of the top left corner of the bounding box.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>x2</b>
+</td>
+<td>Number
+</td>
+<td><small>The x value of the bottom right corner of the bounding box.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>y2</b>
+</td>
+<td>Number
+</td>
+<td><small>The y value of the bottom right corner of the bounding box.</small>
+</td>
+</tr>
+
+</table>
+
+<h2 id="buildingblockobject">Building block object</h2>
+A building block object describes a part that should be added to the marker. It consists of two <a href="#JSONgeometry">JSON geometries</a>, and a bounding box for the geometries. 
+
+<table border="1">
+<tr class="table-heading">
+<td style="min-width:160px;">Property
+</td>
+<td>Type
+</td>
+<td>Description
+</td>
+</tr>
+
+<tr>
+<td><b>pre</b>
+</td>
+<td><a href="#JSONgeometry">JSON geometry</a>
+</td>
+<td><small>This is the <a href="#JSONgeometry">JSON geometry</a> for the geometry we intend to draw. This part is inserted before any previous parts of the marker.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>post</b>
+</td>
+<td><a href="#JSONgeometry">JSON geometry</a>
+</td>
+<td><small>This is the <a href="#JSONgeometry">JSON geometry</a> for the geometry we intend to draw. This part is inserted after any existing parts of the marker.</small>
+</td>
+</tr>
+
+<tr>
+<td><b>bbox</b>
+</td>
+<td><a href="#boundingboxobject">Bounding box object</a>
+</td>
+<td><small>This is the bounding box for the SVG geometry, since javascript can't get the bounds of a SVG geometry until it has been drawn we need to calculate this manually.</small>
+</td>
+</tr>
+
+</table>
+<br>
+<!--
+<h2 id="extendingmilsymbol">Extending milsymbol</h2>
+If you want to you can extend the markers in milsymbol with custom code. It's actually possible to remove built in functionality in milsymbol and replace it with custom code, for example you could replace the code for the direction indicator with code for a speed indicator, but the most common use case is to add extra overlays.<br>
+To get an array of all functions that builds the symbols in milsymbol you can use <b>MS.getMarkerParts()</b>, and in the same way you can set a completely new set of functions using <b>MS.setMarkerParts(</b><i>Array of functions</i><b>)</b>.<br>
+If you just want to add a new overlay on top of the current marker parts, you can use <b>MS.addMarkerParts(</b><i>function</i><b>)</b>, where the new part is a function that returns a <b>MS.buildingBlock</b>. Inside the function you will be able to access all information about the current marker using <b>this</b>.<br>
+<code>
+<small>
+var MSdebug = function debug(){<br>
+&nbsp;&nbsp;&nbsp;&nbsp;//This debug function is a minimal example of how to extend milsymbol.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;//Create a variable to store your geometries<br>
+&nbsp;&nbsp;&nbsp;&nbsp;var g = "";<br>
+&nbsp;&nbsp;&nbsp;&nbsp;//Get a new bounding box and modify it if your geometry extends outside the current bounds.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;var gbbox = new MS.bbox();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;//Draws the bounding box of the marker<br>
+&nbsp;&nbsp;&nbsp;&nbsp;g += '&lt;path fill="none" stroke="black" stroke-width="1" d="M'+<b>this.bbox.x1</b>+','+<b>this.bbox.y1</b>+' l'+<b>this.bbox.width()</b>+',0 0,'+<b>this.bbox.height()</b>+' -'+<b>this.bbox.width()</b>+',0 z"/&gt;'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;//Draws the icon octagon<br>
+&nbsp;&nbsp;&nbsp;&nbsp;g += '&lt;path fill="none" stroke="black" stroke-width="1" d="m 120,60 0,80 m -40,-80 0,80 m -20,-20 80,0 m 0,-40 -80,0 M 100,50 135.35534,64.64466 150,100 135.35534,135.35534 100,150.00002 64.644661,135.35534 50,100 64.644661,64.64466 z" /&gt;'<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return <b>MS.buildingBlock(</b>'',g,gbbox<b>)</b>;<br>
+}<br>
+<b>MS.addMarkerParts(</b>MSdebug<b>)</b>;<br>
+</small>
+</code><br>
+-->
+
+
+</div>
+<div class="footer">
+<center>
+All Code and Graphics are created by Måns BECKMAN.<br>
+Contact: <u>mans.beckman at spatialillusions dot com</u><br><br>
+Symbols are generated using the javascript library milsymbol.js. <br>
+For more information, see <a href="http://spatialillusions.com">www.spatialillusions.com</a><br>
+<br>
+	<svg
+		viewBox="50 50 100 100"
+		width="110"
+		height="110"> 
+		<path
+			style="fill:none;stroke:rgb(90,90,90);stroke-width:2.5px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+			d="m 105,50 25,15 m -40,20 50,10 m -80,-25 0,35 0,25 45,0 15,15 M 110,80 75,70 l 0,50 45,-25 10,35 20,-35 -20,-30 z m -30,65 20,5 20,-5 20,-15 m -50,15 -10,0 -20,-15 m 90,-35 -10,35 -10,0 -10,15 -30,0 m 45,-80 15,30 -10,0 m -10,-35 5,5 -5,0 m -25,-15 25,10 0,5 m -70,5 20,-15 20,5 M 75,70 60,70 50,105 m 10,25 -10,-25 10,0 m 45,25 -15,15 -30,-15 15,-10 m 25,-60 30,5 10,30 M 75,70 100,60 110,80 m 30,15 -10,35 -25,0 m 15,-35 20,0 -30,-15 -20,5 30,10 -15,35 L 75,120 90,85 75,70 60,105 75,120 m 25,-60 5,-10 -25,5 -5,15">
+		</path>
+	</svg>
+</center>
+</div>
+</body>   
+    
+</html>

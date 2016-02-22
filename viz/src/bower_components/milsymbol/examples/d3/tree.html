@@ -1,0 +1,271 @@
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<title>Spatial Illusions</title>
+
+<link rel="stylesheet" href="../../spatialillusions.com.css" />
+
+</head>
+<body onload="renderOrbat()">
+
+
+<div class="heading">
+	<a href="http://spatialillusions.com">SPATIAL ILLUSIONS</a>
+	<span class="bannerLinks">
+	<!--<a href="MS.symbolLibrary/index.html">MS.symbol.js</a>
+	<a href="ForceTracker/index.html">Force Tracker</a>-->
+
+	</span>
+	<svg class="logo"
+		viewBox="50 50 100 100"
+		width="30"
+		height="30"> 
+		<path
+			style="fill:none;stroke:#ffffff;stroke-width:3px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+			d="m 105,50 25,15 m -40,20 50,10 m -80,-25 0,35 0,25 45,0 15,15 M 110,80 75,70 l 0,50 45,-25 10,35 20,-35 -20,-30 z m -30,65 20,5 20,-5 20,-15 m -50,15 -10,0 -20,-15 m 90,-35 -10,35 -10,0 -10,15 -30,0 m 45,-80 15,30 -10,0 m -10,-35 5,5 -5,0 m -25,-15 25,10 0,5 m -70,5 20,-15 20,5 M 75,70 60,70 50,105 m 10,25 -10,-25 10,0 m 45,25 -15,15 -30,-15 15,-10 m 25,-60 30,5 10,30 M 75,70 100,60 110,80 m 30,15 -10,35 -25,0 m 15,-35 20,0 -30,-15 -20,5 30,10 -15,35 L 75,120 90,85 75,70 60,105 75,120 m 25,-60 5,-10 -25,5 -5,15">
+				<animateTransform 
+				attributeType="xml"
+				attributeName="transform" type="rotate"
+				from="0 100 100" to="360 100 100"
+				begin="0" dur="60s" 
+				fill="freeze"
+				repeatCount="indefinite"
+				/>
+		</path>
+	</svg>
+</div>
+
+<div class="body">
+
+
+<style>
+
+.link {
+  fill: none;
+  stroke: rgb(200,200,200);
+  shape-rendering: crispEdges;
+}	
+
+</style>
+<h1>milsymbol and d3 - Let's draw an orbat tree</h1>
+This is an example of how milsymbol can be integrated into d3.js, it uses the tree functionality in d3 to draw an orbat tree and it is possible to add functionality to drag and drop units between different branches.<br>
+The demo uses the same raw geoJSON data as the map demos, calculates the orbat from the input and renders it as a tree.
+Click on dark colored units to expand sub units.</br>
+<br>
+Orientation of the tree:<input onclick="update()" type="radio" name="orientation" value="vertical">Top to Bottom
+<input onclick="update()" type="radio" name="orientation" value="horisontal" checked>Left to Right<br>
+
+</div>
+
+<div id="orbattree">
+</div>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<script src="../../dist/milsymbol.js"></script>
+<script src="../situation.json"></script>
+
+
+<script>
+
+function geoJson2tree(data,name,command){
+	var rawdata = {};
+	for (var key in data.features){
+		rawdata[data.features[key].properties[name]] = data.features[key];
+		rawdata[data.features[key].properties[name]].children = [];
+	}
+
+	var tree = {"properties":{"orbatName":"milsymbol Orbat","SIDC":"SUGP"},"children":[]};
+	for (var key in rawdata){
+		if ( rawdata.hasOwnProperty(rawdata[key].properties[command]) ){
+			rawdata[rawdata[key].properties[command]].children.push(rawdata[key]);
+		}else{
+			var newCommand = {"properties":{"name":rawdata[key].properties[command],"SIDC":"SFGP"},"children":[rawdata[key]]};
+			rawdata[rawdata[key].properties[command]] = newCommand;
+			tree.children.push(newCommand);
+		}
+	}
+	
+	return tree;
+}
+
+var structure = geoJson2tree(situation, "name", "command");
+
+var tree, diagonal, svg;
+var p = 0,
+    duration = 750,
+    root; 
+
+var sof,orientation,_source;
+
+var margin = {top: 100, right: 200, bottom: 200, left: 100}; 
+
+function renderOrbat() {
+
+
+	tree = d3.layout.tree()
+    	.separation(function(a, b) { return a.parent === b.parent ? 1 : 1; })
+    
+	svg = d3.select("#orbattree").append("svg")
+    	.attr("width", 500)
+		.attr("height", 500)
+		.append("g")
+    	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	structure.x0 = 500 / 2;
+	structure.y0 = 0;
+
+ 	function collapse(d) {
+    	if (d.children) {
+      		d._children = d.children;
+      		d._children.forEach(collapse);
+      		d.children = null;
+    	}
+  	}
+  	structure.children.forEach(collapse);
+  	
+  	update(structure);
+  
+}
+function update(source) {
+
+	var radios = document.getElementsByName('orientation');
+	for (var i = 0, length = radios.length; i < length; i++) {
+   		if (radios[i].checked) {
+        	orientation = radios[i].value;
+        	break;
+    	}
+	}
+
+	if(orientation == "horisontal"){tree.nodeSize([70,200])}else{tree.nodeSize([120,150])};
+	
+	// Compute the new tree layout.
+  	var nodes = tree.nodes(structure),
+		links = tree.links(nodes);
+
+  	var minX = 0;
+  	var maxX = 0;
+  	var maxY = 0;
+  	nodes.forEach(function(d) { 	
+  		maxY = Math.max(d.y,maxY);
+  		maxX = Math.max(d.x,maxX);
+  		minX = Math.min(d.x,minX)});
+  
+  	nodes.forEach(function(d) { d.x = d.x - minX;});
+
+	if(orientation == "horisontal"){								
+		d3.select("#orbattree").select("svg").transition()
+			.duration(duration)
+			.attr("height", (maxX-minX)+margin.top+margin.bottom) 
+			.attr("width", maxY+margin.left+margin.right); 								
+	}else{
+		d3.select("#orbattree").select("svg").transition()
+    		.duration(duration)
+			.attr("width", (maxX-minX)+margin.top+margin.bottom) 
+			.attr("height", maxY+margin.left+margin.right); 									
+	}  
+									
+	// Update the nodes…
+	var node = svg.selectAll("g.node")
+    	.data(nodes, function(d) { return d.id || (d.id = ++p); });
+    	
+	// Enter any new nodes at the parent's previous position.
+	var nodeEnter = node.enter().append("g")
+    	.attr("class", "node")
+    	.attr("transform", function(d) { return orientation == "horisontal"?("translate(" + source.y0 + "," + source.x0 + ")"):("translate(" + source.x0 + "," + source.y0 + ")"); })
+    	.on("click", click)
+
+  	// Transition nodes to their new position.
+  	var nodeUpdate = node.transition()
+      	.duration(duration)
+      	.attr("transform", function(d) { return orientation == "horisontal"?("translate(" + d.y + "," + d.x + ")"):("translate(" + d.x + "," + d.y + ")"); });
+	
+	//Update all node symbols so that the color reflect if they have hidden children or not.
+	node.select(".symbol").remove()
+	node.append("g")
+	    .attr("class", "symbol")
+		.attr("transform", function (d){
+			if (d.properties.SIDC) d.symbol = new MS.symbol(d.properties.SIDC,{size:30, uniqueDesignation:(d.properties.name), colorMode: (d._children && d._children!="" ? MS.getColorMode("Medium") : MS.getColorMode("Light")) }).getMarker();
+			return "translate("+(-d.symbol.octagonAnchor.x)+","+(-d.symbol.octagonAnchor.y)+")"})
+		.each(function (d){this.appendChild(d.symbol.asDOM())	})      
+
+  	// Transition exiting nodes to the parent's new position.
+  	var nodeExit = node.exit().transition()
+      	.duration(duration)
+      	.attr("transform", function(d) { return orientation == "horisontal"?("translate(" + source.y + "," + source.x + ")"):("translate(" + source.x + "," + source.y + ")"); })
+      	.remove();
+
+ 	 // Update the links…
+  	var link = svg.selectAll("path.link")
+     	.data(links, function(d) { return d.target.id; });
+
+  	// Enter any new links at the parent's previous position.
+  	link.enter().insert("path", "g")
+      	.attr("class", "link")
+      	.attr("d", function(d) {
+        	var o = {x: source.x0, y: source.y0};
+        	return elbow({source: o, target: o});
+      	});
+
+  	// Transition links to their new position.
+  	link.transition()
+      	.duration(duration)
+      	.attr("d", elbow);
+
+ 	 // Transition exiting nodes to the parent's new position.
+  	link.exit().transition()
+      	.duration(duration)
+      	.attr("d", function(d) {
+        	var o = {x: source.x, y: source.y};
+        	return elbow({source: o, target: o});
+      	})
+      	.remove();
+
+  	// Stash the old positions for transition.
+  	nodes.forEach(function(d) {
+    	d.x0 = d.x;
+    	d.y0 = d.y;
+  	});
+  	root = structure;
+  	_source = source;
+}
+
+
+
+// Toggle children on click.
+function click(d) {
+  	if (d.children) {
+    	d._children = d.children;
+    	d.children = null;
+  	} else {
+    	d.children = d._children;
+    	d._children = null;
+  	}
+  	update(d);
+}
+function expand(d) {
+    if (d._children) {
+    	d.children = d._children;
+        d._children = null;
+    }
+}
+
+// Draws the line between nodes
+function elbow(d, i) {
+  	if(orientation == "horisontal") return "M" + d.source.y + "," + d.source.x
+  		+ " l" + (d.target.y-d.source.y)/2 + "," + 0 + " "
+    	+ " 0," + (d.target.x-d.source.x) + " "
+		+ "L" + d.target.y + "," + d.target.x;
+		
+return "M" + d.source.x + "," + d.source.y
+  		+ " l" + 0 + "," + (d.target.y-d.source.y)/2 + " "
+  		+ " " + (d.target.x-d.source.x) + ",0 "
+		+ "L" + d.target.x + "," + d.target.y;				
+}
+
+
+</script>
+
+
+</body>

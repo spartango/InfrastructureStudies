@@ -2,22 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title></title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"
-          integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.5/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.4.0/MarkerCluster.css"/>
+    <title>Rail Resilience</title>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="bower_components/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="bower_components/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.4.0/MarkerCluster.Default.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css"/>
-    <link rel="stylesheet" href="https://cdn.rawgit.com/CliffCloud/Leaflet.EasyButton/master/src/easy-button.css"/>
-    <link rel="stylesheet"
-          href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.4/leaflet.fullscreen.css'
-          rel='stylesheet'/>
-    <link rel="stylesheet" href="https://cdn.rawgit.com/ebrelsford/Leaflet.loading/master/src/Control.Loading.css"/>
+          href="bower_components/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="bower_components/leaflet-draw/dist/leaflet.draw.css"/>
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="bower_components/Leaflet.EasyButton/src/easy-button.css"/>
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+    <link rel="stylesheet" href="bower_components/leaflet.loading/src/Control.Loading.css"/>
     <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
@@ -26,10 +22,11 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Rail Resilience</a>
             <span class="navbar-right">
-                <a class="navbar-brand" href="#"><i class="fa fa-train" aria-hidden="true"></i> <span id="sourceCount">0</span> <i class="fa fa-angle-double-right"></i> <span id="sinkCount">0</span></a>
-                <a class="navbar-brand" href="#"><i class="fa fa-exchange" aria-hidden="true"></i> <span id="flowCount">0</span></a>
-                <a class="navbar-brand" href="#"><i class="fa fa-road" aria-hidden="true"></i> <span id="bridgeCount">0</span></a>
-                <a class="navbar-brand" href="#"><i class="fa fa-crosshairs" aria-hidden="true"></i> <span id="targetCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-upload"></i> <span id="sourceCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-download"></i> <span id="sinkCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-exchange"></i> <span id="flowCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-road"></i> <span id="bridgeCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-crosshairs"></i> <span id="targetCount">0</span></a>
             </span>
         </div>
     </div>
@@ -39,23 +36,21 @@
 </div>
 </body>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-        integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
-        crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.4.0/leaflet.markercluster.js"></script>
-<script src="https://cdn.rawgit.com/jseppi/Leaflet.MakiMarkers/master/Leaflet.MakiMarkers.js"></script>
-<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-hash/v0.2.1/leaflet-hash.js'></script>
-<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.4/Leaflet.fullscreen.min.js'></script>
-<script src="https://cdn.rawgit.com/pa7/heatmap.js/master/plugins/leaflet-heatmap.js"></script>
-<script src="https://cdn.rawgit.com/pa7/heatmap.js/master/build/heatmap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.js"></script>
-<script src="https://cdn.rawgit.com/CliffCloud/Leaflet.EasyButton/master/src/easy-button.js"></script>
-<script src="https://cdn.rawgit.com/ewoken/Leaflet.MovingMarker/master/MovingMarker.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/2.0.2/turf.min.js"></script>
-<script src="https://cdn.rawgit.com/spatialillusions/milsymbol/master/dist/milsymbol.js"></script>
-<script src="https://cdn.rawgit.com/ebrelsford/Leaflet.loading/master/src/Control.Loading.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="bower_components/leaflet/dist/leaflet.js"></script>
+<script src="bower_components/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<script src="bower_components/Leaflet.MakiMarkers/Leaflet.MakiMarkers.js"></script>
+<script src='bower_components/leaflet-hash/leaflet-hash.js'></script>
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+<script src="bower_components/heatmap.js-amd/build/heatmap.min.js"></script>
+<script src="bower_components/heatmap.js-amd/plugins/leaflet-heatmap.js"></script>
+<script src="bower_components/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="bower_components/Leaflet.EasyButton/src/easy-button.js"></script>
+<script src="bower_components/Leaflet.MovingMarker/MovingMarker.js"></script>
+<script src="bower_components/turf/turf.min.js"></script>
+<script src="bower_components/milsymbol/dist/milsymbol.js"></script>
+<script src="bower_components/leaflet.loading/src/Control.Loading.js"></script>
 <script src="https://d3js.org/d3-array.v0.7.min.js"></script>
 <script src="https://d3js.org/d3-collection.v0.1.min.js"></script>
 <script src="https://d3js.org/d3-color.v0.4.min.js"></script>
