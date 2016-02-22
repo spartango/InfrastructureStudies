@@ -1,3 +1,18 @@
+@font-face {
+  font-family: 'Liberator-Heavy';
+  src: url('fonts/Liberator-Heavy.ttf');
+}
+
+@font-face {
+    font-family: 'Liberator-Medium';
+    src: url('fonts/Liberator-Medium.ttf');
+}
+
+@font-face {
+    font-family: 'Liberator-Light';
+    src: url('fonts/Liberator-Light.ttf');
+}
+
 .flow-marker {
     background-clip: padding-box;
     border-radius: 5px;
@@ -8,4 +23,13 @@
     width: 100%;
     padding-right: 0px;
     padding-left: 0px;
+}
+
+.brand-text {
+    font-family: "Liberator-Heavy", sans-serif;
+    font-size: 24px;
+}
+
+.nav-text {
+    font-family: Liberator-Light, sans-serif;
 }

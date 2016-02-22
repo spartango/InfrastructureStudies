@@ -1,0 +1,39 @@
+{
+  "name": "Infrastructure",
+  "homepage": "https://github.com/spartango/InfrastructureStudies",
+  "authors": [
+    "Anand Gupta <spartango@gmail.com>"
+  ],
+  "description": "Infrastructure Analysis",
+  "main": "app.js",
+  "moduleType": [
+    "globals"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "^3.3.6",
+    "leaflet": "^0.7.7",
+    "leaflet.markercluster": "^0.4.0",
+    "Leaflet.MakiMarkers": "^1.0.1",
+    "leaflet-hash": "*",
+    "heatmap.js-amd": "*",
+    "leaflet-draw": "leaflet.draw#^0.2.4",
+    "Leaflet.EasyButton": "^1.2.0",
+    "Leaflet.MovingMarker": "*",
+    "turf": "^2.0.2",
+    "milsymbol": "^0.5.5",
+    "leaflet.loading": "Leaflet.loading#^0.1.18",
+    "font-awesome": "fontawesome#^4.5.0"
+  },
+  "devDependencies": {
+    "livereload-js": "^2.2.1"
+  }
+}
