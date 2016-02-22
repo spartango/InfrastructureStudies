@@ -1,6 +1,11 @@
-/**
- * Created by spartango on 10/2/15.
- */
+var mapmargin = 50;
+$(window).on("resize", resize);
+resize();
+function resize() {
+    $('#map').css("height", ($(window).height() - (mapmargin + 12)));
+    $('#map').css("margin-top", -21);
+}
+
 var DATA_DIR = "elevation/";
 
 // Setup Map
@@ -419,6 +424,9 @@ var loadPaths = function () {
                     }
                 });
 
+                // Update the top bar count
+                $('#flowCount').text(data.features.length);
+
                 path.addTo(map);
                 backgroundLayers['paths'] = path;
 
@@ -503,6 +511,8 @@ var loadSources = function () {
     if (!backgroundLayers['sources']) {
         loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
             var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+            $('#sourceCount').text(data.features.length);
+
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
@@ -522,6 +532,8 @@ var loadSinks = function () {
     if (!backgroundLayers['sinks']) {
         loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
             var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+            $('#sinkCount').text(data.features.length);
+
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
@@ -586,6 +598,9 @@ var loadSegments = function () {
                 var minCriticality = d3_array.min(criticalityData);
                 var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
+
+                // Update the top bar count
+                $('#bridgeCount').text(data.features.length);
 
                 var path = L.geoJson(data, {
                     filter: function (feature) {
@@ -669,6 +684,9 @@ var loadTargets = function () {
                 var minCriticality = d3_array.min(criticalityData);
                 var midPoint = d3_array.median(criticalityData);
                 var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
+
+                // Update the top bar count
+                $('#targetCount').text(data.features.length);
 
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
@@ -795,11 +813,11 @@ L.easyButton('fa-cog', function (btn) {
         enableDrawing();
         L.easyBar([
             bridgeButton,
-            rangeRingButton,
             portButton,
             stationButton,
             aviationButton,
             SAMButton,
+            rangeRingButton,
             nuclearButton,
         ], {
             position: 'topright'
