@@ -2,7 +2,7 @@ var mapmargin = 50;
 $(window).on("resize", resize);
 resize();
 function resize() {
-    $('#map').css("height", ($(window).height() - (mapmargin + 12)));
+    $('#map').css("height", ($(window).height() - mapmargin ));
     $('#map').css("margin-top", -21);
 }
 
