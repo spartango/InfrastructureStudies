@@ -385,15 +385,11 @@ var loadStations = function () {
 
 var pathPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = "<table><tr>";
+        var popupString = "<table>";
         for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
+            popupString += "<tr><td>"+key+"</td><td>" + feature.properties[key] + "</td></tr>";
         }
-
-        if (feature.properties.id || feature.geometry) {
-            popupString += "</tr><tr>"
-        }
-        popupString += "</tr></table>";
+        popupString += "</table>";
         layer.bindPopup(popupString);
     }
 };
@@ -595,7 +591,7 @@ var loadSegments = function () {
                     filter: function (feature) {
                         return allBridges || feature.properties.criticality >= 2;
                     },
-                    //onEachFeature: pathPopup,
+                    onEachFeature: pathPopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
@@ -660,26 +656,6 @@ var loadDamagedPath = function (id) {
     loadAnimation(flowName);
 };
 
-var damagePopup = function (feature, layer) {
-    // does this feature have a property named popupContent?
-    if (feature.properties) {
-        var popupString = "<table><tr>";
-        for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
-        }
-
-        if (feature.id || feature.geometry) {
-            popupString += "</tr><tr>"
-        }
-
-        //if (feature.id) {
-        //    popupString += "<td><button onclick='loadDamagedPath(" + feature.id + ")'>Reroutes</button></td>";
-        //}
-
-        popupString += "</tr></table>";
-        layer.bindPopup(popupString);
-    }
-};
 
 var loadTargets = function () {
     if (!backgroundLayers['targets']) {
@@ -696,7 +672,7 @@ var loadTargets = function () {
 
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
-                    onEachFeature: damagePopup,
+                    onEachFeature: pathPopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
