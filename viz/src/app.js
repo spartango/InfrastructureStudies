@@ -805,35 +805,35 @@ var enableDrawing = function () {
     });
 };
 
-var advancedMode = false;
-L.easyButton('fa-cog', function (btn) {
-    if (!advancedMode) {
-        btn.removeFrom(map);
-        advancedMode = true;
-        enableDrawing();
-        L.easyBar([
-            bridgeButton,
-            portButton,
-            stationButton,
-            aviationButton,
-            SAMButton,
-            rangeRingButton,
-            nuclearButton,
-        ], {
-            position: 'topright'
-        }).addTo(map);
+L.easyButton('fa-cogs', function (btn) {
+    btn.removeFrom(map);
+    L.easyBar([
+        bridgeButton,
+        portButton,
+        stationButton,
+        aviationButton,
+        SAMButton,
+        rangeRingButton,
+        nuclearButton
+    ], {
+        position: 'topright'
+    }).addTo(map);
 
-        fastButton.addTo(map);
-
-        layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
-        layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
-        layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
-        layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
-        layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
-        layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
-    }
+    layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
+    layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
+    layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
+    layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
+    layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
+    layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
 }, {
     position: 'topright'
+}).addTo(map);
+
+L.easyButton('fa-pencil', function (btn) {
+    btn.removeFrom(map);
+    enableDrawing();
+}, {
+    position: 'bottomleft'
 }).addTo(map);
 
 var refreshTargets = function () {
