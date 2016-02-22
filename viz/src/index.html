@@ -21,7 +21,22 @@
     <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
-<div id="map"></div>
+<div class="navbar navbar-inverse navbar-static-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Rail Resilience</a>
+            <span class="navbar-right">
+                <a class="navbar-brand" href="#"><i class="fa fa-train" aria-hidden="true"></i> <span id="sourceCount">0</span> <i class="fa fa-angle-double-right"></i> <span id="sinkCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-exchange" aria-hidden="true"></i> <span id="flowCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-road" aria-hidden="true"></i> <span id="bridgeCount">0</span></a>
+                <a class="navbar-brand" href="#"><i class="fa fa-crosshairs" aria-hidden="true"></i> <span id="targetCount">0</span></a>
+            </span>
+        </div>
+    </div>
+</div>
+<div class="container-fluid fill">
+    <div id="map"></div>
+</div>
 </body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>

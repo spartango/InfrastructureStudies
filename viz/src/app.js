@@ -1,7 +1,12 @@
-/**
- * Created by spartango on 10/2/15.
- */
-var DATA_DIR = "testing/";
+var mapmargin = 50;
+$(window).on("resize", resize);
+resize();
+function resize() {
+    $('#map').css("height", ($(window).height() - mapmargin ));
+    $('#map').css("margin-top", -21);
+}
+
+var DATA_DIR = "elevation/";
 
 // Setup Map
 var layer;
@@ -31,6 +36,27 @@ var satelliteMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}
     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
     maxZoom: 18,
     id: 'mapbox.satellite',
+    accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
+});
+
+var satelliteDigitalGlobeLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
+    attribution: '&copy; Mapbox &copy; OpenStreetMap &copy; DigitalGlobe',
+    maxZoom: 18,
+    id: 'digitalglobe.nmghof7o',
+    accessToken: 'pk.eyJ1IjoiZGlnaXRhbGdsb2JlIiwiYSI6ImNpa3ZneDl4cTAwZnp1OWtzZmJjNHdvNmsifQ.evG8fSrSxdxBmez_564Pug'
+});
+
+var hybridDigitalGlobeLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
+    attribution: '&copy; Mapbox &copy; OpenStreetMap &copy; DigitalGlobe',
+    maxZoom: 18,
+    id: 'digitalglobe.nmgi4k9c',
+    accessToken: 'pk.eyJ1IjoiZGlnaXRhbGdsb2JlIiwiYSI6ImNpa3ZneDl4cTAwZnp1OWtzZmJjNHdvNmsifQ.evG8fSrSxdxBmez_564Pug'
+});
+
+var topoMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox.outdoors',
     accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
 });
 
@@ -122,8 +148,9 @@ var baseMaps = {
     "Physical": mapboxLayer,
     //"Physical": Esri_WorldPhysical,
     //"Topo": Esri_WorldTopoMap,
+    "Topo": topoMapboxLayer,
     //"Imagery": Esri_WorldImagery,
-    "Hybrid": hybridMapboxLayer,
+    "Satellite": hybridMapboxLayer
     //"OpenStreetMap": OpenStreetMap_Mapnik,
 };
 
@@ -318,27 +345,20 @@ var loadSecondArtillery = function () {
 var stationPopup = function (feature, layer) {
     // does this feature have a property named popupContent?
     if (feature.properties) {
-        var popupString = "<table><tr>";
+        var popupString = "<table>";
         for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
-        }
-
-        if (feature.properties.id || feature.geometry) {
-            popupString += "</tr><tr>"
+            popupString += "<tr><td>" + key + "</td> <td>" + feature.properties[key] + "</td></tr>";
         }
 
         if (feature.geometry) {
-            popupString += "<td><button onclick='map.setView({lat:"
+            popupString += "<tr><td><button onclick='map.setView({lat:"
                 + feature.geometry.coordinates[1]
                 + ", lng:"
                 + feature.geometry.coordinates[0]
-                + "}, 16)'>Zoom</button></td>"
-        }
-        if (false && feature.properties.id) {
-            popupString += "<td><button onclick='showRoutes(" + feature.properties.id + ")'>Routes</button></td>";
+                + "}, 16)'>Zoom</button></td></tr>"
         }
 
-        popupString += "</tr></table>";
+        popupString += "</table>";
         layer.bindPopup(popupString);
     }
 };
@@ -370,15 +390,11 @@ var loadStations = function () {
 
 var pathPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = "<table><tr>";
+        var popupString = "<table>";
         for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
+            popupString += "<tr><td>" + key + "</td><td>" + feature.properties[key] + "</td></tr>";
         }
-
-        if (feature.properties.id || feature.geometry) {
-            popupString += "</tr><tr>"
-        }
-        popupString += "</tr></table>";
+        popupString += "</table>";
         layer.bindPopup(popupString);
     }
 };
@@ -407,6 +423,9 @@ var loadPaths = function () {
                         "opacity": 0.5
                     }
                 });
+
+                // Update the top bar count
+                $('#flowCount').text(data.features.length);
 
                 path.addTo(map);
                 backgroundLayers['paths'] = path;
@@ -492,6 +511,8 @@ var loadSources = function () {
     if (!backgroundLayers['sources']) {
         loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
             var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+            $('#sourceCount').text(data.features.length);
+
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
@@ -511,6 +532,8 @@ var loadSinks = function () {
     if (!backgroundLayers['sinks']) {
         loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
             var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+            $('#sinkCount').text(data.features.length);
+
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
@@ -576,11 +599,14 @@ var loadSegments = function () {
                 var maxCriticality = d3_array.max(criticalityData);
                 var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
 
+                // Update the top bar count
+                $('#bridgeCount').text(data.features.length);
+
                 var path = L.geoJson(data, {
                     filter: function (feature) {
                         return allBridges || feature.properties.criticality >= 2;
                     },
-                    //onEachFeature: pathPopup,
+                    onEachFeature: pathPopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
@@ -645,26 +671,6 @@ var loadDamagedPath = function (id) {
     loadAnimation(flowName);
 };
 
-var damagePopup = function (feature, layer) {
-    // does this feature have a property named popupContent?
-    if (feature.properties) {
-        var popupString = "<table><tr>";
-        for (var key in feature.properties) {
-            popupString += "<td>" + feature.properties[key] + "</td>";
-        }
-
-        if (feature.id || feature.geometry) {
-            popupString += "</tr><tr>"
-        }
-
-        if (feature.id) {
-            popupString += "<td><button onclick='loadDamagedPath(" + feature.id + ")'>Reroutes</button></td>";
-        }
-
-        popupString += "</tr></table>";
-        layer.bindPopup(popupString);
-    }
-};
 
 var loadTargets = function () {
     if (!backgroundLayers['targets']) {
@@ -679,9 +685,12 @@ var loadTargets = function () {
                 var midPoint = d3_array.median(criticalityData);
                 var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
+                // Update the top bar count
+                $('#targetCount').text(data.features.length);
+
                 var path = L.geoJson(data, {
                     // TODO: call for the adjustments here
-                    onEachFeature: damagePopup,
+                    onEachFeature: pathPopup,
                     style: function (feature) {
                         var criticality = feature.properties.criticality;
                         var color = d3_scale.scaleLinear()
@@ -796,33 +805,48 @@ var enableDrawing = function () {
     });
 };
 
-var advancedMode = false;
-L.easyButton('fa-cog', function (btn) {
-    if (!advancedMode) {
-        btn.removeFrom(map);
-        advancedMode = true;
-        enableDrawing();
-        L.easyBar([
-            bridgeButton,
-            rangeRingButton,
-            portButton,
-            stationButton,
-            aviationButton,
-            SAMButton,
-            nuclearButton,
-        ], {
-            position: 'topright'
-        }).addTo(map);
+L.easyButton('fa-cogs', function (btn) {
+    btn.removeFrom(map);
+    L.easyBar([
+        bridgeButton,
+        portButton,
+        stationButton,
+        aviationButton,
+        SAMButton,
+        rangeRingButton,
+        nuclearButton
+    ], {
+        position: 'topright'
+    }).addTo(map);
 
-        fastButton.addTo(map);
-
-        layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
-        layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
-        layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
-        layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
-        layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
-        layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
-    }
+    layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
+    layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
+    layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
+    layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
+    layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
+    layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
 }, {
     position: 'topright'
 }).addTo(map);
+
+L.easyButton('fa-pencil', function (btn) {
+    btn.removeFrom(map);
+    enableDrawing();
+}, {
+    position: 'bottomleft'
+}).addTo(map);
+
+var refreshTargets = function () {
+    setTimeout(function () {
+        if (backgroundLayers['targets']) {
+            console.log("Refreshing target layer")
+            loadTargets(); // Unload the layer
+            loadTargets(); // Reload the layer
+        }
+
+        // Schedule another run in 200s
+        refreshTargets();
+    }, 60000);
+};
+
+refreshTargets();

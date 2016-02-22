@@ -2,6 +2,7 @@ package com.spartango.infra.core;
 
 import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.osm.type.NodeStub;
+import com.spartango.infra.targeting.network.RailNetwork;
 import com.spartango.infra.utils.ShapeUtils;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
@@ -34,7 +35,6 @@ public class OSMGraph {
         ROAD_LINK,
         AIR_LINK
     }
-
 
     private GraphDatabaseService graphDb;
 
@@ -106,13 +106,11 @@ public class OSMGraph {
     public long getNodeCount() {
         final long nodeCount;
         try (Transaction tx = graphDb.beginTx()) {
-
             nodeCount = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                     GlobalGraphOperations.at(graphDb)
                                          .getAllNodes()
                                          .iterator(),
-                    Spliterator.DISTINCT),
-                                             false)
+                    Spliterator.DISTINCT), false)
                                      .count();
             tx.success();
         }
@@ -159,6 +157,29 @@ public class OSMGraph {
             tx.success();
         }
         return length;
+    }
+
+    public double linkElevationChange(Relationship relationship, RailNetwork network) {
+        double elevation = 0;
+        try (Transaction tx = graphDb.beginTx()) {
+            if (relationship.hasProperty("elevationChange")) {
+                elevation = Double.parseDouble(String.valueOf(relationship.getProperty("elevationChange")));
+            } else {
+                final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
+                final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
+                // TODO: Fix getting elevations from the index
+                final Optional<Double> startEle = network.getElevation(start);
+                final Optional<Double> endEle = network.getElevation(end);
+
+                if (startEle.isPresent() && endEle.isPresent()) {
+                    // Ruling grade, uphill & downhill are the same
+                    elevation = endEle.get() - startEle.get();
+                    relationship.setProperty("elevationChange", String.valueOf(elevation));
+                }
+            }
+            tx.success();
+        }
+        return elevation;
     }
 
     public GraphDatabaseService getGraphDb() {

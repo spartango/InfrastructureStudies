@@ -35,10 +35,12 @@ public class Writer {
 
     private GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
 
-    private String rootPath;
+    private String      rootPath;
+    private RailNetwork network;
 
-    public Writer(String rootPath) {
+    public Writer(String rootPath, RailNetwork network) {
         this.rootPath = rootPath;
+        this.network = network;
         if (!rootPath.endsWith("/")) {
             this.rootPath += "/";
         }
@@ -62,6 +64,7 @@ public class Writer {
         builder.add("name", String.class);
         builder.add("name:en", String.class);
         builder.add("railway", String.class);
+        builder.add("elevation", Double.class);
 
         // build the type
         final SimpleFeatureType stationType = builder.buildFeatureType();
@@ -77,6 +80,7 @@ public class Writer {
             stationFeatureBuilder.add(startNode.getTag("name"));
             stationFeatureBuilder.add(startNode.getTag("name:en"));
             stationFeatureBuilder.add(startNode.getTag("railway"));
+            stationFeatureBuilder.add(network.getElevation(startNode).orElse(null));
             final SimpleFeature startFeature = stationFeatureBuilder.buildFeature(String.valueOf(startNode.getId()));
             stationFeatures.add(startFeature);
         });
@@ -101,7 +105,8 @@ public class Writer {
         rBuilder.setName("Rail Segment");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("criticality", Double.class);
-//        rBuilder.add("mean_cost", Double.class);
+//        rBuilder.add("length", Double.class);
+        rBuilder.add("elevations", String.class);
 
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
@@ -120,9 +125,22 @@ public class Writer {
             final LineString lineString = geometryFactory.createLineString(
                     coordinateList.toArray(new Coordinate[coordinateList.size()]));
 
-            // Add the Criticality
             linkFeatureBuilder.add(lineString);
+
+            // Add the Criticality
             linkFeatureBuilder.add(criticality);
+
+            // Calculate the distance
+//            final double distance = ShapeUtils.calculateLength(pair);
+//            linkFeatureBuilder.add(distance);
+
+            // Calculate the elevation string
+            String elevationString = "[" + pair.stream()
+                                               .map(network::getElevation)
+                                               .map(ele -> ele.orElse(0.0))
+                                               .map(String::valueOf)
+                                               .collect(Collectors.joining(",")) + "]";
+            linkFeatureBuilder.add(elevationString);
 
             // Add it to the collection
             final SimpleFeature linkFeature = linkFeatureBuilder.buildFeature(String.valueOf(pair.hashCode()));
@@ -134,8 +152,7 @@ public class Writer {
     }
 
     public void writePaths(String name,
-                           Collection<WeightedPath> paths,
-                           RailNetwork railNetwork) {
+                           Collection<WeightedPath> paths) {
         String filePath = rootPath + name + GEOJSON;
 
         // Setup schema
@@ -143,17 +160,19 @@ public class Writer {
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("cost", Double.class);
+//        rBuilder.add("length", Double.class);
+//        rBuilder.add("elevations", String.class);
+
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
-
 
         paths.forEach(path -> {
             if (path == null) {
                 return;
             }
             // Build the geometry
-            linkFeatures.add(buildGeometry(railNetwork, linkFeatureBuilder, path));
+            linkFeatures.add(buildGeometry(linkFeatureBuilder, path));
         });
 
         writeFeature(filePath, linkType, linkFeatures);
@@ -162,13 +181,14 @@ public class Writer {
     public void writeFlow(String name, RailFlow flow) {
         String filePath = rootPath + name + GEOJSON;
 
-        final RailNetwork railNetwork = flow.getRailNetwork();
-
         // Setup schema
         SimpleFeatureTypeBuilder rBuilder = new SimpleFeatureTypeBuilder();
         rBuilder.setName("Rail Link");
         rBuilder.add("the_geom", LineString.class);
         rBuilder.add("cost", Double.class);
+//        rBuilder.add("length", Double.class);
+//        rBuilder.add("elevations", String.class);
+
         final SimpleFeatureType linkType = rBuilder.buildFeatureType();
         SimpleFeatureBuilder linkFeatureBuilder = new SimpleFeatureBuilder(linkType);
         final List<SimpleFeature> linkFeatures = new ArrayList<>();
@@ -182,7 +202,7 @@ public class Writer {
                     return;
                 }
                 // Build the geometry
-                linkFeatures.add(buildGeometry(railNetwork, linkFeatureBuilder, path));
+                linkFeatures.add(buildGeometry(linkFeatureBuilder, path));
             });
 
         writeFeature(filePath, linkType, linkFeatures);
@@ -202,22 +222,35 @@ public class Writer {
         }
     }
 
-    private SimpleFeature buildGeometry(RailNetwork railNetwork,
-                                        SimpleFeatureBuilder linkFeatureBuilder,
+    private SimpleFeature buildGeometry(SimpleFeatureBuilder linkFeatureBuilder,
                                         WeightedPath path) {
-        try (Transaction tx = railNetwork.beginGraphTx()) {
-            final List<Coordinate> coordinateList =
-                    StreamSupport.stream(path.nodes().spliterator(), false)
-                                 .map(railNetwork::getGraphNode)
-                                 .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
-                                                                 nodeStub.getLatitude()))
-                                 .collect(Collectors.toList());
+        try (Transaction tx = network.beginGraphTx()) {
+            final List<NeoNode> nodes = StreamSupport.stream(path.nodes().spliterator(), false)
+                                                     .map(network::getGraphNode)
+                                                     .collect(Collectors.toList());
             tx.success();
+
+            final List<Coordinate> coordinateList = nodes.stream()
+                                                         .map(nodeStub -> new Coordinate(nodeStub.getLongitude(),
+                                                                                         nodeStub.getLatitude()))
+                                                         .collect(Collectors.toList());
 
             final LineString lineString = geometryFactory.createLineString(
                     coordinateList.toArray(new Coordinate[coordinateList.size()]));
             linkFeatureBuilder.add(lineString);
             linkFeatureBuilder.add(path.weight());
+
+//            // Calculate the distance
+//            final double distance = ShapeUtils.calculateLength(nodes);
+//            linkFeatureBuilder.add(distance);
+
+            // Calculate the elevation string
+//            String elevationString = "[" + nodes.stream()
+//                                                .map(network::getElevation)
+//                                                .map(ele -> ele.orElse(0.0))
+//                                                .map(String::valueOf)
+//                                                .collect(Collectors.joining(",")) + "]";
+//            linkFeatureBuilder.add(elevationString);
 
             return linkFeatureBuilder.buildFeature(String.valueOf(path.hashCode()));
         }

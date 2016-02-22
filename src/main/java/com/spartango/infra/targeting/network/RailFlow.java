@@ -16,12 +16,11 @@ import java.util.stream.Collectors;
  * Time: 10:00.
  */
 public class RailFlow {
-    private static final double DAMAGE_COST  = 2400000; // 2,400,000m @ 100km/hr = 24 hours of delay
     private static final Double DEFAULT_FLOW = 1.0;
 
-    protected final Collection<NeoNode>        sources;
-    protected final Collection<NeoNode>        sinks;
-    protected final Set<NodeStub>              damagedNodes;
+    protected final Collection<NeoNode> sources;
+    protected final Collection<NeoNode> sinks;
+    protected final Set<NodeStub>       damagedNodes;
 
     // Order matters
     protected final Map<List<NeoNode>, Double> flowRates;
@@ -69,11 +68,8 @@ public class RailFlow {
                                                        .equals(station.getOsmNode()))
                     .map(neoDestination -> railNetwork.calculatePath(station,
                                                                      neoDestination,
-                                                                     damagedNodes,
-                                                                     DAMAGE_COST))
-                    .filter(path -> path != null
-                                    && path.length()
-                                       != 0)
+                                                                     damagedNodes))
+                    .filter(path -> path != null && path.length() != 0)
                     .collect(Collectors.toList());
     }
 
