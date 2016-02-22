@@ -210,16 +210,17 @@ var clusterIcon = function (cluster) {
         dashoffsetSum += currLength;
     }
 
-    var textX = 40;
+    var textX = 42;
     var fontSize = 32;
     if (childCount >= 10) {
-        textX = 30;
+        textX = 32;
     }
     if (childCount >= 100) {
-        textX = 20;
+        fontSize = 30;
+        textX = 24;
     }
     if (childCount >= 1000) {
-        textX = 10;
+        textX = 20;
         fontSize = 28;
     }
 
