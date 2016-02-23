@@ -320,29 +320,13 @@ var loadSAMs = function () {
                     return L.marker(latlng, {icon: icon});
                 }
             });
-            var heatmapLayer = new HeatmapOverlay({
-                "radius": 1,
-                "maxOpacity": .33,
-                "scaleRadius": true,
-                "useLocalExtrema": false,
-                latField: 'lat',
-                lngField: 'lng',
-                valueField: 'count'
-            });
-            //map.addLayer(heatmapLayer);
-            //heatmapLayer.setData({
-            //    max: 3,
-            //    data: heatPoints
-            //});
             backgroundMarkers.addLayer(geoJsonLayer);
             backgroundLayers['sams'] = geoJsonLayer;
-            backgroundLayers['heat'] = heatmapLayer;
         });
     } else {
         backgroundMarkers.removeLayer(backgroundLayers['sams']);
         //map.removeLayer(backgroundLayers['heat']);
         delete backgroundLayers['sams'];
-        delete backgroundLayers['heat'];
     }
 };
 
