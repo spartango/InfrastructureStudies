@@ -34,6 +34,10 @@
     font-family: Liberator-Light, sans-serif;
 }
 
+.icon-text {
+    font-family: FontAwesome;
+}
+
 .tiny-marker-cluster {
     background-clip: padding-box;
     border-radius: 20px;
