@@ -6,7 +6,7 @@ function resize() {
     $('#map').css("margin-top", -21);
 }
 
-var DATA_DIR = "testing/";
+var DATA_DIR = "elevation/";
 
 // Setup Map
 var layer;
@@ -491,7 +491,7 @@ var loadPaths = function () {
                 path.addTo(map);
                 backgroundLayers['paths'] = path;
 
-                map.fitBounds(path.getBounds());
+                //map.fitBounds(path.getBounds());
                 //hash = new L.Hash(map);
             });
     } else {
@@ -603,7 +603,7 @@ var loadSinks = function () {
             });
             map.addLayer(geoJsonLayer);
             backgroundLayers['sinks'] = geoJsonLayer;
-            //map.fitBounds(geoJsonLayer.getBounds());
+            map.fitBounds(geoJsonLayer.getBounds());
         })
     } else {
         map.removeLayer(backgroundLayers['sinks']);
