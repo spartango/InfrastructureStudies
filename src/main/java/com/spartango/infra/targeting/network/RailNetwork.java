@@ -120,9 +120,9 @@ public class RailNetwork {
 
     public WeightedPath calculatePath(NeoNode start, NeoNode end, Set<NodeStub> damaged) {
         final Set<String> damagedIds = damaged.stream()
-                                                   .map(NodeStub::getId)
-                                                   .map(String::valueOf)
-                                                   .collect(Collectors.toSet());
+                                              .map(NodeStub::getId)
+                                              .map(String::valueOf)
+                                              .collect(Collectors.toSet());
         return graph.calculatePath(start, end, (r, d) -> totalCost(r, damagedIds), this::lengthEstimate);
     }
 
@@ -179,13 +179,14 @@ public class RailNetwork {
 
     protected double damageCost(Relationship relationship, Set<String> damagedIds) {
         if (!damagedIds.isEmpty()) {
-            // Just need to know the Identifiers
-            final String startId = relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString();
-            final String endId = relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString();
-
             // TODO: Support multiple damaged legs properly
-            // Check for damage
-            final boolean damaged = damagedIds.contains(startId) && damagedIds.contains(endId);
+            // Just need to know the Identifiers to figure the damage
+            final boolean damaged = damagedIds.contains(relationship.getStartNode()
+                                                                    .getProperty(NeoNode.OSM_ID)
+                                                                    .toString())
+                                    && damagedIds.contains(relationship.getEndNode()
+                                                                       .getProperty(NeoNode.OSM_ID)
+                                                                       .toString());
             if (damaged) {
                 return DAMAGE_COST;
             }
