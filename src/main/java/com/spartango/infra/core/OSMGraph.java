@@ -145,9 +145,9 @@ public class OSMGraph {
 
     public double linkLength(Relationship relationship) {
         double length;
+        final Object property = relationship.getProperty("distance", null);
         try (Transaction tx = graphDb.beginTx()) {
-            if (relationship.hasProperty("distance")) {
-                final Object property = relationship.getProperty("distance");
+            if (property != null) {
                 if (property instanceof Double) {
                     length = (Double) property;
                 } else {
@@ -168,8 +168,8 @@ public class OSMGraph {
     public double linkElevationChange(Relationship relationship, RailNetwork network) {
         double elevation = 0;
         try (Transaction tx = graphDb.beginTx()) {
-            if (relationship.hasProperty("elevationChange")) {
-                final Object property = relationship.getProperty("elevationChange");
+            final Object property = relationship.getProperty("elevationChange", null);
+            if (property != null) {
                 if (property instanceof Double) {
                     elevation = (Double) property;
                 } else {
