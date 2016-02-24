@@ -119,7 +119,11 @@ public class RailNetwork {
     }
 
     public WeightedPath calculatePath(NeoNode start, NeoNode end, Set<NodeStub> damaged) {
-        return graph.calculatePath(start, end, (r, d) -> totalCost(r, damaged), this::lengthEstimate);
+        final Set<String> damagedIds = damaged.stream()
+                                                   .map(NodeStub::getId)
+                                                   .map(String::valueOf)
+                                                   .collect(Collectors.toSet());
+        return graph.calculatePath(start, end, (r, d) -> totalCost(r, damagedIds), this::lengthEstimate);
     }
 
     public Optional<Double> getElevation(NeoNode node) {
@@ -147,7 +151,7 @@ public class RailNetwork {
     }
 
     // Cost functions
-    protected double totalCost(Relationship relationship, Set<NodeStub> damagedNodes) {
+    protected double totalCost(Relationship relationship, Set<String> damagedIds) {
         double distance = graph.linkLength(relationship);
 
         // Flat land travel cost
@@ -158,7 +162,7 @@ public class RailNetwork {
         double elevationPrice = elevationCost(distance, elevationChange);
 
         // Cost incurred by waiting for repairs on the track
-        double damagePrice = damageCost(relationship, damagedNodes);
+        double damagePrice = damageCost(relationship, damagedIds);
 
         return distancePrice + elevationPrice + damagePrice;
     }
@@ -173,13 +177,8 @@ public class RailNetwork {
         return distance * DISTANCE_SCALE;
     }
 
-    protected double damageCost(Relationship relationship, Set<NodeStub> damagedNodes) {
-        final Set<String> damagedIds = damagedNodes.stream()
-                                                   .map(NodeStub::getId)
-                                                   .map(String::valueOf)
-                                                   .collect(Collectors.toSet());
-
-        if (!damagedNodes.isEmpty()) {
+    protected double damageCost(Relationship relationship, Set<String> damagedIds) {
+        if (!damagedIds.isEmpty()) {
             // Just need to know the Identifiers
             final String startId = relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString();
             final String endId = relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString();

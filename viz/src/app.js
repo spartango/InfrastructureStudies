@@ -7,6 +7,7 @@ function resize() {
 }
 
 var DATA_DIR = "elevation/";
+var debug = false;
 
 // Setup Map
 var layer;
@@ -363,7 +364,8 @@ var loadAviation = function () {
                 feature.properties.type = "airbase";
             });
 
-            var icon = glyphIcon("airbase", "&#xf072");L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
+            var icon = glyphIcon("airbase", "&#xf072");
+            L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -913,4 +915,6 @@ var refreshTargets = function () {
     }, 60000);
 };
 
-refreshTargets();
+if (debug) {
+    refreshTargets();
+}
