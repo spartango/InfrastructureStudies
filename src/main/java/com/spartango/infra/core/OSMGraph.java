@@ -147,12 +147,18 @@ public class OSMGraph {
         double length;
         try (Transaction tx = graphDb.beginTx()) {
             if (relationship.hasProperty("distance")) {
-                length = Double.parseDouble(String.valueOf(relationship.getProperty("distance")));
+                final Object property = relationship.getProperty("distance");
+                if (property instanceof Double) {
+                    length = (Double) property;
+                } else {
+                    length = Double.parseDouble(property.toString());
+                    relationship.setProperty("distance", length);
+                }
             } else {
                 final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
                 final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
                 length = ShapeUtils.calculateDistance(start.getOsmNode(), end.getOsmNode());
-                relationship.setProperty("distance", String.valueOf(length));
+                relationship.setProperty("distance", length);
             }
             tx.success();
         }
@@ -163,7 +169,13 @@ public class OSMGraph {
         double elevation = 0;
         try (Transaction tx = graphDb.beginTx()) {
             if (relationship.hasProperty("elevationChange")) {
-                elevation = Double.parseDouble(String.valueOf(relationship.getProperty("elevationChange")));
+                final Object property = relationship.getProperty("elevationChange");
+                if (property instanceof Double) {
+                    elevation = (Double) property;
+                } else {
+                    elevation = Double.parseDouble(property.toString());
+                    relationship.setProperty("elevationChange", elevation);
+                }
             } else {
                 final NeoNode start = new NeoNode(relationship.getStartNode(), graphDb);
                 final NeoNode end = new NeoNode(relationship.getEndNode(), graphDb);
@@ -174,7 +186,7 @@ public class OSMGraph {
                 if (startEle.isPresent() && endEle.isPresent()) {
                     // Ruling grade, uphill & downhill are the same
                     elevation = endEle.get() - startEle.get();
-                    relationship.setProperty("elevationChange", String.valueOf(elevation));
+                    relationship.setProperty("elevationChange", elevation);
                 }
             }
             tx.success();

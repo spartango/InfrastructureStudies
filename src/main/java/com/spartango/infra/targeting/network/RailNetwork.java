@@ -168,8 +168,11 @@ public class RailNetwork {
     }
 
     protected double elevationCost(double distance, double elevationChange) {
+        // Treat uphill and downhill the same
         double slope = Math.abs(elevationChange / distance);
         double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
+
+        // Penalty paid across the entire length of track
         return distance * scaledSlope * SLOPE_SCALE;
     }
 
