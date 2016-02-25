@@ -119,7 +119,11 @@ public class RailNetwork {
     }
 
     public WeightedPath calculatePath(NeoNode start, NeoNode end, Set<NodeStub> damaged) {
-        return graph.calculatePath(start, end, (r, d) -> totalCost(r, damaged), this::lengthEstimate);
+        final Set<String> damagedIds = damaged.stream()
+                                              .map(NodeStub::getId)
+                                              .map(String::valueOf)
+                                              .collect(Collectors.toSet());
+        return graph.calculatePath(start, end, (r, d) -> totalCost(r, damagedIds), this::lengthEstimate);
     }
 
     public Optional<Double> getElevation(NeoNode node) {
@@ -147,7 +151,7 @@ public class RailNetwork {
     }
 
     // Cost functions
-    protected double totalCost(Relationship relationship, Set<NodeStub> damagedNodes) {
+    protected double totalCost(Relationship relationship, Set<String> damagedIds) {
         double distance = graph.linkLength(relationship);
 
         // Flat land travel cost
@@ -158,14 +162,17 @@ public class RailNetwork {
         double elevationPrice = elevationCost(distance, elevationChange);
 
         // Cost incurred by waiting for repairs on the track
-        double damagePrice = damageCost(relationship, damagedNodes);
+        double damagePrice = damageCost(relationship, damagedIds);
 
         return distancePrice + elevationPrice + damagePrice;
     }
 
     protected double elevationCost(double distance, double elevationChange) {
+        // Treat uphill and downhill the same
         double slope = Math.abs(elevationChange / distance);
         double scaledSlope = Math.max(1.0, slope / MAX_SLOPE);
+
+        // Penalty paid across the entire length of track
         return distance * scaledSlope * SLOPE_SCALE;
     }
 
@@ -173,20 +180,16 @@ public class RailNetwork {
         return distance * DISTANCE_SCALE;
     }
 
-    protected double damageCost(Relationship relationship, Set<NodeStub> damagedNodes) {
-        final Set<String> damagedIds = damagedNodes.stream()
-                                                   .map(NodeStub::getId)
-                                                   .map(String::valueOf)
-                                                   .collect(Collectors.toSet());
-
-        if (!damagedNodes.isEmpty()) {
-            // Just need to know the Identifiers
-            final String startId = relationship.getStartNode().getProperty(NeoNode.OSM_ID).toString();
-            final String endId = relationship.getEndNode().getProperty(NeoNode.OSM_ID).toString();
-
+    protected double damageCost(Relationship relationship, Set<String> damagedIds) {
+        if (!damagedIds.isEmpty()) {
             // TODO: Support multiple damaged legs properly
-            // Check for damage
-            final boolean damaged = damagedIds.contains(startId) && damagedIds.contains(endId);
+            // Just need to know the Identifiers to figure the damage
+            final boolean damaged = damagedIds.contains(relationship.getStartNode()
+                                                                    .getProperty(NeoNode.OSM_ID)
+                                                                    .toString())
+                                    && damagedIds.contains(relationship.getEndNode()
+                                                                       .getProperty(NeoNode.OSM_ID)
+                                                                       .toString());
             if (damaged) {
                 return DAMAGE_COST;
             }

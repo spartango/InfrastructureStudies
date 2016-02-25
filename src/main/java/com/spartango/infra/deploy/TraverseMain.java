@@ -34,8 +34,8 @@ public class TraverseMain {
     //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
-    private static final String OUTPUT_PATH = "elevation/";
-    private static final long BRIDGE_LIMIT = 2000;
+    private static final String OUTPUT_PATH   = "elevation/";
+    private static final long   BRIDGE_LIMIT  = 2000;
 
     private static GraphDatabaseService graphDb;
 
@@ -83,7 +83,8 @@ public class TraverseMain {
                                       2279127731L,
                                       2999345286L,
                                       1584384382L,
-                                      2451329911L)).loadGraphNodes();
+                                      2451329911L,
+                                      2623140053L)).loadGraphNodes();
 
         System.out.println("Loaded "
                            + sources.size() + " sources and "

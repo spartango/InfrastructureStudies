@@ -6,7 +6,8 @@ function resize() {
     $('#map').css("margin-top", -21);
 }
 
-var DATA_DIR = "testing/";
+var DATA_DIR = "elevation/";
+var debug = false;
 
 // Setup Map
 var layer;
@@ -15,9 +16,6 @@ var hash;
 var map = L.map('map', {
     zoomControl: false
 }).setView([51.505, -0.09], 13);
-L.control.fullscreen({
-    position: 'bottomright'
-}).addTo(map);
 
 var loadingControl = L.Control.loading({
     separate: true,
@@ -146,12 +144,9 @@ var baseMaps = {
     "Streets": CartoDB_Positron,
     "Dark": CartoDB_DarkMatter,
     "Physical": mapboxLayer,
-    //"Physical": Esri_WorldPhysical,
-    //"Topo": Esri_WorldTopoMap,
     "Topo": topoMapboxLayer,
-    //"Imagery": Esri_WorldImagery,
-    "Satellite": hybridMapboxLayer
-    //"OpenStreetMap": OpenStreetMap_Mapnik,
+    "Satellite": hybridMapboxLayer,
+    //"Latest Imagery": satelliteDigitalGlobeLayer
 };
 
 var defaultMap = baseMaps["Streets"];
@@ -174,10 +169,12 @@ L.control.scale().addTo(map);
 var defaultColor = "white";
 var typeColors = {
     "port": "#00b",
-    "SAM": "#fb0",
-    "airbase": "#f70",
+    "SAM": "#ffc000",
+    "airbase": "#ff7500",
     "station": "#00C8EE",
-    "nuclear": "#f30"
+    "nuclear": "#ff0000",
+    "source": "#4dac26",
+    "sink": "#d01c8b"
 };
 
 var clusterIcon = function (cluster) {
@@ -185,7 +182,6 @@ var clusterIcon = function (cluster) {
     var strokeLength = 2 * 3.141592 * radius;
     var colorCount = {};
     var childCount = cluster.getChildCount();
-    var inInterval = false;
 
     cluster.getAllChildMarkers().forEach(function (el) {
         var type = el.feature.properties.type;
@@ -224,7 +220,37 @@ var clusterIcon = function (cluster) {
         fontSize = 28;
     }
 
-    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: `+fontSize+`px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
+    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
+        </svg>`;
+
+    return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
+};
+
+var glyphIcon = function (type, iconChar) {
+    var radius = 36;
+    var strokeLength = 2 * 3.141592 * radius;
+    var colorCount = {};
+
+    var color = typeColors[type] ? typeColors[type] : type;
+    colorCount[color] = 1;
+
+    var textOpacity = 1;
+
+    var dashoffsetSum = 0;
+    var svgHtml = `<svg width="100%" height="100%" viewbox="0 0 100 100"> \
+        <circle cx="50" cy="50" r="` + radius + `" fill="` + color + `" fill-opacity="0.95"/>`
+
+    //for (var color in colorCount) {
+    //    svgHtml = svgHtml + `<circle cx="50" cy="50" r="` + radius + `" fill="transparent" stroke-width="10" stroke=` +
+    //        color + ` stroke-dasharray=` + strokeLength + ` stroke-dashoffset="` + dashoffsetSum + `" stroke-opacity="` + textOpacity + `" />`
+    //    currLength = (1.0 * colorCount[color]) * strokeLength;
+    //    dashoffsetSum += currLength;
+    //}
+
+    var textX = 36;
+    var fontSize = 32;
+
+    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-family: FontAwesome; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + iconChar + `</text>
         </svg>`;
 
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
@@ -247,7 +273,8 @@ var loadGeoJSON = function (path, callback) {
 var backgroundLayers = {};
 
 var backgroundMarkers = new L.MarkerClusterGroup({
-    iconCreateFunction: clusterIcon
+    iconCreateFunction: clusterIcon,
+    maxClusterRadius: 50
 }).addTo(map);
 
 var showRoutes = function (id) {
@@ -288,7 +315,7 @@ var loadPorts = function () {
             data.features.forEach(function (feature) {
                 feature.properties.type = "port";
             });
-            var icon = L.MakiMarkers.icon({icon: "harbor", color: typeColors["port"], size: "s"});
+            var icon = glyphIcon("port", "&#xf13d"); //L.MakiMarkers.icon({icon: "harbor", color: typeColors["port"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -311,7 +338,7 @@ var loadSAMs = function () {
                 feature.properties.type = "SAM";
             });
 
-            var icon = L.MakiMarkers.icon({icon: "rocket", color: typeColors["SAM"], size: "s"});
+            var icon = glyphIcon("SAM", "&#xf135"); //L.MakiMarkers.icon({icon: "rocket", color: typeColors["SAM"], size: "s"});
             //var heatPoints = [];
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
@@ -337,7 +364,8 @@ var loadAviation = function () {
                 feature.properties.type = "airbase";
             });
 
-            var icon = L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
+            var icon = glyphIcon("airbase", "&#xf072");
+            L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: infraPopup,
                 pointToLayer: function (feature, latlng) {
@@ -360,7 +388,7 @@ var loadSecondArtillery = function () {
                 feature.properties.type = "nuclear";
             });
 
-            var icon = L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
+            var icon = glyphIcon("nuclear", "&#xf1e2"); //L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 filter: function (feature) {
                     return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
@@ -407,7 +435,7 @@ var loadStations = function () {
                 feature.properties.type = "station";
             });
 
-            var icon = L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
+            var icon = glyphIcon("station", "&#xf238");//L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
             var geoJsonLayer = L.geoJson(data, {
                 onEachFeature: stationPopup,
                 pointToLayer: function (feature, latlng) {
@@ -465,7 +493,7 @@ var loadPaths = function () {
                 path.addTo(map);
                 backgroundLayers['paths'] = path;
 
-                map.fitBounds(path.getBounds());
+                //map.fitBounds(path.getBounds());
                 //hash = new L.Hash(map);
             });
     } else {
@@ -545,7 +573,7 @@ var loadAnimation = function (flowName) {
 var loadSources = function () {
     if (!backgroundLayers['sources']) {
         loadGeoJSON(DATA_DIR + 'sources.geojson', function (data) {
-            var icon = L.MakiMarkers.icon({icon: "rail", color: "#0b0", size: "m"});
+            var icon = glyphIcon("source", '&#xf093'); // L.MakiMarkers.icon({icon: "rail", color: "#4dac26", size: "m"});
             $('#sourceCount').text(data.features.length);
 
             var geoJsonLayer = L.geoJson(data, {
@@ -566,7 +594,7 @@ var loadSources = function () {
 var loadSinks = function () {
     if (!backgroundLayers['sinks']) {
         loadGeoJSON(DATA_DIR + 'sinks.geojson', function (data) {
-            var icon = L.MakiMarkers.icon({icon: "rail", color: "#b00", size: "m"});
+            var icon = glyphIcon("sink", '&#xf019'); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
             $('#sinkCount').text(data.features.length);
 
             var geoJsonLayer = L.geoJson(data, {
@@ -577,7 +605,7 @@ var loadSinks = function () {
             });
             map.addLayer(geoJsonLayer);
             backgroundLayers['sinks'] = geoJsonLayer;
-            //map.fitBounds(geoJsonLayer.getBounds());
+            map.fitBounds(geoJsonLayer.getBounds());
         })
     } else {
         map.removeLayer(backgroundLayers['sinks']);
@@ -887,4 +915,6 @@ var refreshTargets = function () {
     }, 60000);
 };
 
-refreshTargets();
+if (debug) {
+    refreshTargets();
+}
