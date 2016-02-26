@@ -8,7 +8,7 @@ function resize() {
 
 $(function () {
     $('[data-toggle="tooltip"]').tooltip()
-})
+});
 
 var DATA_DIR = "elevation/";
 var debug = false;
@@ -23,7 +23,7 @@ var map = L.map('map', {
 
 var loadingControl = L.Control.loading({
     separate: true,
-    position: 'bottomright'
+    position: 'topright'
 });
 map.addControl(loadingControl);
 
@@ -881,7 +881,7 @@ L.easyBar([
 var enableDrawing = function () {
     drawnItems = L.featureGroup().addTo(map);
     map.addControl(new L.Control.Draw({
-        position: 'bottomleft',
+        position: 'topleft',
         edit: {
             featureGroup: drawnItems
         }
@@ -910,7 +910,7 @@ L.easyButton('fa-cogs', function (btn) {
         SAMButton,
         rangeRingButton
     ], {
-        position: 'topleft'
+        position: 'bottomright'
     }).addTo(map);
 
     layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
@@ -920,7 +920,7 @@ L.easyButton('fa-cogs', function (btn) {
     layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
     layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
 }, {
-    position: 'topleft'
+    position: 'bottomright'
 }).addTo(map);
 
 var refreshTargets = function () {
