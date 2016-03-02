@@ -10,9 +10,11 @@ $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 });
 
+var urlHash = window.location.hash;
+
 var DATA_DIR = "elevation/";
-var debug = false;
-var tutorial = true;
+var debug = urlHash == "#debug";
+var tutorial = urlHash == "#tutorial";
 
 // Setup Map
 var layer;
@@ -195,13 +197,12 @@ var clusterIcon = function (cluster) {
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
 
-var iconNumber = 0;
 var glyphIcon = function (type, iconChar) {
     var radius = 36;
     var color = typeColors[type] ? typeColors[type] : type;
     var textOpacity = 1;
 
-    var svgHtml = `<svg id="glyph-icon-` + (iconNumber++) + `" width="100%" height="100%" viewbox="0 0 100 100"> \
+    var svgHtml = `<svg class="glyph-icon-` + type + `" width="100%" height="100%" viewbox="0 0 100 100"> \
         <circle cx="50" cy="50" r="` + radius + `" fill="` + color + `" fill-opacity="0.95"/>`
 
     var textX = 36;
@@ -902,39 +903,62 @@ var refreshTargets = function () {
 };
 
 var startTutorial = function () {
+    tutorial = true;
     var intro = introJs();
+    var steps = [
+        {
+            intro: "<h5>Introduction</h5><p>This is an analysis of supply network resilience. "
+            + "It explores the flow of supplies from producers to consumers, "
+            + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
+            position: 'bottom'
+        },
+        {
+            intro: "<h5>Suppliers</h5><p>The green markers identify suppliers of resources, such as food, fuel, and parts. "
+            + "Trains load supplies at and depart from stations near these locations. </p>",
+            position: 'bottom'
+        },
+        {
+            intro: "<h5>Consumers</h5><p>The purple markers indicate consumers of those resources, "
+            + "such as maintenance facilities, populations, or units. "
+            + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
+            position: 'bottom'
+        },
+        {
+            intro: "<h5>Flow</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
+            + "with small dots indicating flow. "
+            + "Each path is optimized, minimizing the costs associated with traveling across terrain. "
+            + "</p>",
+            position: 'bottom'
+        },
+        {
+            intro: "<h5>Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. "
+            + "Their relative vulnerability is indicated by color from green (low) to red (high) "
+            + "and is determined by simulating damage to each bridge. </p>",
+            position: 'bottom'
+        }
+    ];
     intro.setOptions({
-        steps: [
-            {
-                intro: "Hello world!"
-            },
-            {
-                intro: "Sources showing now",
-                position: 'bottom'
-            },
-            {
-                intro: "Sinks showing now",
-                position: 'bottom'
-            },
-            {
-                intro: "Flows showing now",
-                position: 'bottom'
-            },
-            {
-                intro: "Targets showing now",
-                position: 'bottom'
-            }
-        ],
+        steps: steps,
         scrollToElement: false,
         showStepNumbers: false,
         overlayOpacity: 0.0,
-        showBullets: false
+        showBullets: false,
+        exitOnOverlayClick: false,
+        disableInteraction: false,
+        skipLabel: 'Done',
+        tooltipClass: 'custom-tooltip'
     }).onbeforechange(function (targetElement) {
         // Fetch the relevant data
         switch (this._currentStep) {
-            case 1: // Sinks
-                // Hide everything
+            case 0: // Nothing
                 hideMapLayer('sources');
+                hideMapLayer('sinks');
+                hideMapLayer('paths');
+                hideMapLayer('targets');
+                clearAnimation();
+                break;
+            case 1: // Sources
+                // Hide everything
                 hideMapLayer('sinks');
                 hideMapLayer('paths');
                 hideMapLayer('targets');
@@ -964,12 +988,22 @@ var startTutorial = function () {
                 toggleTargets();
                 break;
         }
+    }).onafterchange(function () {
+        var element = document.querySelector('.introjs-tooltipReferenceLayer')
+        if (element) {
+            element.style.setProperty('top', '120px');
+        }
     }).onexit(function () {
-        hideMapLayer('sources');
-        hideMapLayer('sinks');
-        hideMapLayer('paths');
-        hideMapLayer('targets');
-        clearAnimation();
+        showMapLayer('sinks', loadSinks()).then(function () {
+            return showMapLayer('sources', loadSources());
+        }).then(function () {
+            return showMapLayer('paths', loadPaths());
+        }).then(function () {
+            return showMapLayer('targets', loadTargets());
+        }).then(function () {
+            return showAnimation('baseline');
+        });
+
     });
     intro.start();
 };
