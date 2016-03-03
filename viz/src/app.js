@@ -479,14 +479,18 @@ var toggleStations = function () {
     return toggleClusterLayer('stations', loadStationLayer());
 };
 
-var pathPopup = function (feature, layer) {
+var bridgePopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = '<table class="table table-condensed"><thead><tr><th><i class="fa fa-road"></i> Bridge</th></tr></thead>';
+        var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-road"></i> Bridge</th></tr></thead>';
         for (var key in feature.properties) {
             var prettyKey;
-            var prettyValue = features.properties[key];
-            if (key == 'elevations') {
-                prettyKey = "Elevation";
+            var rowClass = "";
+            var prettyValue = feature.properties[key];
+            if (key == 'criticality') {
+                prettyKey = 'Bottleneck';
+                prettyValue = prettyValue + " sources";
+            } else if (key == 'elevations') {
+                prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
                 var count = array.length;
                 prettyValue = array.reduce(function (a, b) {
@@ -495,10 +499,27 @@ var pathPopup = function (feature, layer) {
                 prettyValue += " m";
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
+                // If we still haven't made a string out of this
+                if (Number.isFinite(prettyValue)) {
+                    prettyValue = Math.round(prettyValue) + " km";
+                } else if (typeof prettyValue == 'boolean') {
+                    prettyValue = prettyValue ? "Yes" : "No";
+                }
             }
-            popupString += "<tr><td><strong>" + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
+
+            popupString += `<tr class="` + rowClass + `"><td><strong>` + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
         }
-        popupString += "</table>";
+        popupString += "</table></div>";
+
+        feature.properties.center = turf.center(feature);
+        if (feature.properties.center) {
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+                + feature.properties.center.geometry.coordinates[1]
+                + ", lng:"
+                + feature.properties.center.geometry.coordinates[0]
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
+        }
+
         layer.bindPopup(popupString);
     }
 };
@@ -732,7 +753,7 @@ var loadSegmentLayer = function () {
             filter: function (feature) {
                 return allBridges || feature.properties.criticality >= 2;
             },
-            onEachFeature: pathPopup,
+            onEachFeature: bridgePopup,
             style: function (feature) {
                 var criticality = feature.properties.criticality;
                 var color = d3_scale.scaleLinear()
