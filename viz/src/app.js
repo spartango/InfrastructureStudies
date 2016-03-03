@@ -277,7 +277,6 @@ var showClusterLayer = function (layerName, layerPromise) {
     });
 };
 
-
 var hideClusterLayer = function (layerName) {
     // Hide the layer(s)
     return new Promise(function (resolve, reject) {
@@ -299,25 +298,36 @@ var toggleClusterLayer = function (layerName, layerPromise) {
 
 var infraPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = "<div style='height:100px;overflow:auto;'><table>";
+        var popupString = `<div><div class="row" style='max-height:200px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;
+        if (feature.properties.type) {
+            var niceType = feature.properties.type.charAt(0).toUpperCase() + feature.properties.type.slice(1);
+            popupString += `<thead><tr><th>` + niceType + `</th></tr></thead>`
+        }
+
         for (key in feature.properties) {
-            popupString += "<tr><td>" + key + "</td><td>" + feature.properties[key] + "</td></tr>";
+            if (key != 'type') {
+                var niceKey = key.charAt(0).toUpperCase() + key.slice(1);
+                popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + feature.properties[key] + "</td></tr>";
+            }
         }
 
         popupString += "</table></div>";
         if (feature.geometry) {
-            popupString += "<div><button onclick='map.setView({lat:"
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
                 + feature.geometry.coordinates[1]
                 + ", lng:"
                 + feature.geometry.coordinates[0]
-                + "}, 16)'>Zoom</button></div>"
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
         }
         layer.bindPopup(popupString);
     }
 };
 
 var loadPorts = function () {
-    return loadGeoJSON('background/WPI.geojson').then(function (data) {
+    return loadGeoJSON('background/WPI.geojson');
+};
+var loadPortLayer = function () {
+    return loadPorts().then(function (data) {
         data.features.forEach(function (feature) {
             feature.properties.type = "port";
         });
@@ -332,10 +342,14 @@ var loadPorts = function () {
 };
 
 var togglePorts = function () {
-    return toggleClusterLayer('ports', loadPorts());
+    return toggleClusterLayer('ports', loadPortLayer());
 };
 var loadSAMs = function () {
-    return loadGeoJSON('background/SAMs.geojson').then(function (data) {
+    return loadGeoJSON('background/SAMs.geojson');
+};
+
+var loadSAMLayer = function () {
+    return loadSAMs().then(function (data) {
         data.features.forEach(function (feature) {
             feature.properties.type = "SAM";
         });
@@ -353,11 +367,15 @@ var loadSAMs = function () {
 };
 
 var toggleSAMs = function () {
-    return toggleClusterLayer('sams', loadSAMs());
+    return toggleClusterLayer('sams', loadSAMLayer());
 };
 
 var loadAviation = function () {
-    return loadGeoJSON('background/ChineseMilitaryAviation.geojson').then(function (data) {
+    return loadGeoJSON('background/ChineseMilitaryAviation.geojson');
+};
+
+var loadAviationLayer = function () {
+    return loadAviation().then(function (data) {
         data.features.forEach(function (feature) {
             feature.properties.type = "airbase";
         });
@@ -374,11 +392,15 @@ var loadAviation = function () {
 };
 
 var toggleAviation = function () {
-    return toggleClusterLayer('aviation', loadAviation());
+    return toggleClusterLayer('aviation', loadAviationLayer());
 };
 
 var loadSecondArtillery = function () {
-    return loadGeoJSON('background/2AOperationalSites.geojson').then(function (data) {
+    return loadGeoJSON('background/2AOperationalSites.geojson');
+};
+
+var loadSecondArtilleryLayer = function () {
+    return loadSecondArtillery().then(function (data) {
         data.features.forEach(function (feature) {
             feature.properties.type = "nuclear";
         });
@@ -386,7 +408,7 @@ var loadSecondArtillery = function () {
         var icon = glyphIcon("nuclear", "&#xf1e2"); //L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
         return L.geoJson(data, {
             filter: function (feature) {
-                return feature.properties.name != "Garrison" && feature.properties.name != "UGF"
+                return feature.properties.name != "Garrison"
             },
             onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
@@ -397,38 +419,22 @@ var loadSecondArtillery = function () {
 };
 
 var toggleSecondArtillery = function () {
-    return toggleClusterLayer('missiles', loadSecondArtillery());
-};
-
-var stationPopup = function (feature, layer) {
-    if (feature.properties) {
-        var popupString = "<table>";
-        for (var key in feature.properties) {
-            popupString += "<tr><td>" + key + "</td> <td>" + feature.properties[key] + "</td></tr>";
-        }
-
-        if (feature.geometry) {
-            popupString += "<tr><td><button onclick='map.setView({lat:"
-                + feature.geometry.coordinates[1]
-                + ", lng:"
-                + feature.geometry.coordinates[0]
-                + "}, 16)'>Zoom</button></td></tr>"
-        }
-
-        popupString += "</table>";
-        layer.bindPopup(popupString);
-    }
+    return toggleClusterLayer('missiles', loadSecondArtilleryLayer());
 };
 
 var loadStations = function () {
-    return loadGeoJSON('background/stations.geojson').then(function (data) {
+    return loadGeoJSON('background/stations.geojson');
+};
+
+var loadStationLayer = function () {
+    return loadStations().then(function (data) {
         data.features.forEach(function (feature) {
             feature.properties.type = "station";
         });
 
         var icon = glyphIcon("station", "&#xf238");//L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
         return L.geoJson(data, {
-            onEachFeature: stationPopup,
+            onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
                 return L.marker(latlng, {icon: icon});
             }
@@ -437,14 +443,15 @@ var loadStations = function () {
 };
 
 var toggleStations = function () {
-    return toggleClusterLayer('stations', loadStations());
+    return toggleClusterLayer('stations', loadStationLayer());
 };
 
 var pathPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = "<table>";
+        var popupString = '<table class="table table-condensed">';
         for (var key in feature.properties) {
-            popupString += "<tr><td>" + key + "</td><td>" + feature.properties[key] + "</td></tr>";
+            var niceKey = key.charAt(0).toUpperCase() + key.slice(1)
+            popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + feature.properties[key] + "</td></tr>";
         }
         popupString += "</table>";
         layer.bindPopup(popupString);
@@ -466,7 +473,11 @@ var loadPath = function (id) {
 };
 
 var loadPaths = function () {
-    return loadGeoJSON(DATA_DIR + 'baseline.geojson').then(function (data) {
+    return loadGeoJSON(DATA_DIR + 'baseline.geojson');
+};
+
+var loadPathLayer = function () {
+    return loadPaths().then(function (data) {
         // Update the top bar count
         $('#flowCount').text(data.features.length);
         return L.geoJson(data, {
@@ -481,7 +492,7 @@ var loadPaths = function () {
 };
 
 var togglePaths = function () {
-    return toggleMapLayer('paths', loadPaths());
+    return toggleMapLayer('paths', loadPathLayer());
 };
 
 var fastAnimation = false;
@@ -563,14 +574,17 @@ var toggleAnimation = function (flowName) {
         clearAnimation();
     }
 };
-
 var loadSources = function () {
-    return loadGeoJSON(DATA_DIR + 'sources.geojson').then(function (data) {
+    return loadGeoJSON(DATA_DIR + 'sources.geojson');
+};
+
+var loadSourceLayer = function () {
+    return loadSources().then(function (data) {
         var icon = glyphIcon("source", '&#xf093'); // L.MakiMarkers.icon({icon: "rail", color: "#4dac26", size: "m"});
         $('#sourceCount').text(data.features.length);
 
         var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
+            onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
                 return L.marker(latlng, {icon: icon});
             }
@@ -581,16 +595,20 @@ var loadSources = function () {
 };
 
 var toggleSources = function () {
-    return toggleMapLayer('sources', loadSources());
+    return toggleMapLayer('sources', loadSourceLayer());
 };
 
 var loadSinks = function () {
-    return loadGeoJSON(DATA_DIR + 'sinks.geojson').then(function (data) {
+    return loadGeoJSON(DATA_DIR + 'sinks.geojson');
+};
+
+var loadSinkLayer = function () {
+    return loadSinks().then(function (data) {
         var icon = glyphIcon("sink", '&#xf019'); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
         $('#sinkCount').text(data.features.length);
 
         var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: stationPopup,
+            onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
                 return L.marker(latlng, {icon: icon});
             }
@@ -600,14 +618,19 @@ var loadSinks = function () {
 };
 
 var toggleSinks = function () {
-    return toggleMapLayer('sinks', loadSinks());
+    return toggleMapLayer('sinks', loadSinkLayer());
 };
 
-
 var loadRangeRings = function () {
-    return loadGeoJSON('background/RangeRingsP.geojson').then(function (data) {
-        // Merge the rings
-        var merged = turf.merge(data);
+    return loadGeoJSON('background/RangeRingsP.geojson');
+};
+
+var loadMergedRangeRings = function () {
+    return loadGeoJSON('background/RangeRingsP.geojson').then(turf.merge)
+};
+
+var loadMergedRangeLayer = function () {
+    return loadMergedRangeRings().then(function (merged) {
         return L.geoJson(merged, {
             style: {
                 "color": "#d00",
@@ -620,63 +643,64 @@ var loadRangeRings = function () {
 };
 
 var toggleRangeRings = function () {
-    return toggleMapLayer('rings', loadRangeRings());
+    return toggleMapLayer('rings', loadMergedRangeLayer());
 };
 
 var loadRangeFill = function () {
-    return toggleMapLayer('rings',
-        loadGeoJSON('background/RangeRingsP.geojson').then(function (data) {
-            // Merge the rings
-            return L.geoJson(data, {
-                style: {
-                    "color": "#d00",
-                    "weight": 0,
-                    "opacity": 0.5,
-                    "fillOpacity": 0.05
-                }
-            });
-        }));
+    return toggleMapLayer('rings', loadRangeRings().then(function (data) {
+        return L.geoJson(data, {
+            style: {
+                "color": "#d00",
+                "weight": 0,
+                "opacity": 0.5,
+                "fillOpacity": 0.05
+            }
+        });
+    }));
+};
+
+var loadBridges = function () {
+    return loadGeoJSON(DATA_DIR + 'bridges.geojson');
 };
 
 var allBridges = false;
-var loadSegments = function () {
-    return loadGeoJSON(DATA_DIR + 'bridges.geojson')
-        .then(function (data) {
-            // Update the top bar count
-            $('#bridgeCount').text(data.features.length);
+var loadSegmentLayer = function () {
+    return loadBridges().then(function (data) {
+        // Update the top bar count
+        $('#bridgeCount').text(data.features.length);
 
-            // Have a quick look through the data and figure out what the range of criticality is
-            var criticalityData = data.features.map(function (feature) {
-                return feature.properties.criticality;
-            });
-
-            var minCriticality = d3_array.min(criticalityData);
-            var maxCriticality = d3_array.max(criticalityData);
-            var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
-
-            return L.geoJson(data, {
-                filter: function (feature) {
-                    return allBridges || feature.properties.criticality >= 2;
-                },
-                onEachFeature: pathPopup,
-                style: function (feature) {
-                    var criticality = feature.properties.criticality;
-                    var color = d3_scale.scaleLinear()
-                        .domain([minCriticality, midPoint, maxCriticality])
-                        .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                    var weight = 4;
-                    return {
-                        "color": color(criticality),
-                        "weight": weight,
-                        "opacity": 0.66
-                    }
-                }
-            });
+        // Have a quick look through the data and figure out what the range of criticality is
+        var criticalityData = data.features.map(function (feature) {
+            return feature.properties.criticality;
         });
+
+        var minCriticality = d3_array.min(criticalityData);
+        var maxCriticality = d3_array.max(criticalityData);
+        var midPoint = minCriticality + ( (maxCriticality - minCriticality) / 2);
+
+        return L.geoJson(data, {
+            filter: function (feature) {
+                return allBridges || feature.properties.criticality >= 2;
+            },
+            onEachFeature: pathPopup,
+            style: function (feature) {
+                var criticality = feature.properties.criticality;
+                var color = d3_scale.scaleLinear()
+                    .domain([minCriticality, midPoint, maxCriticality])
+                    .range(["#00FF00", "#FFFF00", "#FF0000"]);
+                var weight = 4;
+                return {
+                    "color": color(criticality),
+                    "weight": weight,
+                    "opacity": 0.66
+                }
+            }
+        });
+    });
 };
 
 var toggleSegments = function () {
-    return toggleMapLayer('segments', loadSegments());
+    return toggleMapLayer('segments', loadSegmentLayer());
 };
 
 var clearDamagedPath = function () {
@@ -722,42 +746,115 @@ var loadDamagedPath = function (id) {
         });
 };
 
-
 var loadTargets = function () {
-    return loadGeoJSON(DATA_DIR + 'damage.geojson')
-        .then(function (data) {
-            // Have a quick look through the data and figure out what the range of criticality
-            var criticalityData = data.features.map(function (feature) {
-                return feature.properties.criticality;
-            });
+    return loadGeoJSON(DATA_DIR + 'damage.geojson');
+};
 
-            var minCriticality = d3_array.min(criticalityData);
-            var midPoint = d3_array.median(criticalityData);
-            var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
+var targetPopup = function (feature, layer) {
+    if (feature.properties) {
+        var popupString = '<table class="table table-condensed"><thead><tr><th>Bridge Target</th></tr></thead>';
+        for (var key in feature.properties) {
+            var prettyKey;
+            if (key == 'criticality') {
+                prettyKey = 'Cost of Destruction'
+            } if (key == 'elevations') {
+                prettyKey = 'Elevation'
+            } else {
+                prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
+            }
 
-            // Update the top bar count
-            $('#targetCount').text(data.features.length);
+            var prettyValue = feature.properties[key];
+            if (key == 'elevations') {
+                var array = JSON.parse(prettyValue);
+                var count = array.length;
+                prettyValue = array.reduce(function (a, b) {
+                        return a + b;
+                    }) / count;
+                prettyValue += " m";
+            }
+            else if (key == 'criticality') {
+                prettyValue = Math.round(prettyValue) + " km extra";
+            } else if (Number.isFinite(prettyValue)) {
+                prettyValue = Math.round(prettyValue) + " km";
+            }
 
-            return L.geoJson(data, {
-                // TODO: call for the adjustments here
-                onEachFeature: pathPopup,
-                style: function (feature) {
-                    var criticality = feature.properties.criticality;
-                    var color = d3_scale.scaleLinear()
-                        .domain([minCriticality, midPoint, maxCriticality])
-                        .range(["#00FF00", "#FFFF00", "#FF0000"]);
-                    return {
-                        "color": color(criticality),
-                        "weight": 8,
-                        "opacity": 0.66
-                    }
+            popupString += "<tr><td><strong>" + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
+        }
+        popupString += "</table>";
+        layer.bindPopup(popupString);
+    }
+};
+
+var loadTargetLayer = function () {
+    return loadTargets().then(function (data) {
+        // Load up the merged SAM threats
+        return loadMergedRangeRings().then(function (mergedRings) {
+            // Mark the targets which are in range
+            console.log("Computing active SAM threats");
+            loadingControl.addLoader("SAM");
+            data.features.forEach(function (feature) {
+                if (turf.inside(turf.center(feature), mergedRings)) {
+                    feature.properties["Active SAM Threat"] = true;
                 }
             });
-        })
+            loadingControl.removeLoader("SAM");
+            return data;
+        }).then(loadSAMs).then(function (sams) {
+            console.log("Computing SAM ranges");
+            loadingControl.addLoader("Range");
+            data.features.forEach(function (feature) {
+                var center = turf.center(feature);
+                var nearest = turf.nearest(center, sams);
+                var distance = turf.distance(nearest, center);
+                feature.properties["Nearest SAM"] = distance;
+            });
+            loadingControl.removeLoader("Range");
+            return data;
+        }).then(loadAviation).then(function (airbases) {
+            console.log("Computing airbase ranges");
+            loadingControl.addLoader("Air");
+            data.features.forEach(function (feature) {
+                var center = turf.center(feature);
+                var nearest = turf.nearest(center, airbases);
+                var distance = turf.distance(nearest, center);
+                feature.properties["Nearest airbase"] = distance;
+            });
+            loadingControl.removeLoader("Air");
+            return data;
+        });
+    }).then(function (data) {
+        // Have a quick look through the data and figure out what the range of criticality
+        var criticalityData = data.features.map(function (feature) {
+            return feature.properties.criticality;
+        });
+
+        var minCriticality = d3_array.min(criticalityData);
+        var midPoint = d3_array.median(criticalityData);
+        var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
+
+        // Update the top bar count
+        $('#targetCount').text(data.features.length);
+
+        return L.geoJson(data, {
+            // TODO: call for the adjustments here
+            onEachFeature: targetPopup,
+            style: function (feature) {
+                var criticality = feature.properties.criticality;
+                var color = d3_scale.scaleLinear()
+                    .domain([minCriticality, midPoint, maxCriticality])
+                    .range(["#00FF00", "#FFFF00", "#FF0000"]);
+                return {
+                    "color": color(criticality),
+                    "weight": 8,
+                    "opacity": 0.66
+                }
+            }
+        });
+    });
 };
 
 var toggleTargets = function () {
-    return toggleMapLayer('targets', loadTargets());
+    return toggleMapLayer('targets', loadTargetLayer());
 };
 
 var toggleFlows = function () {
@@ -902,39 +999,83 @@ var refreshTargets = function () {
     }, 60000);
 };
 
+function showDefaultLayers() {
+    showMapLayer('sinks', loadSinkLayer()).then(function () {
+        return showMapLayer('sources', loadSourceLayer());
+    }).then(function () {
+        return showMapLayer('paths', loadPathLayer());
+    }).then(function () {
+        return showMapLayer('targets', loadTargetLayer());
+    }).then(function () {
+        return showAnimation('baseline');
+    });
+}
+
 var startTutorial = function () {
     tutorial = true;
     var intro = introJs();
     var steps = [
         {
             intro: "<h5>Introduction</h5><p>This is an analysis of supply network resilience. "
-            + "It explores the flow of supplies from producers to consumers, "
+            + "It explores the flow of supplies from suppliers to consumers, "
             + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
-            position: 'bottom'
+            position: 'bottom',
+            before: function () {
+                hideMapLayer('sources');
+                hideMapLayer('sinks');
+                hideMapLayer('paths');
+                hideMapLayer('targets');
+                clearAnimation();
+            }
         },
         {
             intro: "<h5>Suppliers</h5><p>The green markers identify suppliers of resources, such as food, fuel, and parts. "
             + "Trains load supplies at and depart from stations near these locations. </p>",
-            position: 'bottom'
+            position: 'bottom',
+            before: function () {
+                hideMapLayer('sinks');
+                hideMapLayer('paths');
+                hideMapLayer('targets');
+                clearAnimation();
+                showMapLayer('sources', loadSourceLayer());
+            }
         },
         {
             intro: "<h5>Consumers</h5><p>The purple markers indicate consumers of those resources, "
             + "such as maintenance facilities, populations, or units. "
             + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
-            position: 'bottom'
+            position: 'bottom',
+            before: function () {
+                hideMapLayer('sources');
+                hideMapLayer('paths');
+                hideMapLayer('targets');
+                clearAnimation();
+                showMapLayer('sinks', loadSinkLayer());
+            }
         },
         {
             intro: "<h5>Flow</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
             + "with small dots indicating flow. "
             + "Each path is optimized, minimizing the costs associated with traveling across terrain. "
             + "</p>",
-            position: 'bottom'
+            position: 'bottom',
+            before: function () {
+                hideMapLayer('targets');
+                showMapLayer('sources', loadSourceLayer()).then(function () {
+                    showMapLayer('sinks', loadSinkLayer());
+                }).then(function () {
+                    showMapLayer('paths', loadPathLayer());
+                }).then(function () {
+                    showAnimation('baseline');
+                });
+            }
         },
         {
             intro: "<h5>Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. "
             + "Their relative vulnerability is indicated by color from green (low) to red (high) "
             + "and is determined by simulating damage to each bridge. </p>",
-            position: 'bottom'
+            position: 'bottom',
+            before: toggleTargets
         }
     ];
     intro.setOptions({
@@ -949,62 +1090,13 @@ var startTutorial = function () {
         tooltipClass: 'custom-tooltip'
     }).onbeforechange(function (targetElement) {
         // Fetch the relevant data
-        switch (this._currentStep) {
-            case 0: // Nothing
-                hideMapLayer('sources');
-                hideMapLayer('sinks');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-                break;
-            case 1: // Sources
-                // Hide everything
-                hideMapLayer('sinks');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-                showMapLayer('sources', loadSources());
-                break;
-            case 2: // Sinks
-                hideMapLayer('sources');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-                showMapLayer('sinks', loadSinks());
-                break;
-
-            case 3: // Paths
-                hideMapLayer('targets');
-                showMapLayer('sources', loadSources()).then(function () {
-                    showMapLayer('sinks', loadSinks());
-                }).then(function () {
-                    showMapLayer('paths', loadPaths());
-                }).then(function () {
-                    showAnimation('baseline');
-                });
-                break;
-
-            case 4: // Targets
-                toggleTargets();
-                break;
-        }
+        steps[this._currentStep].before();
     }).onafterchange(function () {
         var element = document.querySelector('.introjs-tooltipReferenceLayer')
         if (element) {
             element.style.setProperty('top', '120px');
         }
-    }).onexit(function () {
-        showMapLayer('sinks', loadSinks()).then(function () {
-            return showMapLayer('sources', loadSources());
-        }).then(function () {
-            return showMapLayer('paths', loadPaths());
-        }).then(function () {
-            return showMapLayer('targets', loadTargets());
-        }).then(function () {
-            return showAnimation('baseline');
-        });
-
-    });
+    }).onexit(showDefaultLayers);
     intro.start();
 };
 
@@ -1016,9 +1108,5 @@ if (tutorial) {
     startTutorial();
 } else {
     // Default layers
-    toggleSources()
-        .then(toggleSinks)
-        .then(toggleFlows)
-        .then(toggleTargets);
+    showDefaultLayers();
 }
-
