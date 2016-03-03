@@ -13,19 +13,22 @@
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="bower_components/Leaflet.EasyButton/src/easy-button.css"/>
     <link rel="stylesheet" href="bower_components/leaflet.loading/src/Control.Loading.css"/>
+    <link rel="stylesheet" href="bower_components/intro.js/minified/introjs.min.css"/>
     <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
 <div class="navbar navbar-static-top">
     <div class="navbar-inner">
         <div class="container-fluid">
-             <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
+            <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
+            <a id="helpButton" class="navbar-brand" href="#tutorial" onclick="startTutorial()" data-toggle="tooltip" data-placement="bottom" title="Help"><i class="fa fa-info-circle"></i></a>
+
             <span class="navbar-right nav-text">
-                <a class="navbar-brand" href="#" onclick="loadSources()" data-toggle="tooltip" data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span id="sourceCount"></span></a>
-                <a class="navbar-brand" href="#" onclick="loadSinks()" data-toggle="tooltip" data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span id="sinkCount"></span></a>
-                <a class="navbar-brand" href="#" onclick="loadFlows()" data-toggle="tooltip" data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
-                <a class="navbar-brand" href="#" onclick="loadSegments()" data-toggle="tooltip" data-placement="bottom" title="Bridges"><i class="fa fa-road"></i> <span id="bridgeCount"></span></a>
-                <a class="navbar-brand" href="#" onclick="loadTargets()" data-toggle="tooltip" data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span id="targetCount"></span></a>
+                <a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" title="Suppliers"><i class="fa fa-upload"></i> <span id="sourceCount"></span></a>
+                <a id="sinkToggle"  class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip" data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span id="sinkCount"></span></a>
+                <a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip" data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
+                <a id="targetToggle" class="navbar-brand" href="#" onclick="toggleTargets()" data-toggle="tooltip" data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span id="targetCount"></span></a>
+                <a id="bridgeToggle" class="navbar-brand" href="#" onclick="toggleSegments()" data-toggle="tooltip" data-placement="bottom" title="Bridges"><i class="fa fa-road"></i> <span id="bridgeCount"></span></a>
             </span>
         </div>
     </div>
@@ -55,6 +58,7 @@
 <script src="https://d3js.org/d3-format.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-interpolate.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-scale.v0.6.min.js"></script>
+<script src="bower_components/intro.js/intro.js"></script>
 <script src="app.js"></script>
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]
