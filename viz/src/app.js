@@ -145,8 +145,32 @@ var typeColors = {
     "airbase": "#ff7500",
     "station": "#00C8EE",
     "nuclear": "#ff0000",
-    "source": "#4dac26",
-    "sink": "#d01c8b"
+    "supplier": "#4dac26",
+    "consumer": "#d01c8b"
+};
+
+var typeIcons = {
+    "port": "anchor",
+    "SAM": "rocket",
+    "bridge": "road",
+    "flow": "exchange",
+    "rangering": "warning",
+    "airbase": "plane",
+    "station": "train",
+    "nuclear": "bomb",
+    "supplier": "upload",
+    "consumer": "download",
+    "target": "crosshairs"
+};
+
+var typeChars = {
+    "port": "&#xf13d",
+    "SAM": "&#xf135",
+    "airbase": "&#xf072",
+    "station": "&#xf238",
+    "nuclear": "&#xf1e2",
+    "supplier": '&#xf093',
+    "consumer": '&#xf019'
 };
 
 var clusterIcon = function (cluster) {
@@ -197,9 +221,10 @@ var clusterIcon = function (cluster) {
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
 
-var glyphIcon = function (type, iconChar) {
+var glyphIcon = function (type, icon) {
     var radius = 36;
-    var color = typeColors[type] ? typeColors[type] : type;
+    var color = typeColors[type] ? typeColors[type] : color;
+    var iconChar = typeChars[type] ? typeChars[type] : icon;
     var textOpacity = 1;
 
     var svgHtml = `<svg class="glyph-icon-` + type + `" width="100%" height="100%" viewbox="0 0 100 100"> \
@@ -298,10 +323,12 @@ var toggleClusterLayer = function (layerName, layerPromise) {
 
 var infraPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = `<div><div class="row" style='max-height:200px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;
+        var popupString = `<div><div class="row" style='max-height:250px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;
         if (feature.properties.type) {
-            var niceType = feature.properties.type.charAt(0).toUpperCase() + feature.properties.type.slice(1);
-            popupString += `<thead><tr><th>` + niceType + `</th></tr></thead>`
+            var type = feature.properties.type;
+            var niceType = type.charAt(0).toUpperCase() + type.slice(1);
+            var iconString = typeIcons[type] ? `<i class="fa fa-` + typeIcons[type] + `"></i>` : "";
+            popupString += `<thead><tr><th>` + iconString + ` ` + niceType + `</th></tr></thead>`;
         }
 
         for (key in feature.properties) {
@@ -311,7 +338,13 @@ var infraPopup = function (feature, layer) {
             }
         }
 
+        if (feature.geometry) {
+            popupString += "<tr><td><strong>MGRS</strong></td><td>" + mgrs.forward(feature.geometry.coordinates);
+            +"</td></tr>";
+        }
+
         popupString += "</table></div>";
+
         if (feature.geometry) {
             popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
                 + feature.geometry.coordinates[1]
@@ -331,7 +364,7 @@ var loadPortLayer = function () {
         data.features.forEach(function (feature) {
             feature.properties.type = "port";
         });
-        var icon = glyphIcon("port", "&#xf13d"); //L.MakiMarkers.icon({icon: "harbor", color: typeColors["port"], size: "s"});
+        var icon = glyphIcon("port"); //L.MakiMarkers.icon({icon: "harbor", color: typeColors["port"], size: "s"});
         return L.geoJson(data, {
             onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
@@ -354,7 +387,7 @@ var loadSAMLayer = function () {
             feature.properties.type = "SAM";
         });
 
-        var icon = glyphIcon("SAM", "&#xf135"); //L.MakiMarkers.icon({icon: "rocket", color: typeColors["SAM"], size: "s"});
+        var icon = glyphIcon("SAM"); //L.MakiMarkers.icon({icon: "rocket", color: typeColors["SAM"], size: "s"});
         //var heatPoints = [];
         return L.geoJson(data, {
             onEachFeature: infraPopup,
@@ -380,7 +413,7 @@ var loadAviationLayer = function () {
             feature.properties.type = "airbase";
         });
 
-        var icon = glyphIcon("airbase", "&#xf072");
+        var icon = glyphIcon("airbase");
         //L.MakiMarkers.icon({icon: "airport", color: typeColors["airbase"], size: "s"});
         return L.geoJson(data, {
             onEachFeature: infraPopup,
@@ -405,7 +438,7 @@ var loadSecondArtilleryLayer = function () {
             feature.properties.type = "nuclear";
         });
 
-        var icon = glyphIcon("nuclear", "&#xf1e2"); //L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
+        var icon = glyphIcon("nuclear"); //L.MakiMarkers.icon({icon: "danger", color: typeColors["nuclear"], size: "s"});
         return L.geoJson(data, {
             filter: function (feature) {
                 return feature.properties.name != "Garrison"
@@ -432,7 +465,7 @@ var loadStationLayer = function () {
             feature.properties.type = "station";
         });
 
-        var icon = glyphIcon("station", "&#xf238");//L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
+        var icon = glyphIcon("station");//L.MakiMarkers.icon({icon: "rail", color: typeColors["station"], size: "s"});
         return L.geoJson(data, {
             onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
@@ -448,10 +481,22 @@ var toggleStations = function () {
 
 var pathPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = '<table class="table table-condensed">';
+        var popupString = '<table class="table table-condensed"><thead><tr><th><i class="fa fa-road"></i> Bridge</th></tr></thead>';
         for (var key in feature.properties) {
-            var niceKey = key.charAt(0).toUpperCase() + key.slice(1)
-            popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + feature.properties[key] + "</td></tr>";
+            var prettyKey;
+            var prettyValue = features.properties[key];
+            if (key == 'elevations') {
+                prettyKey = "Elevation";
+                var array = JSON.parse(prettyValue);
+                var count = array.length;
+                prettyValue = array.reduce(function (a, b) {
+                        return a + b;
+                    }) / count;
+                prettyValue += " m";
+            } else {
+                prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
+            }
+            popupString += "<tr><td><strong>" + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
         }
         popupString += "</table>";
         layer.bindPopup(popupString);
@@ -580,9 +625,11 @@ var loadSources = function () {
 
 var loadSourceLayer = function () {
     return loadSources().then(function (data) {
-        var icon = glyphIcon("source", '&#xf093'); // L.MakiMarkers.icon({icon: "rail", color: "#4dac26", size: "m"});
+        var icon = glyphIcon("supplier"); // L.MakiMarkers.icon({icon: "rail", color: "#4dac26", size: "m"});
         $('#sourceCount').text(data.features.length);
-
+        data.features.forEach(function (feature) {
+            feature.properties.type = "supplier";
+        });
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
@@ -604,9 +651,11 @@ var loadSinks = function () {
 
 var loadSinkLayer = function () {
     return loadSinks().then(function (data) {
-        var icon = glyphIcon("sink", '&#xf019'); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
+        var icon = glyphIcon("consumer"); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
         $('#sinkCount').text(data.features.length);
-
+        data.features.forEach(function (feature) {
+            feature.properties.type = "consumer";
+        });
         var geoJsonLayer = L.geoJson(data, {
             onEachFeature: infraPopup,
             pointToLayer: function (feature, latlng) {
@@ -631,7 +680,7 @@ var loadMergedRangeRings = function () {
 
 var loadMergedRangeLayer = function () {
     return loadMergedRangeRings().then(function (merged) {
-        return L.geoJson(merged, {
+        var layer = L.geoJson(merged, {
             style: {
                 "color": "#d00",
                 "weight": 2,
@@ -639,6 +688,7 @@ var loadMergedRangeLayer = function () {
                 "fillOpacity": 0.10
             }
         });
+        return layer;
     });
 };
 
@@ -752,42 +802,59 @@ var loadTargets = function () {
 
 var targetPopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = '<table class="table table-condensed"><thead><tr><th>Bridge Target</th></tr></thead>';
+        var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-crosshairs"></i> Critical Bridge</th></tr></thead>';
         for (var key in feature.properties) {
             var prettyKey;
+            var rowClass = "";
+            var prettyValue = feature.properties[key];
             if (key == 'criticality') {
                 prettyKey = 'Cost of Destruction';
+                prettyValue = Math.round(prettyValue / 100) + " hrs";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
-            } else if (key == 'activeSAM') {
-                prettyKey = 'Active SAM Threat';
-            } else if (key == 'nearestSAM') {
-                prettyKey = 'Nearest SAM Site';
-            } else if (key == 'nearestAirbase') {
-                prettyKey = 'Nearest Airbase';
-            } else {
-                prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
-            }
-
-            var prettyValue = feature.properties[key];
-            if (key == 'elevations') {
                 var array = JSON.parse(prettyValue);
                 var count = array.length;
                 prettyValue = array.reduce(function (a, b) {
                         return a + b;
                     }) / count;
                 prettyValue += " m";
-            } else if (key == 'criticality') {
+            } else if (key == 'activeSAM') {
+                prettyKey = `<a href="#" onclick="toggleSAMs()"> SAM Threat</a>`;
+                prettyValue = Math.round(feature.properties['nearestSAM']) + " km";
+                rowClass = "danger"
+            } else if (key == 'nearestSAM') {
+                continue; // Skip nearest SAM on its own
+                //prettyKey = 'Nearest SAM Site';
+            } else if (key == 'center') {
+                continue; // Skip center
+                //prettyKey = "MGRS";
+                //prettyValue = mgrs.forward(prettyValue.geometry.coordinates);
+            } else if (key == 'nearestAirbase') {
+                rowClass = "warning";
+                prettyKey = `<a href="#" onclick="toggleAviation()"> Nearest Airbase</a>`;
                 prettyValue = Math.round(prettyValue) + " km";
-            } else if (Number.isFinite(prettyValue)) {
-                prettyValue = Math.round(prettyValue) + " km";
-            } else if (typeof prettyValue == 'boolean') {
-                prettyValue = prettyValue ? "Yes" : "No";
+            } else {
+                prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
+                // If we still haven't made a string out of this
+                if (Number.isFinite(prettyValue)) {
+                    prettyValue = Math.round(prettyValue) + " km";
+                } else if (typeof prettyValue == 'boolean') {
+                    prettyValue = prettyValue ? "Yes" : "No";
+                }
             }
 
-            popupString += "<tr><td><strong>" + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
+            popupString += `<tr class="` + rowClass + `"><td><strong>` + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
         }
-        popupString += "</table>";
+        popupString += "</table></div>";
+
+        if (feature.properties.center) {
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+                + feature.properties.center.geometry.coordinates[1]
+                + ", lng:"
+                + feature.properties.center.geometry.coordinates[0]
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
+        }
+
         layer.bindPopup(popupString);
     }
 };
@@ -800,7 +867,9 @@ var loadTargetLayer = function () {
             console.log("Computing active SAM threats");
             loadingControl.addLoader("SAM");
             data.features.forEach(function (feature) {
-                if (turf.inside(turf.center(feature), mergedRings)) {
+                var center = turf.center(feature);
+                feature.properties.center = center;
+                if (turf.inside(center, mergedRings)) {
                     feature.properties["activeSAM"] = true;
                 }
             });
@@ -809,8 +878,10 @@ var loadTargetLayer = function () {
         }).then(loadSAMs).then(function (sams) {
             console.log("Computing SAM ranges");
             loadingControl.addLoader("Range");
-            data.features.forEach(function (feature) {
-                var center = turf.center(feature);
+            data.features.filter(function (feature) {
+                return feature.properties.activeSAM;
+            }).forEach(function (feature) {
+                var center = feature.properties.center;
                 var nearest = turf.nearest(center, sams);
                 var distance = turf.distance(nearest, center);
                 feature.properties["nearestSAM"] = distance;
@@ -821,7 +892,7 @@ var loadTargetLayer = function () {
             console.log("Computing airbase ranges");
             loadingControl.addLoader("Air");
             data.features.forEach(function (feature) {
-                var center = turf.center(feature);
+                var center = feature.properties.center;
                 var nearest = turf.nearest(center, airbases);
                 var distance = turf.distance(nearest, center);
                 feature.properties["nearestAirbase"] = distance;
@@ -881,7 +952,7 @@ L.control.scale().addTo(map);
 var layerControl = L.control.layers(baseMaps, overlayMaps, {position: 'bottomleft'});
 layerControl.addTo(map);
 
-var bridgeButton = L.easyButton('fa-road', function (btn, map) {
+var bridgeButton = L.easyButton('fa-' + typeIcons['bridge'], function (btn, map) {
     if (!allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
         toggleSegments();
@@ -893,29 +964,29 @@ var bridgeButton = L.easyButton('fa-road', function (btn, map) {
 });
 
 // Advanced controls
-var portButton = L.easyButton('fa-anchor', function (btn, map) {
+var portButton = L.easyButton('fa-' + typeIcons['port'], function (btn, map) {
     togglePorts();
 });
-var aviationButton = L.easyButton('fa-plane', function (btn, map) {
+var aviationButton = L.easyButton('fa-' + typeIcons['airbase'], function (btn, map) {
     toggleAviation();
 });
-var nuclearButton = L.easyButton('fa-bomb', function (btn, map) {
+var nuclearButton = L.easyButton('fa-' + typeIcons['nuclear'], function (btn, map) {
     toggleSecondArtillery();
 });
 
-var stationButton = L.easyButton('fa-train', function (btn, map) {
+var stationButton = L.easyButton('fa-' + typeIcons['station'], function (btn, map) {
     toggleStations();
 });
 
-var SAMButton = L.easyButton('fa-rocket', function (btn, map) {
+var SAMButton = L.easyButton('fa-' + typeIcons['SAM'], function (btn, map) {
     toggleSAMs();
 });
 
-var flowButton = L.easyButton('fa-exchange', function (btn, map) {
+var flowButton = L.easyButton('fa-' + typeIcons['flow'], function (btn, map) {
     toggleFlows();
 });
 
-var rangeRingButton = L.easyButton('fa-warning', function (btn, map) {
+var rangeRingButton = L.easyButton('fa-' + typeIcons['rangering'], function (btn, map) {
     toggleRangeRings();
 });
 var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
@@ -928,7 +999,7 @@ var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
     // Load or unload the layer
     toggleSegments();
 });
-var damageButton = L.easyButton('fa-crosshairs', function (btn, map) {
+var damageButton = L.easyButton('fa-' + typeIcons['target'], function (btn, map) {
     toggleTargets();
 });
 
@@ -1007,15 +1078,18 @@ var refreshTargets = function () {
 };
 
 function showDefaultLayers() {
-    showMapLayer('sinks', loadSinkLayer()).then(function () {
-        return showMapLayer('sources', loadSourceLayer());
-    }).then(function () {
-        return showMapLayer('paths', loadPathLayer());
-    }).then(function () {
-        return showMapLayer('targets', loadTargetLayer());
-    }).then(function () {
-        return showAnimation('baseline');
-    });
+    return showMapLayer('rings', loadMergedRangeLayer())
+        .then(function () {
+            return showMapLayer('sinks', loadSinkLayer());
+        }).then(function () {
+            return showMapLayer('sources', loadSourceLayer());
+        }).then(function () {
+            return showMapLayer('paths', loadPathLayer());
+        }).then(function () {
+            return showMapLayer('targets', loadTargetLayer());
+        }).then(function () {
+            return showAnimation('baseline');
+        });
 }
 
 var startTutorial = function () {
@@ -1028,6 +1102,7 @@ var startTutorial = function () {
             + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
             position: 'bottom',
             before: function () {
+                showMapLayer('rings', loadMergedRangeLayer());
                 hideMapLayer('sources');
                 hideMapLayer('sinks');
                 hideMapLayer('paths');
