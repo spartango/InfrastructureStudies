@@ -756,9 +756,15 @@ var targetPopup = function (feature, layer) {
         for (var key in feature.properties) {
             var prettyKey;
             if (key == 'criticality') {
-                prettyKey = 'Cost of Destruction'
-            } if (key == 'elevations') {
-                prettyKey = 'Elevation'
+                prettyKey = 'Cost of Destruction';
+            } else if (key == 'elevations') {
+                prettyKey = 'Elevation';
+            } else if (key == 'activeSAM') {
+                prettyKey = 'Active SAM Threat';
+            } else if (key == 'nearestSAM') {
+                prettyKey = 'Nearest SAM Site';
+            } else if (key == 'nearestAirbase') {
+                prettyKey = 'Nearest Airbase';
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
             }
@@ -771,11 +777,12 @@ var targetPopup = function (feature, layer) {
                         return a + b;
                     }) / count;
                 prettyValue += " m";
-            }
-            else if (key == 'criticality') {
-                prettyValue = Math.round(prettyValue) + " km extra";
+            } else if (key == 'criticality') {
+                prettyValue = Math.round(prettyValue) + " km";
             } else if (Number.isFinite(prettyValue)) {
                 prettyValue = Math.round(prettyValue) + " km";
+            } else if (typeof prettyValue == 'boolean') {
+                prettyValue = prettyValue ? "Yes" : "No";
             }
 
             popupString += "<tr><td><strong>" + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
@@ -794,7 +801,7 @@ var loadTargetLayer = function () {
             loadingControl.addLoader("SAM");
             data.features.forEach(function (feature) {
                 if (turf.inside(turf.center(feature), mergedRings)) {
-                    feature.properties["Active SAM Threat"] = true;
+                    feature.properties["activeSAM"] = true;
                 }
             });
             loadingControl.removeLoader("SAM");
@@ -806,7 +813,7 @@ var loadTargetLayer = function () {
                 var center = turf.center(feature);
                 var nearest = turf.nearest(center, sams);
                 var distance = turf.distance(nearest, center);
-                feature.properties["Nearest SAM"] = distance;
+                feature.properties["nearestSAM"] = distance;
             });
             loadingControl.removeLoader("Range");
             return data;
@@ -817,7 +824,7 @@ var loadTargetLayer = function () {
                 var center = turf.center(feature);
                 var nearest = turf.nearest(center, airbases);
                 var distance = turf.distance(nearest, center);
-                feature.properties["Nearest airbase"] = distance;
+                feature.properties["nearestAirbase"] = distance;
             });
             loadingControl.removeLoader("Air");
             return data;
