@@ -332,10 +332,14 @@ var infraPopup = function (feature, layer) {
         }
 
         for (key in feature.properties) {
-            if (key != 'type') {
-                var niceKey = key.charAt(0).toUpperCase() + key.slice(1);
-                popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + feature.properties[key] + "</td></tr>";
+            var niceKey = key.charAt(0).toUpperCase() + key.slice(1);
+            var niceValue = feature.properties[key];
+            if (key == 'elevation') {
+                niceValue += " m";
+            } else if (key == 'type') {
+                continue;
             }
+            popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + niceValue + "</td></tr>";
         }
 
         if (feature.geometry) {
@@ -840,12 +844,17 @@ var targetPopup = function (feature, layer) {
                     }) / count;
                 prettyValue += " m";
             } else if (key == 'activeSAM') {
-                prettyKey = `<a href="#" onclick="toggleSAMs()"> SAM Threat</a>`;
+                continue;
+            } else if (key == 'nearestSAM' && feature.properties.activeSAM) {
+                prettyKey = `<a href="#" onclick="toggleSAMThreats()"> SAM Threat</a>`;
                 prettyValue = Math.round(feature.properties['nearestSAM']) + " km";
                 rowClass = "danger"
-            } else if (key == 'nearestSAM') {
-                continue; // Skip nearest SAM on its own
-                //prettyKey = 'Nearest SAM Site';
+            } else if (key == 'nearestStation') {
+                prettyKey = `<a href="#" onclick="toggleStations()"> Nearest Station</a>`;
+                prettyValue = Math.round(prettyValue) + " km";
+            } else if (key == 'nearestSAM' && !feature.properties.activeSAM) {
+                prettyKey = `<a href="#" onclick="toggleSAMThreats()"> Nearest Radar</a>`;
+                prettyValue = Math.round(feature.properties['nearestSAM']) + " km";
             } else if (key == 'center') {
                 continue; // Skip center
                 //prettyKey = "MGRS";
@@ -899,9 +908,7 @@ var loadTargetLayer = function () {
         }).then(loadSAMs).then(function (sams) {
             console.log("Computing SAM ranges");
             loadingControl.addLoader("Range");
-            data.features.filter(function (feature) {
-                return feature.properties.activeSAM;
-            }).forEach(function (feature) {
+            data.features.forEach(function (feature) {
                 var center = feature.properties.center;
                 var nearest = turf.nearest(center, sams);
                 var distance = turf.distance(nearest, center);
@@ -960,6 +967,26 @@ var toggleFlows = function () {
     return togglePaths().then(function () {
         toggleAnimation('baseline')
     });
+};
+
+var toggleSAMThreats = function () {
+    return toggleRangeRings().then(toggleSAMs);
+};
+
+var showSinks = function () {
+    return showMapLayer('sinks', loadSinkLayer());
+};
+var showSources = function () {
+    return showMapLayer('sources', loadSourceLayer());
+};
+var showPaths = function () {
+    return showMapLayer('paths', loadPathLayer());
+};
+var showTargets = function () {
+    return showMapLayer('targets', loadTargetLayer());
+};
+var showBaselineAnimation = function () {
+    return showAnimation('baseline');
 };
 
 // Default controls
@@ -1099,18 +1126,11 @@ var refreshTargets = function () {
 };
 
 function showDefaultLayers() {
-    return showMapLayer('rings', loadMergedRangeLayer())
-        .then(function () {
-            return showMapLayer('sinks', loadSinkLayer());
-        }).then(function () {
-            return showMapLayer('sources', loadSourceLayer());
-        }).then(function () {
-            return showMapLayer('paths', loadPathLayer());
-        }).then(function () {
-            return showMapLayer('targets', loadTargetLayer());
-        }).then(function () {
-            return showAnimation('baseline');
-        });
+    return showSinks()
+        .then(showSources)
+        .then(showPaths)
+        .then(showTargets)
+        .then(showBaselineAnimation);
 }
 
 var startTutorial = function () {
@@ -1123,7 +1143,6 @@ var startTutorial = function () {
             + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
             position: 'bottom',
             before: function () {
-                showMapLayer('rings', loadMergedRangeLayer());
                 hideMapLayer('sources');
                 hideMapLayer('sinks');
                 hideMapLayer('paths');
