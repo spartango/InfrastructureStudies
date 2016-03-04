@@ -1,20 +1,7 @@
-var mapmargin = 50;
-$(window).on("resize", resize);
-resize();
-function resize() {
-    $('#map').css("height", ($(window).height() - mapmargin ));
-    $('#map').css("margin-top", -21);
-}
-
-$(function () {
-    $('[data-toggle="tooltip"]').tooltip()
-});
-
 var urlHash = window.location.hash;
 
 var DATA_DIR = "elevation/";
-var debug = urlHash == "#debug";
-var tutorial = urlHash == "#tutorial";
+var standardView = !urlHash || urlHash == "#" || urlHash == "";
 
 // Setup Map
 var layer;
@@ -24,96 +11,6 @@ var drawnItems;
 var map = L.map('map', {
     zoomControl: false
 }).setView([31.531634, 106.054523], 5);
-
-// Tile sets
-var mapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox.streets',
-    accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
-});
-
-var satelliteMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox.satellite',
-    accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
-});
-
-var satelliteDigitalGlobeLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: '&copy; Mapbox &copy; OpenStreetMap &copy; DigitalGlobe',
-    maxZoom: 20,
-    id: 'digitalglobe.nal0g75k',
-    accessToken: 'pk.eyJ1IjoiZGlnaXRhbGdsb2JlIiwiYSI6ImNpa3ZneDl4cTAwZnp1OWtzZmJjNHdvNmsifQ.evG8fSrSxdxBmez_564Pug'
-});
-
-var hybridDigitalGlobeLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: '&copy; Mapbox &copy; OpenStreetMap &copy; DigitalGlobe',
-    maxZoom: 18,
-    id: 'digitalglobe.nal0mpda',
-    accessToken: 'pk.eyJ1IjoiZGlnaXRhbGdsb2JlIiwiYSI6ImNpa3ZneDl4cTAwZnp1OWtzZmJjNHdvNmsifQ.evG8fSrSxdxBmez_564Pug'
-});
-
-var topoMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox.outdoors',
-    accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
-});
-
-var hybridMapboxLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox.streets-satellite',
-    accessToken: 'pk.eyJ1Ijoic3BhcnRhbmdvIiwiYSI6IkFvOEpBcWcifQ.YJf-kBxkS9GYW2SFQ3Bpcg'
-});
-
-var CartoDB_Positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png', {
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-});
-
-var CartoDB_DarkMatter = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png', {
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-});
-
-var OpenWeatherMap_Clouds = L.tileLayer('http://{s}.tile.openweathermap.org/map/clouds/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
-
-var OpenWeatherMap_Precipitation = L.tileLayer('http://{s}.tile.openweathermap.org/map/precipitation/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
-
-var OpenWeatherMap_Pressure = L.tileLayer('http://{s}.tile.openweathermap.org/map/pressure/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
-
-var OpenWeatherMap_PressureContour = L.tileLayer('http://{s}.tile.openweathermap.org/map/pressure_cntr/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
-
-var OpenWeatherMap_Wind = L.tileLayer('http://{s}.tile.openweathermap.org/map/wind/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
-var OpenWeatherMap_Temperature = L.tileLayer('http://{s}.tile.openweathermap.org/map/temp/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
-    opacity: 0.5
-});
 
 var baseMaps = {
     "Streets": CartoDB_Positron,
@@ -135,129 +32,6 @@ var overlayMaps = {
     //"Pressure Contours": OpenWeatherMap_PressureContour,
     //"Wind": OpenWeatherMap_Wind,
     //"Temperature": OpenWeatherMap_Temperature
-};
-
-// Icon sets
-var defaultColor = "white";
-var typeColors = {
-    "port": "#00b",
-    "SAM": "#ffc000",
-    "airbase": "#ff7500",
-    "station": "#00C8EE",
-    "nuclear": "#ff0000",
-    "supplier": "#4dac26",
-    "consumer": "#d01c8b"
-};
-
-var typeIcons = {
-    "port": "anchor",
-    "SAM": "rocket",
-    "bridge": "road",
-    "flow": "exchange",
-    "rangering": "warning",
-    "airbase": "plane",
-    "station": "train",
-    "nuclear": "bomb",
-    "supplier": "upload",
-    "consumer": "download",
-    "target": "crosshairs"
-};
-
-var typeChars = {
-    "port": "&#xf13d",
-    "SAM": "&#xf135",
-    "airbase": "&#xf072",
-    "station": "&#xf238",
-    "nuclear": "&#xf1e2",
-    "supplier": '&#xf093',
-    "consumer": '&#xf019'
-};
-
-var clusterIcon = function (cluster) {
-    var radius = 36;
-    var strokeLength = 2 * 3.141592 * radius;
-    var colorCount = {};
-    var childCount = cluster.getChildCount();
-
-    cluster.getAllChildMarkers().forEach(function (el) {
-        var type = el.feature.properties.type;
-        var color = typeColors[type] ? typeColors[type] : defaultColor;
-        if (colorCount.hasOwnProperty(color))
-            colorCount[color]++;
-        else
-            colorCount[color] = 1;
-    });
-
-
-    var textOpacity = 1;
-    var dashoffsetSum = 0;
-    var svgHtml = `<svg width="100%" height="100%" viewbox="0 0 100 100"> \
-        <circle cx="50" cy="50" r="` + radius + `" fill="black" fill-opacity="0.5"/>`
-
-    for (var color in colorCount) {
-        svgHtml = svgHtml + `<circle cx="50" cy="50" r="` + radius + `" fill="transparent" stroke-width="10" stroke=` +
-            color + ` stroke-dasharray=` + strokeLength + ` stroke-dashoffset="` + dashoffsetSum + `" stroke-opacity="` + textOpacity + `" />`
-        var currLength = (1.0 * colorCount[color] / childCount) * strokeLength;
-        dashoffsetSum += currLength;
-    }
-
-    var textX = 42;
-    var fontSize = 32;
-    if (childCount >= 10) {
-        textX = 32;
-    }
-    if (childCount >= 100) {
-        fontSize = 30;
-        textX = 24;
-    }
-    if (childCount >= 1000) {
-        textX = 20;
-        fontSize = 28;
-    }
-
-    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
-        </svg>`;
-
-    return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
-};
-
-var glyphIcon = function (type, icon) {
-    var radius = 36;
-    var color = typeColors[type] ? typeColors[type] : color;
-    var iconChar = typeChars[type] ? typeChars[type] : icon;
-    var textOpacity = 1;
-
-    var svgHtml = `<svg class="glyph-icon-` + type + `" width="100%" height="100%" viewbox="0 0 100 100"> \
-        <circle cx="50" cy="50" r="` + radius + `" fill="` + color + `" fill-opacity="0.95"/>`
-
-    var textX = 36;
-    var fontSize = 32;
-
-    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-family: FontAwesome; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + iconChar + `</text>
-        </svg>`;
-
-    return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
-};
-
-// Data loading
-var loadGeoJSON = function (path) {
-    return new Promise(function (resolve, reject) {
-        loadingControl.addLoader(path);
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', path, true);
-        xhr.onload = function () {
-            if (xhr.readyState == 4) {
-                var data = JSON.parse(xhr.responseText);
-                resolve(data);
-                loadingControl.removeLoader(path);
-            }
-        };
-        xhr.onerror = function () {
-            reject(this.statusText);
-            loadingControl.removeLoader(path);
-        };
-        xhr.send();
-    });
 };
 
 var backgroundLayers = {};
@@ -360,9 +134,6 @@ var infraPopup = function (feature, layer) {
     }
 };
 
-var loadPorts = function () {
-    return loadGeoJSON('background/WPI.geojson');
-};
 var loadPortLayer = function () {
     return loadPorts().then(function (data) {
         data.features.forEach(function (feature) {
@@ -380,9 +151,6 @@ var loadPortLayer = function () {
 
 var togglePorts = function () {
     return toggleClusterLayer('ports', loadPortLayer());
-};
-var loadSAMs = function () {
-    return loadGeoJSON('background/SAMs.geojson');
 };
 
 var loadSAMLayer = function () {
@@ -407,10 +175,6 @@ var toggleSAMs = function () {
     return toggleClusterLayer('sams', loadSAMLayer());
 };
 
-var loadAviation = function () {
-    return loadGeoJSON('background/ChineseMilitaryAviation.geojson');
-};
-
 var loadAviationLayer = function () {
     return loadAviation().then(function (data) {
         data.features.forEach(function (feature) {
@@ -430,10 +194,6 @@ var loadAviationLayer = function () {
 
 var toggleAviation = function () {
     return toggleClusterLayer('aviation', loadAviationLayer());
-};
-
-var loadSecondArtillery = function () {
-    return loadGeoJSON('background/2AOperationalSites.geojson');
 };
 
 var loadSecondArtilleryLayer = function () {
@@ -457,10 +217,6 @@ var loadSecondArtilleryLayer = function () {
 
 var toggleSecondArtillery = function () {
     return toggleClusterLayer('missiles', loadSecondArtilleryLayer());
-};
-
-var loadStations = function () {
-    return loadGeoJSON('background/stations.geojson');
 };
 
 var loadStationLayer = function () {
@@ -526,24 +282,6 @@ var bridgePopup = function (feature, layer) {
 
         layer.bindPopup(popupString);
     }
-};
-
-var loadPath = function (id) {
-    return loadGeoJSON(DATA_DIR + id + '_path.geojson')
-        .then(function (data) {
-            var path = L.geoJson(data, {
-                //onEachFeature: pathPopup
-                style: {
-                    "weight": 4,
-                    "opacity": 0.5
-                }
-            });
-            path.addTo(map);
-        });
-};
-
-var loadPaths = function () {
-    return loadGeoJSON(DATA_DIR + 'baseline.geojson');
 };
 
 var loadPathLayer = function () {
@@ -644,9 +382,6 @@ var toggleAnimation = function (flowName) {
         clearAnimation();
     }
 };
-var loadSources = function () {
-    return loadGeoJSON(DATA_DIR + 'sources.geojson');
-};
 
 var loadSourceLayer = function () {
     return loadSources().then(function (data) {
@@ -670,10 +405,6 @@ var toggleSources = function () {
     return toggleMapLayer('sources', loadSourceLayer());
 };
 
-var loadSinks = function () {
-    return loadGeoJSON(DATA_DIR + 'sinks.geojson');
-};
-
 var loadSinkLayer = function () {
     return loadSinks().then(function (data) {
         var icon = glyphIcon("consumer"); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
@@ -693,14 +424,6 @@ var loadSinkLayer = function () {
 
 var toggleSinks = function () {
     return toggleMapLayer('sinks', loadSinkLayer());
-};
-
-var loadRangeRings = function () {
-    return loadGeoJSON('background/RangeRingsP.geojson');
-};
-
-var loadMergedRangeRings = function () {
-    return loadGeoJSON('background/RangeRingsP.geojson').then(turf.merge)
 };
 
 var loadMergedRangeLayer = function () {
@@ -732,10 +455,6 @@ var loadRangeFill = function () {
             }
         });
     }));
-};
-
-var loadBridges = function () {
-    return loadGeoJSON(DATA_DIR + 'bridges.geojson');
 };
 
 var allBridges = false;
@@ -819,10 +538,6 @@ var loadDamagedPath = function (id) {
         }).then(function () {
             toggleAnimation(flowName);
         });
-};
-
-var loadTargets = function () {
-    return loadGeoJSON(DATA_DIR + 'damage.geojson');
 };
 
 var targetPopup = function (feature, layer) {
@@ -1012,31 +727,14 @@ var bridgeButton = L.easyButton('fa-' + typeIcons['bridge'], function (btn, map)
 });
 
 // Advanced controls
-var portButton = L.easyButton('fa-' + typeIcons['port'], function (btn, map) {
-    togglePorts();
-});
-var aviationButton = L.easyButton('fa-' + typeIcons['airbase'], function (btn, map) {
-    toggleAviation();
-});
-var nuclearButton = L.easyButton('fa-' + typeIcons['nuclear'], function (btn, map) {
-    toggleSecondArtillery();
-});
+var portButton = L.easyButton('fa-' + typeIcons['port'], togglePorts);
+var aviationButton = L.easyButton('fa-' + typeIcons['airbase'], toggleAviation);
+var nuclearButton = L.easyButton('fa-' + typeIcons['nuclear'], toggleSecondArtillery);
+var stationButton = L.easyButton('fa-' + typeIcons['station'], toggleStations);
+var SAMButton = L.easyButton('fa-' + typeIcons['SAM'], toggleSAMs);
+var flowButton = L.easyButton('fa-' + typeIcons['flow'], toggleFlows);
 
-var stationButton = L.easyButton('fa-' + typeIcons['station'], function (btn, map) {
-    toggleStations();
-});
-
-var SAMButton = L.easyButton('fa-' + typeIcons['SAM'], function (btn, map) {
-    toggleSAMs();
-});
-
-var flowButton = L.easyButton('fa-' + typeIcons['flow'], function (btn, map) {
-    toggleFlows();
-});
-
-var rangeRingButton = L.easyButton('fa-' + typeIcons['rangering'], function (btn, map) {
-    toggleRangeRings();
-});
+var rangeRingButton = L.easyButton('fa-' + typeIcons['rangering'], toggleRangeRings);
 var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
     if (allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
@@ -1047,9 +745,7 @@ var priorityButton = L.easyButton('fa-sort-numeric-desc', function (btn, map) {
     // Load or unload the layer
     toggleSegments();
 });
-var damageButton = L.easyButton('fa-' + typeIcons['target'], function (btn, map) {
-    toggleTargets();
-});
+var damageButton = L.easyButton('fa-' + typeIcons['target'], toggleTargets);
 
 var fastButton = L.easyButton('fa-bolt', function (btn, map) {
     if (backgroundLayers['animation']) {
@@ -1115,16 +811,6 @@ L.easyButton('fa-cogs', function (btn) {
     position: 'bottomright'
 }).addTo(map);
 
-var refreshTargets = function () {
-    setTimeout(function () {
-        hideMapLayer('targets')   // Unload the layer
-            .then(toggleTargets); // Reload the layer
-
-        // Schedule another run in 60s
-        refreshTargets();
-    }, 60000);
-};
-
 function showDefaultLayers() {
     return showSinks()
         .then(showSources)
@@ -1133,102 +819,6 @@ function showDefaultLayers() {
         .then(showBaselineAnimation);
 }
 
-var startTutorial = function () {
-    tutorial = true;
-    var intro = introJs();
-    var steps = [
-        {
-            intro: "<h5>Introduction</h5><p>This is an analysis of supply network resilience. "
-            + "It explores the flow of supplies from suppliers to consumers, "
-            + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
-            position: 'bottom',
-            before: function () {
-                hideMapLayer('sources');
-                hideMapLayer('sinks');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-            }
-        },
-        {
-            intro: "<h5>Suppliers</h5><p>The green markers identify suppliers of resources, such as food, fuel, and parts. "
-            + "Trains load supplies at and depart from stations near these locations. </p>",
-            position: 'bottom',
-            before: function () {
-                hideMapLayer('sinks');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-                showMapLayer('sources', loadSourceLayer());
-            }
-        },
-        {
-            intro: "<h5>Consumers</h5><p>The purple markers indicate consumers of those resources, "
-            + "such as maintenance facilities, populations, or units. "
-            + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
-            position: 'bottom',
-            before: function () {
-                hideMapLayer('sources');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
-                showMapLayer('sinks', loadSinkLayer());
-            }
-        },
-        {
-            intro: "<h5>Flow</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
-            + "with small dots indicating flow. "
-            + "Each path is optimized, minimizing the costs associated with traveling across terrain. "
-            + "</p>",
-            position: 'bottom',
-            before: function () {
-                hideMapLayer('targets');
-                showMapLayer('sources', loadSourceLayer()).then(function () {
-                    showMapLayer('sinks', loadSinkLayer());
-                }).then(function () {
-                    showMapLayer('paths', loadPathLayer());
-                }).then(function () {
-                    showAnimation('baseline');
-                });
-            }
-        },
-        {
-            intro: "<h5>Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. "
-            + "Their relative vulnerability is indicated by color from green (low) to red (high) "
-            + "and is determined by simulating damage to each bridge. </p>",
-            position: 'bottom',
-            before: toggleTargets
-        }
-    ];
-    intro.setOptions({
-        steps: steps,
-        scrollToElement: false,
-        showStepNumbers: false,
-        overlayOpacity: 0.0,
-        showBullets: false,
-        exitOnOverlayClick: false,
-        disableInteraction: false,
-        skipLabel: 'Done',
-        tooltipClass: 'custom-tooltip'
-    }).onbeforechange(function (targetElement) {
-        // Fetch the relevant data
-        steps[this._currentStep].before();
-    }).onafterchange(function () {
-        var element = document.querySelector('.introjs-tooltipReferenceLayer')
-        if (element) {
-            element.style.setProperty('top', '120px');
-        }
-    }).onexit(showDefaultLayers);
-    intro.start();
-};
-
-if (debug) {
-    refreshTargets();
-}
-
-if (tutorial) {
-    startTutorial();
-} else {
-    // Default layers
+if (standardView) {
     showDefaultLayers();
 }

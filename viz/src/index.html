@@ -60,7 +60,25 @@
 <script src="https://d3js.org/d3-interpolate.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-scale.v0.6.min.js"></script>
 <script src="bower_components/intro.js/intro.js"></script>
+<script src="types.js"></script>
+<script src="layers.js"></script>
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script>
+    var mapmargin = 50;
+    $(window).on("resize", resize);
+    resize();
+    function resize() {
+        $('#map').css("height", ($(window).height() - mapmargin ));
+        $('#map').css("margin-top", -21);
+    }
+
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
 <script src="app.js"></script>
+<script src="refresh.js"></script>
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]
         + ':35729/livereload.js"></'
