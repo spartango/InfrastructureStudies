@@ -464,27 +464,36 @@ var targetPopup = function (feature, layer) {
             var prettyValue = feature.properties[key];
             if (key == 'criticality') {
                 prettyKey = 'Cost of Destruction';
+                // Format this cost in terms of hours, with nice commas and rounding
                 prettyValue = ("" + Math.round(prettyValue / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hrs";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
                 var count = array.length;
+                // Compute the average elevation
                 prettyValue = array.reduce(function (a, b) {
                         return a + b;
                     }) / count;
                 prettyValue += " m";
             } else if (key == 'activeSAM') {
-                continue;
-            } else if (key == 'nearestSAM' && feature.properties.activeSAM) {
-                prettyKey = `<a href="#" onclick="toggleSAMThreats()"> SAM Threat</a>`;
-                prettyValue = Math.round(feature.properties['nearestSAM']) + " km";
-                rowClass = "danger"
+                continue; // We'll handle activeSAM elsewhere
             } else if (key == 'nearestStation') {
                 prettyKey = `<a href="#" onclick="toggleStations()"> Nearest Station</a>`;
-                prettyValue = Math.round(prettyValue) + " km";
-            } else if (key == 'nearestSAM' && !feature.properties.activeSAM) {
-                prettyKey = `<a href="#" onclick="toggleSAMThreats()"> Nearest Radar</a>`;
-                prettyValue = Math.round(feature.properties['nearestSAM']) + " km";
+                var distance = turf.distance(feature.properties['nearestStation'], feature.properties['center']);
+                prettyValue = Math.round(distance) + " km";
+            } else if (key == 'nearestSAM') {
+                // Prep a function to show just the nearest SAM on click
+
+
+                prettyKey = `<a href="#" onclick="toggleSAMThreats()">`;
+                if (feature.properties.activeSAM) {
+                    prettyKey += `SAM Threat</a>`;
+                    rowClass = "danger"
+                } else {
+                    prettyKey = `Nearest Radar</a>`;
+                }
+                var distance = turf.distance(feature.properties['nearestSAM'], feature.properties['center']);
+                prettyValue = Math.round(distance) + " km";
             } else if (key == 'center') {
                 continue; // Skip center
                 //prettyKey = "MGRS";
@@ -492,7 +501,8 @@ var targetPopup = function (feature, layer) {
             } else if (key == 'nearestAirbase') {
                 rowClass = "warning";
                 prettyKey = `<a href="#" onclick="toggleAviation()"> Nearest Airbase</a>`;
-                prettyValue = Math.round(prettyValue) + " km";
+                var distance = turf.distance(feature.properties['nearestAirbase'], feature.properties['center']);
+                prettyValue = Math.round(distance) + " km";
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
@@ -541,8 +551,7 @@ var loadTargetLayer = function () {
             data.features.forEach(function (feature) {
                 var center = feature.properties.center;
                 var nearest = turf.nearest(center, sams);
-                var distance = turf.distance(nearest, center);
-                feature.properties["nearestSAM"] = distance;
+                feature.properties["nearestSAM"] = nearest;
             });
             loadingControl.removeLoader("Range");
             return data;
@@ -552,8 +561,7 @@ var loadTargetLayer = function () {
             data.features.forEach(function (feature) {
                 var center = feature.properties.center;
                 var nearest = turf.nearest(center, airbases);
-                var distance = turf.distance(nearest, center);
-                feature.properties["nearestAirbase"] = distance;
+                feature.properties["nearestAirbase"] = nearest;
             });
             loadingControl.removeLoader("Air");
             return data;
