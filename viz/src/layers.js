@@ -458,6 +458,7 @@ var loadDamagedPath = function (id) {
 var targetPopup = function (feature, layer) {
     if (feature.properties) {
         var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-crosshairs"></i> Critical Bridge</th></tr></thead>';
+        var center = feature.properties['center'];
         for (var key in feature.properties) {
             var prettyKey;
             var rowClass = "";
@@ -475,34 +476,40 @@ var targetPopup = function (feature, layer) {
                         return a + b;
                     }) / count;
                 prettyValue += " m";
-            } else if (key == 'activeSAM') {
-                continue; // We'll handle activeSAM elsewhere
             } else if (key == 'nearestStation') {
-                prettyKey = `<a href="#" onclick="toggleStations()"> Nearest Station</a>`;
-                var distance = turf.distance(feature.properties['nearestStation'], feature.properties['center']);
+                var station = feature.properties['nearestStation'];
+                var extent = turf.extent(turf.featurecollection([station, center]));
+                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
+                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleStations(),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
+                var distance = turf.distance(station, center);
                 prettyValue = Math.round(distance) + " km";
             } else if (key == 'nearestSAM') {
-                // Prep a function to show just the nearest SAM on click
-
-
-                prettyKey = `<a href="#" onclick="toggleSAMThreats()">`;
+                var sam = feature.properties['nearestSAM'];
+                var extent = turf.extent(turf.featurecollection([sam, center]));
+                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
+                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleSAMThreats(),` + JSON.stringify(bounds) + `)">`;
                 if (feature.properties.activeSAM) {
                     prettyKey += `SAM Threat</a>`;
                     rowClass = "danger"
                 } else {
-                    prettyKey = `Nearest Radar</a>`;
+                    prettyKey += `Nearest Radar</a>`;
                 }
-                var distance = turf.distance(feature.properties['nearestSAM'], feature.properties['center']);
+                var distance = turf.distance(sam, center);
                 prettyValue = Math.round(distance) + " km";
+            } else if (key == 'nearestAirbase') {
+                var airbase = feature.properties['nearestAirbase'];
+                var extent = turf.extent(turf.featurecollection([airbase, center]));
+                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
+                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleAviation(),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
+                rowClass = "warning";
+                var distance = turf.distance(airbase, center);
+                prettyValue = Math.round(distance) + " km";
+            } else if (key == 'activeSAM') {
+                continue; // We'll handle activeSAM elsewhere
             } else if (key == 'center') {
                 continue; // Skip center
                 //prettyKey = "MGRS";
                 //prettyValue = mgrs.forward(prettyValue.geometry.coordinates);
-            } else if (key == 'nearestAirbase') {
-                rowClass = "warning";
-                prettyKey = `<a href="#" onclick="toggleAviation()"> Nearest Airbase</a>`;
-                var distance = turf.distance(feature.properties['nearestAirbase'], feature.properties['center']);
-                prettyValue = Math.round(distance) + " km";
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
@@ -608,6 +615,15 @@ var toggleFlows = function () {
 
 var toggleSAMThreats = function () {
     return toggleRangeRings().then(toggleSAMs);
+};
+
+var toggleAndFocus = function (toggle, bounds) {
+    return toggle.then(function () {
+        if (bounds) { // Focus on this target
+            console.log(bounds);
+            map.fitBounds(bounds);
+        }
+    });
 };
 
 var showSinks = function () {
