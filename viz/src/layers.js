@@ -320,7 +320,7 @@ var loadSourceLayer = function () {
                 return L.marker(latlng, {icon: icon});
             }
         });
-        map.fitBounds(geoJsonLayer.getBounds());
+        //map.fitBounds(geoJsonLayer.getBounds());
         return geoJsonLayer;
     });
 };
@@ -624,15 +624,35 @@ var showAndFocus = function (showPromise, bounds) {
 var showSinks = function () {
     return showMapLayer('sinks', loadSinkLayer);
 };
+
+var hideSinks = function () {
+    return hideMapLayer('sinks');
+};
+
 var showSources = function () {
     return showMapLayer('sources', loadSourceLayer);
 };
+
+var hideSources = function () {
+    return hideMapLayer('sources');
+};
+
 var showPaths = function () {
     return showMapLayer('paths', loadPathLayer);
 };
+
+var hidePaths = function () {
+    return hideMapLayer('paths');
+};
+
 var showTargets = function () {
     return showMapLayer('targets', loadTargetLayer);
 };
+
+var hideTargets = function () {
+    return hideMapLayer('targets');
+};
+
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
 };

@@ -67,7 +67,8 @@ var refreshResults = function (interval) {
     var time = interval ? interval : 60000;
     setTimeout(function () {
         console.log("Refreshing, next in " + interval);
-        showDefaultLayers();
+        // Make sure default layers are showing, then refresh the target layer
+        showDefaultLayers().then(hideTargets).then(showTargets);
         refreshResults(time);
     }, time);
 };
@@ -97,3 +98,5 @@ L.easyButton('fa-pencil', function (btn) {
 }, {
     position: 'topleft'
 }).addTo(map);
+
+showSources();

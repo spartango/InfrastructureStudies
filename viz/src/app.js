@@ -45,6 +45,15 @@ var showDefaultLayers = function () {
         .then(showBaselineAnimation);
 };
 
+
+var hideDefaultLayers = function () {
+    return hideSinks()
+        .then(hideSources)
+        .then(hidePaths)
+        .then(hideTargets)
+        .then(clearAnimation);
+};
+
 if (defaultMode) {
     showDefaultLayers();
 }
