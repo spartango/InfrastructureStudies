@@ -27,7 +27,7 @@ var startTutorial = function () {
                 hideMapLayer('paths');
                 hideMapLayer('targets');
                 clearAnimation();
-                showMapLayer('sources', loadSourceLayer());
+                showSources();
             }
         },
         {
@@ -40,7 +40,7 @@ var startTutorial = function () {
                 hideMapLayer('paths');
                 hideMapLayer('targets');
                 clearAnimation();
-                showMapLayer('sinks', loadSinkLayer());
+                showSinks()
             }
         },
         {
@@ -51,11 +51,7 @@ var startTutorial = function () {
             position: 'bottom',
             before: function () {
                 hideMapLayer('targets');
-                showMapLayer('sources', loadSourceLayer()).then(function () {
-                    showMapLayer('sinks', loadSinkLayer());
-                }).then(function () {
-                    showMapLayer('paths', loadPathLayer());
-                }).then(function () {
+                showSources().then(showSinks).then(showPaths).then(function () {
                     showAnimation('baseline');
                 });
             }
@@ -82,7 +78,7 @@ var startTutorial = function () {
         // Fetch the relevant data
         steps[this._currentStep].before();
     }).onafterchange(function () {
-        var element = document.querySelector('.introjs-tooltipReferenceLayer')
+        var element = document.querySelector('.introjs-tooltipReferenceLayer');
         if (element) {
             element.style.setProperty('top', '120px');
         }
