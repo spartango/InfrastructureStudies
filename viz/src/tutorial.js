@@ -32,7 +32,7 @@ var startTutorial = function () {
         },
         {
             intro: "<h5>Consumers</h5><p>The purple markers indicate consumers of those resources, "
-            + "such as maintenance facilities, populations, or units. "
+            + "such as maintenance facilities, populations, or military units. "
             + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
             position: 'bottom',
             before: function () {
