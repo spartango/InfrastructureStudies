@@ -27,7 +27,7 @@ var startTutorial = function () {
                 hideMapLayer('paths');
                 hideMapLayer('targets');
                 clearAnimation();
-                showMapLayer('sources', loadSourceLayer());
+                showSources();
             }
         },
         {
@@ -40,22 +40,19 @@ var startTutorial = function () {
                 hideMapLayer('paths');
                 hideMapLayer('targets');
                 clearAnimation();
-                showMapLayer('sinks', loadSinkLayer());
+                showSinks()
             }
         },
         {
-            intro: "<h5>Flow</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
+            intro: "<h5>Flows</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
             + "with small dots indicating flow. "
             + "Each path is optimized, minimizing the costs associated with traveling across terrain. "
             + "</p>",
             position: 'bottom',
             before: function () {
-                hideMapLayer('targets');
-                showMapLayer('sources', loadSourceLayer()).then(function () {
-                    showMapLayer('sinks', loadSinkLayer());
-                }).then(function () {
-                    showMapLayer('paths', loadPathLayer());
-                }).then(function () {
+                hideMapLayer('targets')
+                    .then(showSources)
+                    .then(showSinks).then(showPaths).then(function () {
                     showAnimation('baseline');
                 });
             }
@@ -65,7 +62,16 @@ var startTutorial = function () {
             + "Their relative vulnerability is indicated by color from green (low) to red (high) "
             + "and is determined by simulating damage to each bridge. </p>",
             position: 'bottom',
-            before: toggleTargets
+            before: function () {
+                hideClusterLayer('sams').then(showTargets)
+            }
+        },
+        {
+            intro: "<h5>Defense</h5><p>The yellow markers indicate Surface-to-Air Missile (SAM) sites and early warning "
+            + " radars protecting the rail network from aerial attack. Clicking on a bridge will indicate the nearest "
+            + " SAM/Radar site.</p>",
+            position: 'bottom',
+            before: showSAMs
         }
     ];
     intro.setOptions({
@@ -82,7 +88,7 @@ var startTutorial = function () {
         // Fetch the relevant data
         steps[this._currentStep].before();
     }).onafterchange(function () {
-        var element = document.querySelector('.introjs-tooltipReferenceLayer')
+        var element = document.querySelector('.introjs-tooltipReferenceLayer');
         if (element) {
             element.style.setProperty('top', '120px');
         }
