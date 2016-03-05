@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="bower_components/leaflet/dist/leaflet.css"/>
     <link rel="stylesheet" href="bower_components/leaflet.markercluster/dist/MarkerCluster.css"/>
-    <link rel="stylesheet"
-          href="bower_components/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="bower_components/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="bower_components/leaflet-draw/dist/leaflet.draw.css"/>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="bower_components/Leaflet.EasyButton/src/easy-button.css"/>
@@ -21,14 +20,21 @@
     <div class="navbar-inner">
         <div class="container-fluid">
             <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
-            <a id="helpButton" class="navbar-brand" href="#tutorial" onclick="startTutorial()" data-toggle="tooltip" data-placement="bottom" title="Help"><i class="fa fa-info-circle"></i></a>
+            <a id="helpButton" class="navbar-brand" href="#tutorial" onclick="startTutorial()" data-toggle="tooltip"
+               data-placement="bottom" title="Help"><i class="fa fa-info-circle"></i></a>
 
             <span class="navbar-right nav-text">
-                <a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" title="Suppliers"><i class="fa fa-upload"></i> <span id="sourceCount"></span></a>
-                <a id="sinkToggle"  class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip" data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span id="sinkCount"></span></a>
-                <a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip" data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
-                <a id="targetToggle" class="navbar-brand" href="#" onclick="toggleTargets()" data-toggle="tooltip" data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span id="targetCount"></span></a>
-                <a id="bridgeToggle" class="navbar-brand" href="#" onclick="toggleSegments()" data-toggle="tooltip" data-placement="bottom" title="Bridges"><i class="fa fa-road"></i> <span id="bridgeCount"></span></a>
+                <a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" data-toggle="tooltip"
+                   data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span id="sourceCount"></span></a>
+                <a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip"
+                   data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span id="sinkCount"></span></a>
+                <a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
+                   data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
+                <a id="targetToggle" class="navbar-brand" href="#" onclick="toggleTargets()" data-toggle="tooltip"
+                   data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span
+                        id="targetCount"></span></a>
+                <a id="bridgeToggle" class="navbar-brand" href="#" onclick="toggleSegments()" data-toggle="tooltip"
+                   data-placement="bottom" title="Bridges"><i class="fa fa-road"></i> <span id="bridgeCount"></span></a>
             </span>
         </div>
     </div>
@@ -42,7 +48,6 @@
 <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 <script src="bower_components/leaflet/dist/leaflet.js"></script>
 <script src="bower_components/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-<script src="bower_components/Leaflet.MakiMarkers/Leaflet.MakiMarkers.js"></script>
 <script src='bower_components/leaflet-hash/leaflet-hash.js'></script>
 <script src="bower_components/heatmap.js-amd/build/heatmap.min.js"></script>
 <script src="bower_components/heatmap.js-amd/plugins/leaflet-heatmap.js"></script>
@@ -50,8 +55,8 @@
 <script src="bower_components/Leaflet.EasyButton/src/easy-button.js"></script>
 <script src="bower_components/Leaflet.MovingMarker/MovingMarker.js"></script>
 <script src="bower_components/turf/turf.min.js"></script>
-<script src="bower_components/milsymbol/dist/milsymbol.js"></script>
 <script src="bower_components/leaflet.loading/src/Control.Loading.js"></script>
+<script src="https://cdn.rawgit.com/proj4js/mgrs/master/dist/mgrs.js"></script>
 <script src="https://d3js.org/d3-array.v0.7.min.js"></script>
 <script src="https://d3js.org/d3-collection.v0.1.min.js"></script>
 <script src="https://d3js.org/d3-color.v0.4.min.js"></script>
@@ -59,7 +64,29 @@
 <script src="https://d3js.org/d3-interpolate.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-scale.v0.6.min.js"></script>
 <script src="bower_components/intro.js/intro.js"></script>
+<script src="types.js"></script>
+<script src="tiles.js"></script>
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="layers.js"></script>
+
+<script>
+    var mapmargin = 50;
+    $(window).on("resize", resize);
+    resize();
+    function resize() {
+        $('#map').css("height", ($(window).height() - mapmargin ));
+        $('#map').css("margin-top", -21);
+    }
+
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
 <script src="app.js"></script>
+<script src="tutorial.js"></script>
+<script src="refresh.js"></script>
+<script src="buttons.js"></script>
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]
         + ':35729/livereload.js"></'
@@ -77,9 +104,7 @@
         a.src = g;
         m.parentNode.insertBefore(a, m)
     })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
-
     ga('create', 'UA-73115284-1', 'auto');
     ga('send', 'pageview');
-
 </script>
 </html>
