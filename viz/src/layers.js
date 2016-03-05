@@ -35,8 +35,10 @@ var toggleMapLayer = function (layerName, layerPromise) {
 var showClusterLayer = function (layerName, layerPromise) {
     // Add the layer to the map
     return layerPromise.then(function (layer) {
-        backgroundMarkers.addLayer(layer);
-        backgroundLayers[layerName] = layer;
+        if (!backgroundLayers[layerName]) {
+            backgroundMarkers.addLayer(layer);
+            backgroundLayers[layerName] = layer;
+        }
     });
 };
 
@@ -480,14 +482,14 @@ var targetPopup = function (feature, layer) {
                 var station = feature.properties['nearestStation'];
                 var extent = turf.extent(turf.featurecollection([station, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleStations(),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showStations(),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
                 var distance = turf.distance(station, center);
                 prettyValue = Math.round(distance) + " km";
             } else if (key == 'nearestSAM') {
                 var sam = feature.properties['nearestSAM'];
                 var extent = turf.extent(turf.featurecollection([sam, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleSAMThreats(),` + JSON.stringify(bounds) + `)">`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showSAMThreats(),` + JSON.stringify(bounds) + `)">`;
                 if (feature.properties.activeSAM) {
                     prettyKey += `SAM Threat</a>`;
                     rowClass = "danger"
@@ -500,7 +502,7 @@ var targetPopup = function (feature, layer) {
                 var airbase = feature.properties['nearestAirbase'];
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="toggleAndFocus(toggleAviation(),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showAviation(),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
                 rowClass = "warning";
                 var distance = turf.distance(airbase, center);
                 prettyValue = Math.round(distance) + " km";
@@ -617,10 +619,9 @@ var toggleSAMThreats = function () {
     return toggleRangeRings().then(toggleSAMs);
 };
 
-var toggleAndFocus = function (toggle, bounds) {
-    return toggle.then(function () {
+var showAndFocus = function (showPromise, bounds) {
+    return showPromise.then(function () {
         if (bounds) { // Focus on this target
-            console.log(bounds);
             map.fitBounds(bounds);
         }
     });
@@ -640,4 +641,24 @@ var showTargets = function () {
 };
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
+};
+
+var showMergedRings = function () {
+    return showMapLayer('rings', loadMergedRangeLayer());
+};
+
+var showSAMs = function () {
+    return showClusterLayer('sams', loadSAMLayer());
+};
+
+var showSAMThreats = function () {
+    return showMergedRings().then(showSAMs);
+};
+
+var showAviation = function () {
+    return showClusterLayer('aviation', loadAviationLayer());
+};
+
+var showStations = function () {
+    return showClusterLayer('stations', loadStationLayer());
 };
