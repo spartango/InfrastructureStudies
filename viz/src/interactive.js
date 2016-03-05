@@ -63,7 +63,9 @@ var enableDrawing = function () {
     });
 };
 
+var refreshing = false;
 var refreshResults = function (interval) {
+    refreshing = true;
     var time = interval ? interval : 60000;
     setTimeout(function () {
         console.log("Refreshing, next in " + interval);
@@ -81,7 +83,9 @@ var simulate = function () {
         DATA_DIR = "elevation/" + simulationId + "/";
 
         // Try to load up the default layers. We may need to keep trying
-        refreshResults(5000);
+        if (!refreshing) {
+            refreshResults(5000);
+        }
     });
 };
 
