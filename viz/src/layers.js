@@ -4,14 +4,17 @@ var backgroundMarkers = new L.MarkerClusterGroup({
     maxClusterRadius: 50
 });
 
-var showMapLayer = function (layerName, layerPromise) {
+var showMapLayer = function (layerName, layerSupplier) {
     // Add the layer to the map
-    return layerPromise.then(function (layer) {
-        if (!backgroundLayers[layerName]) {
+    if (!backgroundLayers[layerName]) {
+        var layerPromise = layerSupplier();
+        return layerPromise.then(function (layer) {
             layer.addTo(map);
             backgroundLayers[layerName] = layer;
-        }
-    });
+        });
+    } else {
+        return Promise.resolve();
+    }
 };
 
 var hideMapLayer = function (layerName) {
@@ -24,22 +27,26 @@ var hideMapLayer = function (layerName) {
     });
 };
 
-var toggleMapLayer = function (layerName, layerPromise) {
+var toggleMapLayer = function (layerName, layerSupplier) {
     if (!backgroundLayers[layerName]) {
-        return showMapLayer(layerName, layerPromise);
+        return showMapLayer(layerName, layerSupplier);
     } else {
         return hideMapLayer(layerName);
     }
 };
 
-var showClusterLayer = function (layerName, layerPromise) {
+var showClusterLayer = function (layerName, layerSupplier) {
     // Add the layer to the map
-    return layerPromise.then(function (layer) {
-        if (!backgroundLayers[layerName]) {
+    if (!backgroundLayers[layerName]) {
+        var layerPromise = layerSupplier();
+        return layerPromise.then(function (layer) {
             backgroundMarkers.addLayer(layer);
             backgroundLayers[layerName] = layer;
-        }
-    });
+
+        });
+    } else {
+        return Promise.resolve();
+    }
 };
 
 var hideClusterLayer = function (layerName) {
@@ -53,9 +60,9 @@ var hideClusterLayer = function (layerName) {
     });
 };
 
-var toggleClusterLayer = function (layerName, layerPromise) {
+var toggleClusterLayer = function (layerName, layerSupplier) {
     if (!backgroundLayers[layerName]) {
-        return showClusterLayer(layerName, layerPromise);
+        return showClusterLayer(layerName, layerSupplier);
     } else {
         return hideClusterLayer(layerName);
     }
@@ -121,7 +128,7 @@ var loadPortLayer = function () {
 };
 
 var togglePorts = function () {
-    return toggleClusterLayer('ports', loadPortLayer());
+    return toggleClusterLayer('ports', loadPortLayer);
 };
 
 var loadSAMLayer = function () {
@@ -129,7 +136,7 @@ var loadSAMLayer = function () {
 };
 
 var toggleSAMs = function () {
-    return toggleClusterLayer('sams', loadSAMLayer());
+    return toggleClusterLayer('sams', loadSAMLayer);
 };
 
 var loadAviationLayer = function () {
@@ -137,7 +144,7 @@ var loadAviationLayer = function () {
 };
 
 var toggleAviation = function () {
-    return toggleClusterLayer('aviation', loadAviationLayer());
+    return toggleClusterLayer('aviation', loadAviationLayer);
 };
 
 var loadSecondArtilleryLayer = function () {
@@ -145,7 +152,7 @@ var loadSecondArtilleryLayer = function () {
 };
 
 var toggleSecondArtillery = function () {
-    return toggleClusterLayer('missiles', loadSecondArtilleryLayer());
+    return toggleClusterLayer('missiles', loadSecondArtilleryLayer);
 };
 
 var loadStationLayer = function () {
@@ -153,7 +160,7 @@ var loadStationLayer = function () {
 };
 
 var toggleStations = function () {
-    return toggleClusterLayer('stations', loadStationLayer());
+    return toggleClusterLayer('stations', loadStationLayer);
 };
 
 var bridgePopup = function (feature, layer) {
@@ -217,7 +224,7 @@ var loadPathLayer = function () {
 };
 
 var togglePaths = function () {
-    return toggleMapLayer('paths', loadPathLayer());
+    return toggleMapLayer('paths', loadPathLayer);
 };
 
 var fastAnimation = false;
@@ -319,7 +326,7 @@ var loadSourceLayer = function () {
 };
 
 var toggleSources = function () {
-    return toggleMapLayer('sources', loadSourceLayer());
+    return toggleMapLayer('sources', loadSourceLayer);
 };
 
 var loadSinkLayer = function () {
@@ -340,7 +347,7 @@ var loadSinkLayer = function () {
 };
 
 var toggleSinks = function () {
-    return toggleMapLayer('sinks', loadSinkLayer());
+    return toggleMapLayer('sinks', loadSinkLayer);
 };
 
 var loadMergedRangeLayer = function () {
@@ -358,20 +365,7 @@ var loadMergedRangeLayer = function () {
 };
 
 var toggleRangeRings = function () {
-    return toggleMapLayer('rings', loadMergedRangeLayer());
-};
-
-var loadRangeFill = function () {
-    return toggleMapLayer('rings', loadRangeRings().then(function (data) {
-        return L.geoJson(data, {
-            style: {
-                "color": "#d00",
-                "weight": 0,
-                "opacity": 0.5,
-                "fillOpacity": 0.05
-            }
-        });
-    }));
+    return toggleMapLayer('rings', loadMergedRangeLayer);
 };
 
 var allBridges = false;
@@ -411,7 +405,7 @@ var loadSegmentLayer = function () {
 };
 
 var toggleSegments = function () {
-    return toggleMapLayer('segments', loadSegmentLayer());
+    return toggleMapLayer('segments', loadSegmentLayer);
 };
 
 var clearDamagedPath = function () {
@@ -606,7 +600,7 @@ var loadTargetLayer = function () {
 };
 
 var toggleTargets = function () {
-    return toggleMapLayer('targets', loadTargetLayer());
+    return toggleMapLayer('targets', loadTargetLayer);
 };
 
 var toggleFlows = function () {
@@ -628,27 +622,27 @@ var showAndFocus = function (showPromise, bounds) {
 };
 
 var showSinks = function () {
-    return showMapLayer('sinks', loadSinkLayer());
+    return showMapLayer('sinks', loadSinkLayer);
 };
 var showSources = function () {
-    return showMapLayer('sources', loadSourceLayer());
+    return showMapLayer('sources', loadSourceLayer);
 };
 var showPaths = function () {
-    return showMapLayer('paths', loadPathLayer());
+    return showMapLayer('paths', loadPathLayer);
 };
 var showTargets = function () {
-    return showMapLayer('targets', loadTargetLayer());
+    return showMapLayer('targets', loadTargetLayer);
 };
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
 };
 
 var showMergedRings = function () {
-    return showMapLayer('rings', loadMergedRangeLayer());
+    return showMapLayer('rings', loadMergedRangeLayer);
 };
 
 var showSAMs = function () {
-    return showClusterLayer('sams', loadSAMLayer());
+    return showClusterLayer('sams', loadSAMLayer);
 };
 
 var showSAMThreats = function () {
@@ -656,9 +650,9 @@ var showSAMThreats = function () {
 };
 
 var showAviation = function () {
-    return showClusterLayer('aviation', loadAviationLayer());
+    return showClusterLayer('aviation', loadAviationLayer);
 };
 
 var showStations = function () {
-    return showClusterLayer('stations', loadStationLayer());
+    return showClusterLayer('stations', loadStationLayer);
 };
