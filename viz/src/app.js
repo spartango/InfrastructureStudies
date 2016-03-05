@@ -1,7 +1,6 @@
 var urlHash = window.location.hash;
 
-var DATA_DIR = "elevation/";
-var standardView = !urlHash || urlHash == "#" || urlHash == "";
+var defaultMode = !urlHash || urlHash == "#" || urlHash == "";
 
 // Setup Map
 var layer;
@@ -46,6 +45,6 @@ var showDefaultLayers = function () {
         .then(showBaselineAnimation);
 };
 
-if (standardView) {
+if (defaultMode) {
     showDefaultLayers();
 }

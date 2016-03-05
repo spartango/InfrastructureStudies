@@ -1,3 +1,5 @@
+var DATA_DIR = "elevation/";
+
 // Data loading
 var loadGeoJSON = function (path) {
     return new Promise(function (resolve, reject) {
@@ -6,8 +8,12 @@ var loadGeoJSON = function (path) {
         xhr.open('GET', path, true);
         xhr.onload = function () {
             if (xhr.readyState == 4) {
-                var data = JSON.parse(xhr.responseText);
-                resolve(data);
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    resolve(data);
+                } catch (e) {
+                    reject(this.statusText);
+                }
                 loadingControl.removeLoader(path);
             }
         };

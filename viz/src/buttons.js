@@ -24,27 +24,6 @@ var flowButton = buildButton('flow', toggleFlows);
 var rangeRingButton = buildButton('rangering', toggleRangeRings);
 var damageButton = buildButton('target', toggleTargets);
 
-var enableDrawing = function () {
-    drawnItems = L.featureGroup().addTo(map);
-    map.addControl(new L.Control.Draw({
-        position: 'topleft',
-        edit: {
-            featureGroup: drawnItems
-        }
-    }));
-    map.on('draw:created', function (event) {
-        var layer = event.layer;
-        drawnItems.addLayer(layer);
-    });
-};
-
-L.easyButton('fa-pencil', function (btn) {
-    btn.removeFrom(map);
-    enableDrawing();
-}, {
-    position: 'topleft'
-}).addTo(map);
-
 L.easyButton('fa-cogs', function (btn) {
     btn.removeFrom(map);
     L.easyBar([

@@ -20,6 +20,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,6 +46,16 @@ public class Writer {
         this.network = network;
         if (!rootPath.endsWith("/")) {
             this.rootPath += "/";
+        }
+
+        // Create this folder if it doesnt exist
+        final Path path = Paths.get(rootPath);
+        if (!Files.isDirectory(path)) {
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                System.err.println("Failed to create directory structure for output");
+            }
         }
     }
 

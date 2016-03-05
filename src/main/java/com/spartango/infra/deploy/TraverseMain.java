@@ -3,11 +3,8 @@ package com.spartango.infra.deploy;
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.core.graph.NeoNode;
-import com.spartango.infra.io.Writer;
-import com.spartango.infra.osm.type.NodeStub;
-import com.spartango.infra.targeting.damage.HistogramTargeter;
+import com.spartango.infra.targeting.Simulation;
 import com.spartango.infra.targeting.load.NodeIdLoader;
-import com.spartango.infra.targeting.network.RailFlow;
 import com.spartango.infra.targeting.network.RailNetwork;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -17,12 +14,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static java.lang.System.currentTimeMillis;
 
 /**
  * Author: spartango
@@ -34,8 +25,6 @@ public class TraverseMain {
     //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
-    private static final String OUTPUT_PATH   = "elevation/";
-    private static final long   BRIDGE_LIMIT  = 2000;
 
     private static GraphDatabaseService graphDb;
 
@@ -43,12 +32,9 @@ public class TraverseMain {
         // Read the rail network files
         System.out.println("Loading existing data...");
         final RailNetwork railNet = loadNetwork();
-        final Writer writer = new Writer(PATH + OUTPUT_PATH, railNet);
-
-        long startTime = currentTimeMillis();
 
         // Load up the sources and sinks
-        final List<NeoNode> sources = new NodeIdLoader(railNet)
+        final NodeIdLoader sources = new NodeIdLoader(railNet)
                 .addIds(Arrays.asList(3195094191L,
                                       2874005142L,
                                       1681825138L,
@@ -64,9 +50,9 @@ public class TraverseMain {
                                       339089288L,
                                       582373939L,
                                       3499304147L,
-                                      2987122176L)).loadGraphNodes();
+                                      2987122176L));
 
-        final List<NeoNode> sinks = new NodeIdLoader(railNet)
+        final NodeIdLoader sinks = new NodeIdLoader(railNet)
                 .addIds(Arrays.asList(1582348731L,
                                       677180563L,
                                       2023044210L,
@@ -84,51 +70,10 @@ public class TraverseMain {
                                       2999345286L,
                                       1584384382L,
                                       2451329911L,
-                                      2623140053L)).loadGraphNodes();
+                                      2623140053L));
 
-        System.out.println("Loaded "
-                           + sources.size() + " sources and "
-                           + sinks.size() + " sinks in "
-                           + (currentTimeMillis() - startTime) + "ms");
-
-        // Write sources & sinks
-        writer.writeStationNodes("sources", sources);
-        writer.writeStationNodes("sinks", sinks);
-
-        // Calculate the baseline flow from these sources and sinks
-        startTime = currentTimeMillis();
-        System.out.println("Calculating baseline...");
-
-        RailFlow baselineFlow = new RailFlow(railNet, sources, sinks);
-        writer.writeFlow("baseline", baselineFlow);
-
-        System.out.println("Calculated baseline in " + (currentTimeMillis() - startTime) + "ms");
-
-        // Histogram the segments, only including bridges
-        final Map<Set<NodeStub>, Set<NodeStub>> histogram = baselineFlow.histogramPaths(railNet.getBridges());
-        writer.writeSharedSegments("bridges", histogram);
-
-        // Rank targets with the histogram
-        HistogramTargeter targeter = new HistogramTargeter(baselineFlow, histogram, BRIDGE_LIMIT);
-
-        // Simulate Damage, get the changes
-        final long damageStartTime = currentTimeMillis();
-        final Map<Set<NodeStub>, Double> resilienceScores = new ConcurrentHashMap<>();
-        targeter.deltaStream()
-                .peek((x) -> System.out.println("Calculated damage in " +
-                                                (currentTimeMillis() - damageStartTime) + "ms"))
-//                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
-                .forEach(deltaFlow -> {
-                    // Calculate the cost of adjustment
-                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
-                    double deltaCost = deltaFlow.getTotalCost() - baseCost;
-                    resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
-
-                    // Write the resilience scores in progress
-                    writer.writeHistogram("damage", resilienceScores);
-                });
-
-        System.out.println("Finished damage analysis");
+        Simulation simulation = new Simulation(0, railNet, sources, sinks);
+        simulation.run();
 
         // Shutdown
         cleanUp();

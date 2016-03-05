@@ -8,7 +8,7 @@ var refreshTargets = function (interval) {
             .then(toggleTargets); // Reload the layer
 
         // Schedule another run in 60s
-        refreshTargets();
+        refreshTargets(time);
     }, time);
 };
 
