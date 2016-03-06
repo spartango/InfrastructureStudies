@@ -1,4 +1,3 @@
-
 var bridgeButton = L.easyButton('fa-' + typeIcons['bridge'], function (btn, map) {
     if (!allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
@@ -25,46 +24,18 @@ var rangeRingButton = buildButton('rangering', toggleRangeRings);
 var damageButton = buildButton('target', toggleTargets);
 
 var enableDrawing = function () {
-    drawnItems = L.featureGroup().addTo(map);
-    map.addControl(new L.Control.Draw({
-        position: 'topleft',
-        edit: {
-            featureGroup: drawnItems
-        }
-    }));
-    map.on('draw:created', function (event) {
-        var layer = event.layer;
-        drawnItems.addLayer(layer);
-    });
+    if (!drawnItems) {
+        drawnItems = L.featureGroup().addTo(map);
+        map.addControl(new L.Control.Draw({
+            position: 'topleft',
+            edit: {
+                featureGroup: drawnItems
+            }
+        }));
+        map.on('draw:created', function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+        });
+        $('#drawButton').hide();
+    }
 };
-
-L.easyButton('fa-pencil', function (btn) {
-    btn.removeFrom(map);
-    enableDrawing();
-}, {
-    position: 'topleft'
-}).addTo(map);
-
-L.easyButton('fa-cogs', function (btn) {
-    btn.removeFrom(map);
-    L.easyBar([
-        bridgeButton,
-        portButton,
-        stationButton,
-        aviationButton,
-        nuclearButton,
-        SAMButton,
-        rangeRingButton
-    ], {
-        position: 'bottomright'
-    }).addTo(map);
-
-    layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
-    layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
-    layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
-    layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
-    layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
-    layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
-}, {
-    position: 'bottomright'
-}).addTo(map);

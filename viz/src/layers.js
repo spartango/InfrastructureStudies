@@ -604,13 +604,34 @@ var toggleTargets = function () {
 };
 
 var toggleFlows = function () {
+    var targetsShowing = backgroundLayers['targets'] != null;
+
     return togglePaths().then(function () {
-        toggleAnimation('baseline')
+        if (targetsShowing) {
+            return hideMapLayer('targets');
+        }
+    }).then(function () {
+        return toggleAnimation('baseline')
+    }).then(function () {
+        if (targetsShowing) {
+            return showTargets();
+        }
     });
 };
 
 var toggleSAMThreats = function () {
-    return toggleRangeRings().then(toggleSAMs);
+    var targetsShowing = backgroundLayers['targets'] != null;
+    return toggleTargets().then(function () {
+            if (targetsShowing) {
+                return hideMapLayer('targets');
+            }
+        })
+        .then(toggleSAMs)
+        .then(function () {
+            if (targetsShowing) {
+                return showTargets();
+            }
+        });
 };
 
 var showAndFocus = function (showPromise, bounds) {
