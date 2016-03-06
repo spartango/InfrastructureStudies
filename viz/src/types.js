@@ -3,6 +3,7 @@ var defaultColor = "white";
 var typeColors = {
     "port": "#00b",
     "SAM": "#ffc000",
+    "radar": "#ffc000",
     "airbase": "#ff7500",
     "station": "#00C8EE",
     "nuclear": "#ff0000",
@@ -13,6 +14,7 @@ var typeColors = {
 var typeIcons = {
     "port": "anchor",
     "SAM": "rocket",
+    "radar": "feed",
     "bridge": "road",
     "flow": "exchange",
     "rangering": "warning",
@@ -27,6 +29,7 @@ var typeIcons = {
 var typeChars = {
     "port": "&#xf13d",
     "SAM": "&#xf135",
+    "radar": "&#xf09e",
     "airbase": "&#xf072",
     "station": "&#xf238",
     "nuclear": "&#xf1e2",
