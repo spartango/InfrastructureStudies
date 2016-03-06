@@ -19,29 +19,119 @@
 <div class="navbar navbar-static-top">
     <div class="navbar-inner">
         <div class="container-fluid">
-            <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
-            <a id="helpButton" class="navbar-brand" href="#tutorial" onclick="startTutorial()" data-toggle="tooltip"
-               data-placement="bottom" title="Help"><i class="fa fa-info-circle"></i></a>
+            <div class="navbar-header">
+                <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
+                <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
+                           data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
+                    <li><a id="drawButton" class="navbar-brand" href="#" onclick="enableDrawing()"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Draw"><i class="fa fa-pencil"></i></a></li>
+                    <li><a id="simulateButton" class="navbar-brand" href="#" onclick="simulate()"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Simulate"><i class="fa fa-play"></i></a></li>
+                </ul>
+            </div>
 
-            <span class="navbar-right nav-text">
-                <a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" data-toggle="tooltip"
-                   data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span id="sourceCount"></span></a>
-                <a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip"
-                   data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span id="sinkCount"></span></a>
-                <a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
-                   data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
-                <a id="targetToggle" class="navbar-brand" href="#" onclick="toggleTargets()" data-toggle="tooltip"
-                   data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span
-                        id="targetCount"></span></a>
-                <a id="bridgeToggle" class="navbar-brand" href="#" onclick="toggleSegments()" data-toggle="tooltip"
-                   data-placement="bottom" title="Bridges"><i class="fa fa-road"></i> <span id="bridgeCount"></span></a>
-            </span>
+            <ul class="nav navbar-nav navbar-right nav-text">
+                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" data-toggle="tooltip"
+                       data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span
+                        id="sourceCount"></span></a></li>
+                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip"
+                       data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span
+                        id="sinkCount"></span></a></li>
+                <li><a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
+                       data-placement="bottom" title="Flows"><i class="fa fa-exchange"></i> <span id="flowCount"></span></a>
+                </li>
+                <li><a id="targetToggle" class="navbar-brand" href="#" onclick="toggleTargets()" data-toggle="tooltip"
+                       data-placement="bottom" title="Resilience"><i class="fa fa-crosshairs"></i> <span
+                        id="targetCount"></span></a></li>
+                <li class="dropdown">
+                    <a id="contextToggle" class="navbar-brand" href="#" class="dropdown-toggle" data-toggle="dropdown"
+                       role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-bars"></i></a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a id="bridgeToggle" href="#" onclick="toggleSegments()"><i class="fa fa-road"></i> Rail
+                                Bridges</a>
+                        </li>
+                        <li>
+                            <a id="samToggle" href="#" onclick="toggleSAMThreats()"><i class="fa fa-rocket"></i>
+                                SAMs & Radars</a>
+                        </li>
+                        <li>
+                            <a id="airToggle" href="#" onclick="toggleAviation()"><i class="fa fa-plane"></i>
+                                Airbases</a>
+                        </li>
+                        <li>
+                            <a id="nuclearToggle" href="#" onclick="toggleSecondArtillery()"><i class="fa fa-bomb"></i>
+                                Strategic Missiles</a>
+                        </li>
+                        <li>
+                            <a id="portToggle" href="#" onclick="togglePorts()"><i class="fa fa-anchor"></i> Ports</a>
+                        </li>
+                        <li>
+                            <a id="stationToggle" href="#" onclick="toggleStations()"><i class="fa fa-train"></i>
+                                Stations</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
         </div>
     </div>
 </div>
 <div class="container-fluid fill">
     <div id="map"></div>
 </div>
+
+<div class="modal fade" id="sourceModal" tabindex="-1" role="dialog" aria-labelledby="sourceModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header nav-text">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h3 class="modal-title" id="sourceModalLabel">About</h3>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Data Sources</h4>
+                        <dl>
+                            <dt>Rail Data</dt>
+                            <dd><a href="http://openstreetmap.org">OpenStreetMap</a> (2016)</dd>
+                            <dt>SAM & Aviation Data</dt>
+                            <dd><a href="http://geimint.blogspot.com">IMINT & Analysis Blog</a> (2009)</dd>
+                            <dt>Port Data</dt>
+                            <dd>
+                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">NGA
+                                    World Port Index</a> (2016)
+                            </dd>
+                            <dt>Strategic Missile Data</dt>
+                            <dd><a href="http://www.ausairpower.net/APA-PLA-Second-Artillery-Corps.html">Air Power
+                                Australia</a> (2012)
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Contributors</h4>
+                        <dl>
+                            <dd>Anand Gupta</dd>
+                            <dd>Olivia Zhu</dd>
+                            <dd>Stephen Peter Rosen</dd>
+                        </dl>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="startTutorial()">
+                    Walkthrough
+                </button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 
 <script src="bower_components/jquery/dist/jquery.min.js"></script>

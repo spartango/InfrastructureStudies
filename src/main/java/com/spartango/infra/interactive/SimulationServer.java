@@ -34,10 +34,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * Time: 11:30.
  */
 public class SimulationServer {
-    private static final String PATH          = "data/";
-    private static final String DB_PATH       = PATH + "rail.db";
-    private static final String GRAPH_DB_PATH = PATH + "graph.db";
-    private static final int    DEFAULT_PORT  = 8080;
+    private static final String PATH                 = "data/";
+    private static final String DB_PATH              = PATH + "rail.db";
+    private static final String GRAPH_DB_PATH        = PATH + "graph.db";
+    private static final int    DEFAULT_PORT         = 8080;
+    private static final int    DEFAULT_TARGET_COUNT = 10;
 
     private static GraphDatabaseService graphDb;
     private static RailNetwork railNetwork = loadNetwork();
@@ -81,11 +82,13 @@ public class SimulationServer {
         ObjectMapper mapper = new ObjectMapper();
         httpServerExchange.startBlocking();
         final NodeIdLoader sinks = new NodeIdLoader(railNetwork);
+        int targetCount = DEFAULT_TARGET_COUNT;
         try {
             final InputStream inputStream = httpServerExchange.getInputStream();
             final JsonNode json = mapper.readTree(inputStream);
 
             // Add to Sink loader
+            targetCount = json.has("targets") ? json.get("targets").asInt() : targetCount;
             json.get("sinks").forEach(node -> sinks.addId(node.longValue()));
         } catch (IOException e) {
             e.printStackTrace();
@@ -114,7 +117,8 @@ public class SimulationServer {
 
         // Generate an ID
         long id = idCount.incrementAndGet();
-        Simulation sim = new Simulation(id, railNetwork, sources, sinks);
+        final int sinkCount = sinks.loadGraphNodes().size();
+        Simulation sim = new Simulation(id, railNetwork, sources, sinks, targetCount);
 
         System.out.println("Starting simulation " + id);
         // Spin off the sim in its own thread(s)
@@ -122,7 +126,8 @@ public class SimulationServer {
 
         // Send back the ID for the client to track
         httpServerExchange.setStatusCode(200);
-        httpServerExchange.getResponseSender().send("{ \"id\": " + id + "}");
+        httpServerExchange.getResponseSender()
+                          .send("{ \"id\": " + id + ", \"targets\": " + (sinkCount > 0 ? targetCount : 0) + "}");
         httpServerExchange.endExchange();
 
     }

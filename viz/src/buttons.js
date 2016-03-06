@@ -1,4 +1,3 @@
-
 var bridgeButton = L.easyButton('fa-' + typeIcons['bridge'], function (btn, map) {
     if (!allBridges && backgroundLayers['segments']) {
         // unload the layer to be reloaded
@@ -23,27 +22,3 @@ var SAMButton = buildButton('SAM', toggleSAMs);
 var flowButton = buildButton('flow', toggleFlows);
 var rangeRingButton = buildButton('rangering', toggleRangeRings);
 var damageButton = buildButton('target', toggleTargets);
-
-L.easyButton('fa-cogs', function (btn) {
-    btn.removeFrom(map);
-    L.easyBar([
-        bridgeButton,
-        portButton,
-        stationButton,
-        aviationButton,
-        nuclearButton,
-        SAMButton,
-        rangeRingButton
-    ], {
-        position: 'bottomright'
-    }).addTo(map);
-
-    layerControl.addOverlay(OpenWeatherMap_Clouds, 'Clouds');
-    layerControl.addOverlay(OpenWeatherMap_Precipitation, 'Precipitation');
-    layerControl.addOverlay(OpenWeatherMap_Pressure, 'Pressure');
-    layerControl.addOverlay(OpenWeatherMap_PressureContour, 'Pressure Contours');
-    layerControl.addOverlay(OpenWeatherMap_Wind, 'Wind');
-    layerControl.addOverlay(OpenWeatherMap_Temperature, 'Temperature');
-}, {
-    position: 'bottomright'
-}).addTo(map);

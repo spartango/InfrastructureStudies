@@ -208,9 +208,11 @@ var bridgePopup = function (feature, layer) {
     }
 };
 
+var flowCount = 1;
 var loadPathLayer = function () {
     return loadPaths().then(function (data) {
         // Update the top bar count
+        flowCount = data.features.length
         $('#flowCount').text(data.features.length);
         return L.geoJson(data, {
             style: {
@@ -460,9 +462,10 @@ var targetPopup = function (feature, layer) {
             var rowClass = "";
             var prettyValue = feature.properties[key];
             if (key == 'criticality') {
-                prettyKey = 'Cost of Destruction';
+                prettyKey = 'Rerouting Cost';
                 // Format this cost in terms of hours, with nice commas and rounding
-                prettyValue = ("" + Math.round(prettyValue / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hrs";
+                var hours = prettyValue / (100 * flowCount );
+                prettyValue = ("" + Math.round(hours)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
@@ -532,6 +535,7 @@ var targetPopup = function (feature, layer) {
     }
 };
 
+var targetCount = 0;
 var loadTargetLayer = function () {
     return loadTargets().then(function (data) {
         // Load up the merged SAM threats
@@ -580,6 +584,7 @@ var loadTargetLayer = function () {
         var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
         // Update the top bar count
+        targetCount = data.features.length;
         $('#targetCount').text(data.features.length);
 
         return L.geoJson(data, {
@@ -604,13 +609,34 @@ var toggleTargets = function () {
 };
 
 var toggleFlows = function () {
+    var targetsShowing = backgroundLayers['targets'] != null;
+
     return togglePaths().then(function () {
-        toggleAnimation('baseline')
+        if (targetsShowing) {
+            return hideMapLayer('targets');
+        }
+    }).then(function () {
+        return toggleAnimation('baseline')
+    }).then(function () {
+        if (targetsShowing) {
+            return showTargets();
+        }
     });
 };
 
 var toggleSAMThreats = function () {
-    return toggleRangeRings().then(toggleSAMs);
+    var targetsShowing = backgroundLayers['targets'] != null;
+    return toggleRangeRings().then(function () {
+            if (targetsShowing) {
+                return hideMapLayer('targets');
+            }
+        })
+        .then(toggleSAMs)
+        .then(function () {
+            if (targetsShowing) {
+                return showTargets();
+            }
+        });
 };
 
 var showAndFocus = function (showPromise, bounds) {

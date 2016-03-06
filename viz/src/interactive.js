@@ -46,61 +46,73 @@ var buildIdRequest = function (locations) {
 
 // Seed a simulation. The server should give us back an identifier to track
 var requestSimulation = function (ids) {
-    return postData('/simulate', {sinks: ids});
+    return postData('/simulate', {sinks: ids, targets: 3});
 };
 
 var enableDrawing = function () {
-    drawnItems = L.featureGroup().addTo(map);
-    map.addControl(new L.Control.Draw({
-        position: 'topleft',
-        edit: {
-            featureGroup: drawnItems
-        }
-    }));
-    map.on('draw:created', function (event) {
-        var layer = event.layer;
-        drawnItems.addLayer(layer);
-    });
+    if (!drawnItems) {
+        drawnItems = L.featureGroup().addTo(map);
+        map.addControl(new L.Control.Draw({
+            position: 'topleft',
+            edit: {
+                featureGroup: drawnItems
+            }
+        }));
+        map.on('draw:created', function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+        });
+        $('#drawButton').hide();
+        $('#simulateButton').show();
+    }
 };
 
 var refreshing = false;
-var refreshResults = function (interval) {
+var refreshResults = function (interval, expectedTargets, simulationId) {
     refreshing = true;
     var time = interval ? interval : 60000;
     setTimeout(function () {
         console.log("Refreshing, next in " + interval);
         // Make sure default layers are showing, then refresh the target layer
-        showDefaultLayers().then(hideTargets).then(showTargets);
-        refreshResults(time);
+        showDefaultLayers().then(hideTargets).then(showTargets).then(function () {
+            $("#targetCount").text(targetCount + "/" + expectedTargets);
+        });
+        if (targetCount < expectedTargets) {
+            refreshResults(time, expectedTargets, simulationId);
+        } else {
+            loadingControl.removeLoader(simulationId);
+            $("#targetCount").text(targetCount);
+        }
     }, time);
 };
 
 var simulate = function () {
-    var geojson = drawnItems.toGeoJSON();
-    console.log(geojson);
-    return buildIdRequest(geojson).then(requestSimulation).then(function (response) {
-        var simulationId = response.id;
-        DATA_DIR = "elevation/" + simulationId + "/";
+    if (drawnItems) {
+        $('#simulateButton').hide();
 
-        // Try to load up the default layers. We may need to keep trying
-        if (!refreshing) {
-            refreshResults(5000);
-        }
-    });
+        var geojson = drawnItems.toGeoJSON();
+        console.log(geojson);
+        return buildIdRequest(geojson).then(requestSimulation).then(function (response) {
+            var simulationId = response.id;
+            var expectedTargets = response.targets;
+            console.log(response);
+
+            loadingControl.addLoader(response.id);
+            DATA_DIR = "elevation/" + simulationId + "/";
+            targetCount = 0;
+            // Try to load up the default layers. We may need to keep trying
+            if (!refreshing) {
+                refreshResults(5000, expectedTargets, simulationId);
+            }
+        });
+    }
 };
 
-L.easyButton('fa-pencil', function (btn) {
-    btn.removeFrom(map);
-    enableDrawing();
-
-    L.easyButton('fa-play', function (btn) {
-        btn.removeFrom(map);
-        simulate();
-    }, {
-        position: 'topleft'
-    }).addTo(map);
-}, {
-    position: 'topleft'
-}).addTo(map);
-
-showSources();
+if (interactiveMode) {
+    showSources();
+    $('#drawButton').show();
+    $('#simulateButton').hide();
+} else {
+    $('#drawButton').hide();
+    $('#simulateButton').hide();
+}
