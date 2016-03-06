@@ -54,6 +54,11 @@ var enableDrawing = function () {
             position: 'topleft',
             edit: {
                 featureGroup: drawnItems
+            },
+            draw: {
+                marker: {
+                    repeatMode: true
+                }
             }
         }));
         map.on('draw:created', function (event) {

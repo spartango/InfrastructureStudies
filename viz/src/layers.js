@@ -172,7 +172,7 @@ var bridgePopup = function (feature, layer) {
             var prettyValue = feature.properties[key];
             if (key == 'criticality') {
                 prettyKey = 'Bottleneck';
-                prettyValue = prettyValue + " sources";
+                prettyValue = prettyValue + " sinks";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
