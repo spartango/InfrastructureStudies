@@ -521,9 +521,8 @@ var targetPopup = function (feature, layer) {
             } else if (key == 'activeSAM') {
                 continue; // We'll handle activeSAM elsewhere
             } else if (key == 'center') {
-                continue; // Skip center
-                //prettyKey = "MGRS";
-                //prettyValue = mgrs.forward(prettyValue.geometry.coordinates);
+                prettyKey = "MGRS";
+                prettyValue = mgrs.forward(center.geometry.coordinates);
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
