@@ -2,11 +2,11 @@
 var defaultColor = "black";
 var typeColors = {
     "port": "#00b",
-    "SAM": "#ffc000",
+    "SAM": "#ff0000",
     "radar": "#ffc000",
     "airbase": "#ff7500",
     "station": "#00C8EE",
-    "nuclear": "#ff0000",
+    "nuclear": "#64311B",
     "supplier": "#4dac26",
     "consumer": "#d01c8b"
 };

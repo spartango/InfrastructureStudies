@@ -600,7 +600,7 @@ var loadTargetLayer = function () {
 
         var color = d3_scale.scaleLinear()
             .domain([minCriticality, midPoint, maxCriticality])
-            .range(["#00FF00", "#FFFF00", "#FF0000"]);
+            .range(["#00CCFF", "#FFFF00", "#FF0000"]);
 
         data.features.forEach(function (feature) {
             var criticality = feature.properties.criticality;
