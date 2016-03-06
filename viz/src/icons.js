@@ -6,7 +6,8 @@ var clusterIcon = function (cluster) {
 
     cluster.getAllChildMarkers().forEach(function (el) {
         var type = el.feature.properties.type;
-        var color = typeColors[type] ? typeColors[type] : defaultColor;
+        var color = typeColors[type] ? typeColors[type] :
+            el.feature.properties.color ? JSON.stringify(el.feature.properties.color) : defaultColor;
         if (colorCount.hasOwnProperty(color))
             colorCount[color]++;
         else
@@ -48,7 +49,7 @@ var clusterIcon = function (cluster) {
 
 var glyphIcon = function (type, icon) {
     var radius = 36;
-    var color = typeColors[type] ? typeColors[type] : color;
+    var color = typeColors[type] ? typeColors[type] : type;
     var iconChar = typeChars[type] ? typeChars[type] : icon;
     var textOpacity = 1;
 

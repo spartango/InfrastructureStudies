@@ -1,5 +1,5 @@
 // Icon sets
-var defaultColor = "white";
+var defaultColor = "black";
 var typeColors = {
     "port": "#00b",
     "SAM": "#ffc000",
@@ -34,5 +34,7 @@ var typeChars = {
     "station": "&#xf238",
     "nuclear": "&#xf1e2",
     "supplier": '&#xf093',
+    "bridge": '&#xf018',
+    "target": '&#xf05b',
     "consumer": '&#xf019'
 };

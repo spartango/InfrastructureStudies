@@ -518,11 +518,13 @@ var targetPopup = function (feature, layer) {
                 rowClass = "warning";
                 var distance = turf.distance(airbase, center);
                 prettyValue = Math.round(distance) + " km";
-            } else if (key == 'activeSAM') {
-                continue; // We'll handle activeSAM elsewhere
             } else if (key == 'center') {
                 prettyKey = "MGRS";
                 prettyValue = mgrs.forward(center.geometry.coordinates);
+            } else if (key == 'activeSAM') {
+                continue; // We'll handle activeSAM elsewhere
+            } else if (key == 'color') {
+                continue; // We'll handle activeSAM elsewhere
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
@@ -596,23 +598,62 @@ var loadTargetLayer = function () {
         var midPoint = d3_array.median(criticalityData);
         var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
+        var color = d3_scale.scaleLinear()
+            .domain([minCriticality, midPoint, maxCriticality])
+            .range(["#00FF00", "#FFFF00", "#FF0000"]);
+
+        data.features.forEach(function (feature) {
+            var criticality = feature.properties.criticality;
+            feature.properties.color = color(criticality);
+            feature.properties.type = 'bridge';
+        });
+
+        var pointData = {
+            features: data.features.map(function (feature) {
+                return {
+                    type: feature.type,
+                    id: feature.id,
+                    geometry: feature.properties.center.geometry,
+                    properties: feature.properties
+                };
+            }),
+            type: "FeatureCollection"
+        };
+
+        console.log(data);
+        console.log(pointData);
+
+
         // Update the top bar count
         $('#targetCount').text(data.features.length);
 
-        return L.geoJson(data, {
+        var pointLayer = L.geoJson(pointData, {
             onEachFeature: targetPopup,
+            pointToLayer: function (feature, latlng) {
+                var colorValue = feature.properties.color;
+                var icon = glyphIcon(colorValue, typeChars['target']);
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+
+        var segmentLayer = L.geoJson(data, {
             style: function (feature) {
-                var criticality = feature.properties.criticality;
-                var color = d3_scale.scaleLinear()
-                    .domain([minCriticality, midPoint, maxCriticality])
-                    .range(["#00FF00", "#FFFF00", "#FF0000"]);
                 return {
-                    "color": color(criticality),
+                    "color": feature.properties.color,
                     "weight": 8,
                     "opacity": 0.66
                 }
             }
         });
+
+        var targetCluster = new L.MarkerClusterGroup({
+            iconCreateFunction: clusterIcon,
+            maxClusterRadius: 50
+        });
+
+        targetCluster.addLayer(pointLayer);
+
+        return L.layerGroup([targetCluster, segmentLayer]);
     });
 };
 
