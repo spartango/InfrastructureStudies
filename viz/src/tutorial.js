@@ -78,7 +78,9 @@ var startTutorial = function () {
             + " radars protecting the rail network from aerial attack. Clicking on a bridge will indicate the nearest "
             + " SAM/Radar site.</p>",
             position: 'bottom',
-            before: showSAMs
+            before: function () {
+                hideMapLayer('targets').then(showSAMs);
+            }
         }
     ];
     intro.setOptions({
@@ -99,6 +101,9 @@ var startTutorial = function () {
         if (element) {
             element.style.setProperty('top', '120px');
         }
+    }).oncomplete(function () {
+        window.location.hash = "#";
+        hideClusterLayer('SAMs').then(showDefaultLayers);
     }).onexit(function () {
         window.location.hash = "#";
         showDefaultLayers();

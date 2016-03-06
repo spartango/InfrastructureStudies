@@ -44,8 +44,6 @@ var clusterIcon = function (cluster) {
     svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
         </svg>`;
 
-    console.log(svgHtml);
-
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
 
