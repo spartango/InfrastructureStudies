@@ -621,7 +621,7 @@ var toggleFlows = function () {
 
 var toggleSAMThreats = function () {
     var targetsShowing = backgroundLayers['targets'] != null;
-    return toggleTargets().then(function () {
+    return toggleRangeRings().then(function () {
             if (targetsShowing) {
                 return hideMapLayer('targets');
             }
