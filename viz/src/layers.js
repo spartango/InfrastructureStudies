@@ -529,7 +529,7 @@ var targetPopup = function (feature, layer) {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
                 if (Number.isFinite(prettyValue)) {
-                    prettyValue = Math.round(prettyValue) + " km";
+                    prettyValue = prettyValue > 1.0 ? Math.round(prettyValue) + " km" : Math.round(prettyValue * 1000) + " m";
                 } else if (typeof prettyValue == 'boolean') {
                     prettyValue = prettyValue ? "Yes" : "No";
                 }
@@ -604,6 +604,8 @@ var loadTargetLayer = function () {
 
         data.features.forEach(function (feature) {
             var criticality = feature.properties.criticality;
+            var coordinates = feature.geometry.coordinates;
+            feature.properties.span = turf.distance(turf.point(coordinates[0]), turf.point(coordinates[coordinates.length - 1]));
             feature.properties.color = color(criticality);
             feature.properties.type = 'bridge';
         });
@@ -637,10 +639,14 @@ var loadTargetLayer = function () {
         });
 
         var segmentLayer = L.geoJson(data, {
+            filter: function (feature) {
+                // Only draw segments that are longer than 1km
+                return (feature.properties.span > 0.5);
+            },
             style: function (feature) {
                 return {
                     "color": feature.properties.color,
-                    "weight": 8,
+                    "weight": 6,
                     "opacity": 0.66
                 }
             }
