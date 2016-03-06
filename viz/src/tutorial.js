@@ -19,8 +19,10 @@ var startTutorial = function () {
             }
         },
         {
-            intro: "<h5>Suppliers</h5><p>The green markers identify suppliers of resources, such as food, fuel, and parts. "
-            + "Trains load supplies at and depart from stations near these locations. </p>",
+            intro: `<h5><i class="fa fa-` + typeIcons['supplier']
+            + `"></i> | Suppliers</h5>`
+            + `<p> The green markers identify suppliers of resources, such as food, fuel, and parts. `
+            + `Trains load supplies at and depart from stations near these locations. </p>`,
             position: 'bottom',
             before: function () {
                 hideMapLayer('sinks');
@@ -31,7 +33,8 @@ var startTutorial = function () {
             }
         },
         {
-            intro: "<h5>Consumers</h5><p>The purple markers indicate consumers of those resources, "
+            intro: `<h5><i class="fa fa-` + typeIcons['consumer']
+            + `"></i> | Consumers</h5><p>The purple markers indicate consumers of those resources, `
             + "such as maintenance facilities, populations, or military units. "
             + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
             position: 'bottom',
@@ -44,7 +47,8 @@ var startTutorial = function () {
             }
         },
         {
-            intro: "<h5>Flows</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, "
+            intro: `<h5><i class="fa fa-` + typeIcons['flow']
+            + `"></i> | Flows</h5><p>The blue paths represent the railroad links connecting suppliers to consumers, `
             + "with small dots indicating flow. "
             + "Each path is optimized, minimizing the costs associated with traveling across terrain. "
             + "</p>",
@@ -58,7 +62,8 @@ var startTutorial = function () {
             }
         },
         {
-            intro: "<h5>Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. "
+            intro: `<h5><i class="fa fa-` + typeIcons['target']
+            + `"></i> | Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. `
             + "Their relative vulnerability is indicated by color from green (low) to red (high) "
             + "and is determined by simulating damage to each bridge. </p>",
             position: 'bottom',
@@ -67,7 +72,9 @@ var startTutorial = function () {
             }
         },
         {
-            intro: "<h5>Defense</h5><p>The yellow markers indicate Surface-to-Air Missile (SAM) sites and early warning "
+            intro: `<h5><i class="fa fa-` + typeIcons['SAM']
+            + `"></i> | Defense</h5><p>`
+            + `The yellow and red markers indicate Surface-to-Air Missile (SAM) sites and early warning `
             + " radars protecting the rail network from aerial attack. Clicking on a bridge will indicate the nearest "
             + " SAM/Radar site.</p>",
             position: 'bottom',
@@ -92,7 +99,10 @@ var startTutorial = function () {
         if (element) {
             element.style.setProperty('top', '120px');
         }
-    }).onexit(showDefaultLayers);
+    }).onexit(function () {
+        window.location.hash = "#";
+        showDefaultLayers();
+    });
     intro.start();
 };
 

@@ -44,10 +44,12 @@ var clusterIcon = function (cluster) {
     svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
         </svg>`;
 
+    console.log(svgHtml);
+
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
 
-var glyphIcon = function (type, icon) {
+var glyphSvg = function (type, icon) {
     var radius = 36;
     var color = typeColors[type] ? typeColors[type] : type;
     var iconChar = typeChars[type] ? typeChars[type] : icon;
@@ -61,6 +63,13 @@ var glyphIcon = function (type, icon) {
 
     svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-family: FontAwesome; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + iconChar + `</text>
         </svg>`;
+
+    return svgHtml;
+}
+
+var glyphIcon = function (type, icon) {
+    var radius = 36;
+    var svgHtml = glyphSvg(type, icon);
 
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
