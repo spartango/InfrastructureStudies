@@ -132,7 +132,22 @@ var togglePorts = function () {
 };
 
 var loadSAMLayer = function () {
-    return buildDataLayer('SAM', loadSAMs());
+    return loadSAMs().then(function (data) {
+        data.features.forEach(function (feature) {
+            feature.properties.type = (feature.properties.name && feature.properties.name.indexOf("EW") != -1) ?
+                'radar' : 'SAM';
+        });
+        var radarIcon = glyphIcon('radar');
+        var samIcon = glyphIcon('SAM');
+
+        return L.geoJson(data, {
+            onEachFeature: infraPopup,
+            pointToLayer: function (feature, latlng) {
+                var icon = feature.properties.type == 'radar' ? radarIcon : samIcon;
+                return L.marker(latlng, {icon: icon});
+            }
+        })
+    });
 };
 
 var toggleSAMs = function () {
@@ -506,9 +521,8 @@ var targetPopup = function (feature, layer) {
             } else if (key == 'activeSAM') {
                 continue; // We'll handle activeSAM elsewhere
             } else if (key == 'center') {
-                continue; // Skip center
-                //prettyKey = "MGRS";
-                //prettyValue = mgrs.forward(prettyValue.geometry.coordinates);
+                prettyKey = "MGRS";
+                prettyValue = mgrs.forward(center.geometry.coordinates);
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
