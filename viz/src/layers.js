@@ -610,21 +610,15 @@ var loadTargetLayer = function () {
             feature.properties.type = 'bridge';
         });
 
-        var pointData = {
-            features: data.features.map(function (feature) {
+        var pointData = turf.featurecollection(
+            data.features.map(function (feature) {
                 return {
                     type: feature.type,
                     id: feature.id,
                     geometry: feature.properties.center.geometry,
                     properties: feature.properties
                 };
-            }),
-            type: "FeatureCollection"
-        };
-
-        console.log(data);
-        console.log(pointData);
-
+            }));
 
         // Update the top bar count
         $('#targetCount').text(data.features.length);
