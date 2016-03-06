@@ -21,10 +21,16 @@
         <div class="container-fluid">
             <div class="navbar-header">
                 <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
-                <a id="helpButton" class="navbar-brand" href="#tutorial" onclick="startTutorial()" data-toggle="tooltip"
-                   data-placement="bottom" title="Help"><i class="fa fa-question-circle"></i></a>
-                <a id="drawButton" class="navbar-brand" href="#" onclick="enableDrawing()" data-toggle="tooltip"
-                   data-placement="bottom" title="Draw"><i class="fa fa-pencil"></i></a>
+                <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
+                           data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
+                    <li><a id="helpButton" class="navbar-brand hidden" href="#tutorial" onclick="startTutorial()"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Help"><i class="fa fa-question-circle"></i></a></li>
+                    <li><a id="drawButton" class="navbar-brand hidden" href="#" onclick="enableDrawing()"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Draw"><i class="fa fa-pencil"></i></a></li>
+                </ul>
             </div>
 
             <ul class="nav navbar-nav navbar-right nav-text">
@@ -45,7 +51,8 @@
                        role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-bars"></i></a>
                     <ul class="dropdown-menu">
                         <li>
-                            <a id="bridgeToggle" href="#" onclick="toggleSegments()"><i class="fa fa-road"></i> Rail Bridges</a>
+                            <a id="bridgeToggle" href="#" onclick="toggleSegments()"><i class="fa fa-road"></i> Rail
+                                Bridges</a>
                         </li>
                         <li>
                             <a id="samToggle" href="#" onclick="toggleSAMThreats()"><i class="fa fa-rocket"></i>
@@ -75,6 +82,56 @@
 <div class="container-fluid fill">
     <div id="map"></div>
 </div>
+
+<div class="modal fade" id="sourceModal" tabindex="-1" role="dialog" aria-labelledby="sourceModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header nav-text">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h3 class="modal-title" id="sourceModalLabel">About</h3>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Data Sources</h4>
+                        <dl>
+                            <dt>Rail Data</dt>
+                            <dd><a href="http://openstreetmap.org">OpenStreetMap</a> (2016)</dd>
+                            <dt>SAM & Aviation Data</dt>
+                            <dd><a href="http://geimint.blogspot.com">IMINT & Analysis Blog</a> (2009)</dd>
+                            <dt>Port Data</dt>
+                            <dd>
+                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">NGA
+                                    World Port Index</a> (2016)
+                            </dd>
+                            <dt>Strategic Missile Data</dt>
+                            <dd><a href="http://www.ausairpower.net/APA-PLA-Second-Artillery-Corps.html">Air Power
+                                Australia</a> (2012)
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Contributors</h4>
+                        <dl>
+                            <dd>Anand Gupta</dd>
+                            <dd>Olivia Zhu</dd>
+                            <dd>Stephen Peter Rosen</dd>
+                        </dl>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="startTutorial()">
+                    Walkthrough
+                </button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
