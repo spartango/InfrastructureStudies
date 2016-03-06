@@ -99,21 +99,10 @@ public class SimulationServer {
 
         // Use the prefab sourceloader
         final NodeIdLoader sources = new NodeIdLoader(railNetwork)
-                .addIds(Arrays.asList(3195094191L,
-                                      2874005142L,
+                .addIds(Arrays.asList(2874005142L,
                                       1681825138L,
-                                      2971189978L,
-                                      269838555L,
                                       2051979297L,
-                                      2699872473L,
-                                      3048742262L,
-                                      3476981835L,
-                                      843052502L,
-                                      270146375L,
-                                      1658989377L,
-                                      339089288L,
-                                      582373939L,
-                                      3499304147L));
+                                      843052502L));
 
         // Generate an ID
         long id = idCount.incrementAndGet();

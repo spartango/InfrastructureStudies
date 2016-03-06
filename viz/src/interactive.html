@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Rail Resilience</title>
+    <title>Rail Simulation</title>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="bower_components/leaflet/dist/leaflet.css"/>
@@ -24,6 +24,9 @@
                 <ul class="nav navbar-nav navbar-left nav-text">
                     <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
                            data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
+                    <li><a id="simulateButton" class="navbar-brand" href="#" onclick="simulate()"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Simulate"><i class="fa fa-play"></i></a></li>
                 </ul>
             </div>
 
@@ -170,9 +173,7 @@
 <script src="tutorial.js"></script>
 <script src="refresh.js"></script>
 <script src="buttons.js"></script>
-<script>
-    showDefaultLayers();
-</script>
+<script src="interactive.js"></script>
 
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]

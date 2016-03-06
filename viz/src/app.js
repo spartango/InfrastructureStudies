@@ -53,7 +53,3 @@ var hideDefaultLayers = function () {
         .then(hideTargets)
         .then(clearAnimation);
 };
-
-if (defaultMode) {
-    showDefaultLayers();
-}

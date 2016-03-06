@@ -1,7 +1,5 @@
 var urlHash = window.location.hash;
 
-var interactiveMode = urlHash == "#interactive";
-
 // Generic post
 var postData = function (path, data) {
     return new Promise(function (resolve, reject) {
@@ -62,8 +60,6 @@ var enableDrawing = function () {
             var layer = event.layer;
             drawnItems.addLayer(layer);
         });
-        $('#drawButton').hide();
-        $('#simulateButton').show();
     }
 };
 
@@ -81,7 +77,6 @@ var refreshResults = function (interval, expectedTargets, simulationId) {
             refreshResults(time, expectedTargets, simulationId);
         } else {
             loadingControl.removeLoader(simulationId);
-            $("#targetCount").text(targetCount);
         }
     }, time);
 };
@@ -96,9 +91,11 @@ var simulate = function () {
             var simulationId = response.id;
             var expectedTargets = response.targets;
             console.log(response);
+            drawnItems.clearLayers();
 
             loadingControl.addLoader(response.id);
             DATA_DIR = "elevation/" + simulationId + "/";
+            window.location.hash = "#" + simulationId;
             targetCount = 0;
             // Try to load up the default layers. We may need to keep trying
             if (!refreshing) {
@@ -108,11 +105,15 @@ var simulate = function () {
     }
 };
 
-if (interactiveMode) {
-    showSources();
-    $('#drawButton').show();
-    $('#simulateButton').hide();
+//showSources();
+if (urlHash && urlHash != "#" && urlHash != "") {
+    // We're supposed to be loading an existing simulation
+    $("#simulateButton").hide();
+    var simulationId = urlHash.slice(1);
+    console.log("Loading simulation " + simulationId);
+    DATA_DIR = "elevation/" + simulationId + "/";
+    showDefaultLayers();
 } else {
-    $('#drawButton').hide();
-    $('#simulateButton').hide();
+    enableDrawing();
 }
+
