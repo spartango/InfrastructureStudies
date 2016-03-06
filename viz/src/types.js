@@ -6,7 +6,7 @@ var typeColors = {
     "radar": "#ffc000",
     "airbase": "#ff7500",
     "station": "#00C8EE",
-    "nuclear": "#64311B",
+    "nuclear": "#663300",
     "supplier": "#4dac26",
     "consumer": "#d01c8b"
 };

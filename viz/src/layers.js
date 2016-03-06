@@ -227,14 +227,26 @@ var flowCount = 1;
 var loadPathLayer = function () {
     return loadPaths().then(function (data) {
         // Update the top bar count
-        flowCount = data.features.length
+        flowCount = data.features.length;
         $('#flowCount').text(data.features.length);
-        return L.geoJson(data, {
+        var outer = L.geoJson(data, {
             style: {
-                "weight": 4,
-                "opacity": 0.5
+                "weight": 6,
+                "color": '#FFFFFF',
+                "opacity": 1.0,
+                "clickable": false
             }
         });
+        var inner = L.geoJson(data, {
+            style: {
+                "weight": 4,
+                "color": '#3F3F3F',
+                "opacity": 1.0,
+                "clickable": false
+            }
+        });
+
+        return L.layerGroup([inner, outer]);
         //map.fitBounds(path.getBounds());
         //hash = new L.Hash(map);
     });
@@ -269,7 +281,7 @@ var showAnimation = function (flowName) {
                         var point = turf.point(coord);
                         if (last) {
                             var distance = turf.distance(last, point); // km
-                            var time = distance * (fastAnimation ? 3 : 10); // 100 km/s
+                            var time = distance * (fastAnimation ? 5 : 10); // 100 km/s
                             durations.push(time);
                         }
                         last = point;
@@ -600,7 +612,8 @@ var loadTargetLayer = function () {
 
         var color = d3_scale.scaleLinear()
             .domain([minCriticality, midPoint, maxCriticality])
-            .range(["#00FF00", "#FFFF00", "#FF0000"]);
+            .range(["#FFFF00", "#FF8800", "#FF0000"]);
+            //.interpolate(d3_interpolate.interpolateRgb);
 
         data.features.forEach(function (feature) {
             var criticality = feature.properties.criticality;
@@ -641,7 +654,8 @@ var loadTargetLayer = function () {
                 return {
                     "color": feature.properties.color,
                     "weight": 6,
-                    "opacity": 0.66
+                    "opacity": 0.66,
+                    "clickable": false
                 }
             }
         });
