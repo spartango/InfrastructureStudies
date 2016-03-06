@@ -44,7 +44,7 @@ var buildIdRequest = function (locations) {
 
 // Seed a simulation. The server should give us back an identifier to track
 var requestSimulation = function (ids) {
-    return postData('/simulate', {sinks: ids, targets: 3});
+    return postData('/simulate', {sinks: ids, targets: 10});
 };
 
 var enableDrawing = function () {
