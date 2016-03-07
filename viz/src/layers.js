@@ -562,7 +562,7 @@ var targetPopup = function (feature, layer) {
         layer.bindPopup(popupString);
     }
 };
-
+var drawAimPoints = false;
 var loadTargetLayer = function () {
     return loadTargets().then(function (data) {
         // Load up the merged SAM threats
@@ -613,7 +613,7 @@ var loadTargetLayer = function () {
         var color = d3_scale.scaleLinear()
             .domain([minCriticality, midPoint, maxCriticality])
             .range(["#FFFF00", "#FF8800", "#FF0000"]);
-            //.interpolate(d3_interpolate.interpolateRgb);
+        //.interpolate(d3_interpolate.interpolateRgb);
 
         data.features.forEach(function (feature) {
             var criticality = feature.properties.criticality;
@@ -636,38 +636,41 @@ var loadTargetLayer = function () {
         // Update the top bar count
         $('#targetCount').text(data.features.length);
 
-        var pointLayer = L.geoJson(pointData, {
-            onEachFeature: targetPopup,
-            pointToLayer: function (feature, latlng) {
-                var colorValue = feature.properties.color;
-                var icon = glyphIcon(colorValue, typeChars['target']);
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-
         var segmentLayer = L.geoJson(data, {
+            onEachFeature: targetPopup,
             filter: function (feature) {
                 // Only draw segments that are longer than 1km
-                return (feature.properties.span > 0.5);
+                return !drawAimPoints || (feature.properties.span > 0.5);
             },
             style: function (feature) {
                 return {
                     "color": feature.properties.color,
                     "weight": 6,
                     "opacity": 0.66,
-                    "clickable": false
+                    "clickable": !drawAimPoints
                 }
             }
         });
 
-        var targetCluster = new L.MarkerClusterGroup({
-            iconCreateFunction: clusterIcon,
-            maxClusterRadius: 50
-        });
+        if (drawAimPoints) {
+            var targetCluster = new L.MarkerClusterGroup({
+                iconCreateFunction: clusterIcon,
+                maxClusterRadius: 50
+            });
+            var pointLayer = L.geoJson(pointData, {
+                onEachFeature: targetPopup,
+                pointToLayer: function (feature, latlng) {
+                    var colorValue = feature.properties.color;
+                    var icon = glyphIcon(colorValue, typeChars['target']);
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            targetCluster.addLayer(pointLayer);
 
-        targetCluster.addLayer(pointLayer);
-
-        return L.layerGroup([targetCluster, segmentLayer]);
+            return L.layerGroup([targetCluster, segmentLayer]);
+        } else {
+            return segmentLayer;
+        }
     });
 };
 
@@ -748,4 +751,10 @@ var showAviation = function () {
 
 var showStations = function () {
     return showClusterLayer('stations', loadStationLayer);
+};
+
+var toggleAimpoints = function () {
+    drawAimPoints = !drawAimPoints;
+    hideMapLayer('targets').then(showTargets);
+
 };
