@@ -6,7 +6,8 @@ var clusterIcon = function (cluster) {
 
     cluster.getAllChildMarkers().forEach(function (el) {
         var type = el.feature.properties.type;
-        var color = typeColors[type] ? typeColors[type] : defaultColor;
+        var color = typeColors[type] ? typeColors[type] :
+            el.feature.properties.color ? JSON.stringify(el.feature.properties.color) : defaultColor;
         if (colorCount.hasOwnProperty(color))
             colorCount[color]++;
         else
@@ -40,15 +41,17 @@ var clusterIcon = function (cluster) {
         fontSize = 28;
     }
 
-    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + childCount + `</text>
-        </svg>`;
+    svgHtml += `<text x="` + textX
+        + `" y="60" style="fill: white; font-size: `
+        + fontSize + `px; font-weight: bold; opacity: `
+        + textOpacity + `;">` + childCount + `</text></svg>`;
 
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };
 
-var glyphIcon = function (type, icon) {
+var glyphSvg = function (type, icon) {
     var radius = 36;
-    var color = typeColors[type] ? typeColors[type] : color;
+    var color = typeColors[type] ? typeColors[type] : type;
     var iconChar = typeChars[type] ? typeChars[type] : icon;
     var textOpacity = 1;
 
@@ -58,8 +61,17 @@ var glyphIcon = function (type, icon) {
     var textX = 36;
     var fontSize = 32;
 
-    svgHtml += `<text x="` + textX + `" y="60" style="fill: white; font-family: FontAwesome; font-size: ` + fontSize + `px; font-weight: bold; opacity: ` + textOpacity + `;">` + iconChar + `</text>
-        </svg>`;
+    svgHtml += `<text x="` + textX
+        + `" y="60" style="fill: white; font-family: FontAwesome; font-size: ` + fontSize
+        + `px; font-weight: bold; opacity: ` + textOpacity
+        + `;">` + iconChar + `</text></svg>`;
+
+    return svgHtml;
+};
+
+var glyphIcon = function (type, icon) {
+    var radius = 36;
+    var svgHtml = glyphSvg(type, icon);
 
     return new L.DivIcon({html: svgHtml, className: 'tiny-marker-cluster', iconSize: new L.Point(radius, radius)});
 };

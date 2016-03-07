@@ -22,7 +22,7 @@ var baseMaps = {
 };
 var overlayMaps = {};
 
-var defaultMap = baseMaps["Streets"];
+var defaultMap = baseMaps["Physical"];
 defaultMap.addTo(map);
 
 backgroundMarkers.addTo(map);

@@ -227,14 +227,26 @@ var flowCount = 1;
 var loadPathLayer = function () {
     return loadPaths().then(function (data) {
         // Update the top bar count
-        flowCount = data.features.length
+        flowCount = data.features.length;
         $('#flowCount').text(data.features.length);
-        return L.geoJson(data, {
+        var outer = L.geoJson(data, {
             style: {
-                "weight": 4,
-                "opacity": 0.5
+                "weight": 6,
+                "color": '#FFFFFF',
+                "opacity": 1.0,
+                "clickable": false
             }
         });
+        var inner = L.geoJson(data, {
+            style: {
+                "weight": 4,
+                "color": '#3F3F3F',
+                "opacity": 1.0,
+                "clickable": false
+            }
+        });
+
+        return L.layerGroup([inner, outer]);
         //map.fitBounds(path.getBounds());
         //hash = new L.Hash(map);
     });
@@ -269,7 +281,7 @@ var showAnimation = function (flowName) {
                         var point = turf.point(coord);
                         if (last) {
                             var distance = turf.distance(last, point); // km
-                            var time = distance * (fastAnimation ? 3 : 10); // 100 km/s
+                            var time = distance * (fastAnimation ? 5 : 10); // 100 km/s
                             durations.push(time);
                         }
                         last = point;
@@ -518,16 +530,18 @@ var targetPopup = function (feature, layer) {
                 rowClass = "warning";
                 var distance = turf.distance(airbase, center);
                 prettyValue = Math.round(distance) + " km";
-            } else if (key == 'activeSAM') {
-                continue; // We'll handle activeSAM elsewhere
             } else if (key == 'center') {
                 prettyKey = "MGRS";
                 prettyValue = mgrs.forward(center.geometry.coordinates);
+            } else if (key == 'activeSAM') {
+                continue; // We'll handle activeSAM elsewhere
+            } else if (key == 'color') {
+                continue; // We'll handle activeSAM elsewhere
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
                 if (Number.isFinite(prettyValue)) {
-                    prettyValue = Math.round(prettyValue) + " km";
+                    prettyValue = prettyValue > 1.0 ? Math.round(prettyValue) + " km" : Math.round(prettyValue * 1000) + " m";
                 } else if (typeof prettyValue == 'boolean') {
                     prettyValue = prettyValue ? "Yes" : "No";
                 }
@@ -548,7 +562,7 @@ var targetPopup = function (feature, layer) {
         layer.bindPopup(popupString);
     }
 };
-
+var drawAimPoints = false;
 var loadTargetLayer = function () {
     return loadTargets().then(function (data) {
         // Load up the merged SAM threats
@@ -596,23 +610,67 @@ var loadTargetLayer = function () {
         var midPoint = d3_array.median(criticalityData);
         var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
+        var color = d3_scale.scaleLinear()
+            .domain([minCriticality, midPoint, maxCriticality])
+            .range(["#FFFF00", "#FF8800", "#FF0000"]);
+        //.interpolate(d3_interpolate.interpolateRgb);
+
+        data.features.forEach(function (feature) {
+            var criticality = feature.properties.criticality;
+            var coordinates = feature.geometry.coordinates;
+            feature.properties.span = turf.distance(turf.point(coordinates[0]), turf.point(coordinates[coordinates.length - 1]));
+            feature.properties.color = color(criticality);
+            feature.properties.type = 'bridge';
+        });
+
+        var pointData = turf.featurecollection(
+            data.features.map(function (feature) {
+                return {
+                    type: feature.type,
+                    id: feature.id,
+                    geometry: feature.properties.center.geometry,
+                    properties: feature.properties
+                };
+            }));
+
         // Update the top bar count
         $('#targetCount').text(data.features.length);
 
-        return L.geoJson(data, {
+        var segmentLayer = L.geoJson(data, {
             onEachFeature: targetPopup,
+            filter: function (feature) {
+                // Only draw segments that are longer than 1km
+                return !drawAimPoints || (feature.properties.span > 0.5);
+            },
             style: function (feature) {
-                var criticality = feature.properties.criticality;
-                var color = d3_scale.scaleLinear()
-                    .domain([minCriticality, midPoint, maxCriticality])
-                    .range(["#00FF00", "#FFFF00", "#FF0000"]);
                 return {
-                    "color": color(criticality),
-                    "weight": 8,
-                    "opacity": 0.66
+                    "color": feature.properties.color,
+                    "weight": 6,
+                    "opacity": 0.66,
+                    "clickable": !drawAimPoints
                 }
             }
         });
+
+        if (drawAimPoints) {
+            var targetCluster = new L.MarkerClusterGroup({
+                iconCreateFunction: clusterIcon,
+                maxClusterRadius: 50
+            });
+            var pointLayer = L.geoJson(pointData, {
+                onEachFeature: targetPopup,
+                pointToLayer: function (feature, latlng) {
+                    var colorValue = feature.properties.color;
+                    var icon = glyphIcon(colorValue, typeChars['target']);
+                    return L.marker(latlng, {icon: icon});
+                }
+            });
+            targetCluster.addLayer(pointLayer);
+
+            return L.layerGroup([targetCluster, segmentLayer]);
+        } else {
+            return segmentLayer;
+        }
     });
 };
 
@@ -693,4 +751,10 @@ var showAviation = function () {
 
 var showStations = function () {
     return showClusterLayer('stations', loadStationLayer);
+};
+
+var toggleAimpoints = function () {
+    drawAimPoints = !drawAimPoints;
+    hideMapLayer('targets').then(showTargets);
+
 };
