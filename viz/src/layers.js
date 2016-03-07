@@ -645,7 +645,7 @@ var loadTargetLayer = function () {
             style: function (feature) {
                 return {
                     "color": feature.properties.color,
-                    "weight": 6,
+                    "weight": drawAimPoints ? 4 : 6,
                     "opacity": 0.66,
                     "clickable": !drawAimPoints
                 }

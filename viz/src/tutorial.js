@@ -22,7 +22,8 @@ var startTutorial = function () {
             intro: `<h5><i class="fa fa-` + typeIcons['supplier']
             + `"></i> | Suppliers</h5>`
             + `<p> The blue markers identify suppliers of resources, such as food, fuel, and parts. `
-            + `Trains load supplies at and depart from stations near these sites.</p>`,
+            + `Trains load supplies at and depart from stations near these sites. `
+            + `Click on any supplier for more information about it.</p>`,
             position: 'bottom',
             before: function () {
                 hideMapLayer('sinks');
@@ -36,7 +37,8 @@ var startTutorial = function () {
             intro: `<h5><i class="fa fa-` + typeIcons['consumer']
             + `"></i> | Consumers</h5><p>The purple markers indicate consumers of those resources, `
             + "such as maintenance facilities, populations, or military units. "
-            + "Trains carrying supplies arrive and are offloaded at stations near these locations. </p>",
+            + "Trains carrying supplies are offloaded at stations near these locations. "
+            + `Click on any consumer for more information about it.</p>`,
             position: 'bottom',
             before: function () {
                 hideMapLayer('sources');
@@ -48,9 +50,9 @@ var startTutorial = function () {
         },
         {
             intro: `<h5><i class="fa fa-` + typeIcons['flow']
-            + `"></i> | Flows</h5><p>The black paths represent the railroad links connecting suppliers to consumers, `
-            + "with small dots indicating flow. "
-            + "Each path is optimized for speed, minimizing the costs associated with traveling across terrain. </p>",
+            + `"></i> | Flows</h5><p>The black paths represent the best railroad routes connecting suppliers to consumers, `
+            + "with small dots indicating flow direction. "
+            + "Each path is optimized for speed, minimizing the costs associated with traveling across the terrain. </p>",
             position: 'bottom',
             before: function () {
                 hideMapLayer('targets')
@@ -64,21 +66,23 @@ var startTutorial = function () {
             intro: `<h5><i class="fa fa-` + typeIcons['target']
             + `"></i> | Resilience</h5><p>The highlighted segments are vulnerable bridges along the rail routes. `
             + "Their relative vulnerability is indicated by color from yellow (low) to red (high) "
-            + "and is determined by simulating damage to each bridge. </p>",
+            + "and is determined by simulating damage to each bridge. "
+            + `Click on any bridge for more information about it. </p>`,
             position: 'bottom',
             before: function () {
-                hideClusterLayer('sams').then(showTargets)
+                hideClusterLayer('sams').then(showTargets).then(clearAnimation);
             }
         },
         {
             intro: `<h5><i class="fa fa-` + typeIcons['SAM']
             + `"></i> | Defense</h5><p>`
             + `The green markers indicate Surface-to-Air Missile (SAM) sites, radars, and airbases`
-            + " protecting the rail network from aerial attack. Clicking on a bridge will indicate the nearest "
-            + " SAM/Radar site.</p>",
+            + " protecting the rail network from aerial attack. Selecting a bridge will suggest the nearest "
+            + " SAM/Radar site. "
+            + `Click on any site for more information about it.</p>`,
             position: 'bottom',
             before: function () {
-                hideMapLayer('targets').then(showSAMs);
+                showSAMs();
             }
         }
     ];
