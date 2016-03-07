@@ -1,13 +1,13 @@
 // Icon sets
 var defaultColor = "black";
 var typeColors = {
-    "port": "#00b",
-    "SAM": "#ff0000",
-    "radar": "#ffc000",
-    "airbase": "#ff7500",
-    "station": "#00C8EE",
-    "nuclear": "#663300",
-    "supplier": "#4dac26",
+    "port": "#253494",
+    "SAM": "#31a354",
+    "radar": "#78c679",
+    "airbase": "#006837",
+    "station": "#4eb3d3",
+    "nuclear": "#993404",
+    "supplier": "#0868ac",
     "consumer": "#d01c8b"
 };
 
