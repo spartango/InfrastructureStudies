@@ -11,6 +11,7 @@ var startTutorial = function () {
             + "as well as vulnerabilities in the infrastructure supporting that movement.</p>",
             position: 'bottom',
             before: function () {
+                hideLegend();
                 hideMapLayer('sources');
                 hideMapLayer('sinks');
                 hideMapLayer('paths');
@@ -27,9 +28,6 @@ var startTutorial = function () {
             position: 'bottom',
             before: function () {
                 hideMapLayer('sinks');
-                hideMapLayer('paths');
-                hideMapLayer('targets');
-                clearAnimation();
                 showSources();
             }
         },
@@ -43,7 +41,6 @@ var startTutorial = function () {
             before: function () {
                 hideMapLayer('sources');
                 hideMapLayer('paths');
-                hideMapLayer('targets');
                 clearAnimation();
                 showSinks()
             }
@@ -56,10 +53,12 @@ var startTutorial = function () {
             position: 'bottom',
             before: function () {
                 hideMapLayer('targets')
+                    .then(hideLegend)
                     .then(showSources)
-                    .then(showSinks).then(showPaths).then(function () {
+                    .then(showSinks)
+                    .then(showPaths).then(function () {
                     showAnimation('baseline');
-                });
+                })
             }
         },
         {
@@ -70,7 +69,12 @@ var startTutorial = function () {
             + `Click on any bridge for more information about it. </p>`,
             position: 'bottom',
             before: function () {
-                hideClusterLayer('sams').then(showTargets).then(clearAnimation);
+                hideClusterLayer('sams')
+                    .then(function () {
+                        return hideMapLayer('rings');
+                    })
+                    .then(showTargets)
+                    .then(clearAnimation);
             }
         },
         {
@@ -82,7 +86,7 @@ var startTutorial = function () {
             + `Click on any site for more information about it.</p>`,
             position: 'bottom',
             before: function () {
-                showSAMs();
+                showSAMThreats();
             }
         }
     ];
@@ -106,10 +110,16 @@ var startTutorial = function () {
         }
     }).oncomplete(function () {
         window.location.hash = "#";
-        hideClusterLayer('sams').then(showDefaultLayers);
+        hideClusterLayer('sams')
+            .then(function () {
+                return hideMapLayer('rings');
+            }).then(showDefaultLayers);
     }).onexit(function () {
         window.location.hash = "#";
-        hideClusterLayer('sams').then(showDefaultLayers);
+        hideClusterLayer('sams')
+            .then(function () {
+                return hideMapLayer('rings');
+            }).then(showDefaultLayers);
     });
     intro.start();
 };

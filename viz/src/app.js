@@ -1,7 +1,9 @@
 var urlHash = window.location.hash;
 
 var DATA_DIR = "elevation/";
-var standardView = !urlHash || urlHash == "#" || urlHash == "";
+var standardMode = !urlHash || urlHash == "#" || urlHash == "";
+var milMode = urlHash == "#mil";
+var civMode = urlHash == "#civ";
 
 // Setup Map
 var layer;
@@ -39,13 +41,23 @@ var layerControl = L.control.layers(baseMaps, overlayMaps, {position: 'bottomlef
 layerControl.addTo(map);
 
 var showDefaultLayers = function () {
-    return showSinks()
-        .then(showSources)
-        .then(showPaths)
-        .then(showTargets)
-        .then(showBaselineAnimation);
+    return Promise.all([
+        showSinks(),
+        showSources(),
+        showPaths()
+    ]).then(function () {
+        showBaselineAnimation();
+        return showTargets();
+    });
 };
 
-if (standardView) {
+if (standardMode) {
     showDefaultLayers();
+} else if (milMode) {
+    showSAMThreats();
+    showAviation();
+    toggleSecondArtillery();
+} else if (civMode) {
+    showStations();
+    togglePorts();
 }

@@ -491,7 +491,7 @@ var targetPopup = function (feature, layer) {
             if (key == 'criticality') {
                 prettyKey = 'Rerouting Cost';
                 // Format this cost in terms of hours, with nice commas and rounding
-                var hours = prettyValue / (100 * flowCount );
+                var hours = prettyValue / 100;
                 prettyValue = ("" + Math.round(hours)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
@@ -563,6 +563,25 @@ var targetPopup = function (feature, layer) {
     }
 };
 var drawAimPoints = false;
+
+// Legend
+var legendShowing = false;
+var legend = L.control({position: 'bottomright'});
+
+var showLegend = function () {
+    if (!legendShowing) {
+        legendShowing = true;
+        legend.addTo(map);
+    }
+};
+
+var hideLegend = function () {
+    if (legendShowing) {
+        legendShowing = false;
+        legend.removeFrom(map);
+    }
+};
+
 var loadTargetLayer = function () {
     return loadTargets().then(function (data) {
         // Load up the merged SAM threats
@@ -622,16 +641,28 @@ var loadTargetLayer = function () {
             feature.properties.color = color(criticality);
             feature.properties.type = 'bridge';
         });
+        legend.onAdd = function (map) {
+            var grades = [];
+            var interval = (maxCriticality - minCriticality) / 7;
+            for (var i = 0; i < 7; i++) {
+                grades.push(minCriticality + (interval * i));
+            }
+            var div = L.DomUtil.create('div', 'info legend');
+            //var grades = [minCriticality, midPoint, maxCriticality];
+            var labels = grades.map(function (value) {
+                return ("" + Math.round(value / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            });
 
-        var pointData = turf.featurecollection(
-            data.features.map(function (feature) {
-                return {
-                    type: feature.type,
-                    id: feature.id,
-                    geometry: feature.properties.center.geometry,
-                    properties: feature.properties
-                };
-            }));
+            // loop through our density intervals and generate a label with a colored square for each interval
+            div.innerHTML += `<strong>Rerouting Delays</strong><br>`;
+            for (var i = grades.length - 1; i >= 0; i--) {
+                div.innerHTML +=
+                    '<i style="background:' + color(grades[i]) + '"></i>'
+                    + labels[i] + ' hrs' + '<br>';
+            }
+
+            return div;
+        };
 
         // Update the top bar count
         $('#targetCount').text(data.features.length);
@@ -653,6 +684,16 @@ var loadTargetLayer = function () {
         });
 
         if (drawAimPoints) {
+            var pointData = turf.featurecollection(
+                data.features.map(function (feature) {
+                    return {
+                        type: feature.type,
+                        id: feature.id,
+                        geometry: feature.properties.center.geometry,
+                        properties: feature.properties
+                    };
+                }));
+
             var targetCluster = new L.MarkerClusterGroup({
                 iconCreateFunction: clusterIcon,
                 maxClusterRadius: 50
@@ -674,8 +715,15 @@ var loadTargetLayer = function () {
     });
 };
 
+function toggleLegend() {
+    if(legendShowing){
+        hideLegend();
+    } else {
+        showLegend();
+    }
+}
 var toggleTargets = function () {
-    return toggleMapLayer('targets', loadTargetLayer);
+    return toggleMapLayer('targets', loadTargetLayer).then(toggleLegend);
 };
 
 var toggleFlows = function () {
@@ -727,7 +775,7 @@ var showPaths = function () {
     return showMapLayer('paths', loadPathLayer);
 };
 var showTargets = function () {
-    return showMapLayer('targets', loadTargetLayer);
+    return showMapLayer('targets', loadTargetLayer).then(showLegend);
 };
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
