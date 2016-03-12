@@ -44,8 +44,8 @@ var showDefaultLayers = function () {
     return Promise.all([
         showSinks(),
         showSources(),
-        showPaths().then(showBaselineAnimation)
-    ]).then(showTargets);
+        showPaths().then(showBaselineAnimation).then(showTargets)
+    ]);
 };
 
 if (standardMode) {

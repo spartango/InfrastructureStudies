@@ -626,7 +626,7 @@ var loadTargetLayer = function () {
         });
 
         var minCriticality = d3_array.min(criticalityData);
-        var midPoint = d3_array.median(criticalityData);
+        var midPoint = d3_array.mean(criticalityData);
         var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
 
         var color = d3_scale.scaleLinear()
