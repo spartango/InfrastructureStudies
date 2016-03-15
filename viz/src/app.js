@@ -1,6 +1,6 @@
 var urlHash = window.location.hash;
 
-var DATA_DIR = "testing/";
+var DATA_DIR = "elevation/";
 var standardMode = !urlHash || urlHash == "#" || urlHash == "";
 var milMode = urlHash == "#mil";
 var civMode = urlHash == "#civ";

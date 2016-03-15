@@ -191,16 +191,13 @@ var bridgePopup = function (feature, layer) {
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
-                var count = array.length;
-                prettyValue = array.reduce(function (a, b) {
-                        return a + b;
-                    }) / count;
+                prettyValue = d3_array.mean(array);
                 prettyValue += " m";
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
                 if (Number.isFinite(prettyValue)) {
-                    prettyValue = Math.round(prettyValue) + " km";
+                    prettyValue = formatDistance(prettyValue);
                 } else if (typeof prettyValue == 'boolean') {
                     prettyValue = prettyValue ? "Yes" : "No";
                 }
@@ -274,12 +271,12 @@ var reroutePopup = function (feature, layer) {
         var prettyValue = feature.properties[key];
         if (key == 'cost') {
             prettyKey = 'Travel Time';
-            prettyValue = ("" + Math.round(prettyValue / 100000)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
+            prettyValue = formatTime(costToHours(prettyValue));
         } else {
             prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
             // If we still haven't made a string out of this
             if (Number.isFinite(prettyValue)) {
-                prettyValue = Math.round(prettyValue) + " km";
+                prettyValue = formatDistance(prettyValue);
             } else if (typeof prettyValue == 'boolean') {
                 prettyValue = prettyValue ? "Yes" : "No";
             }
@@ -442,7 +439,8 @@ var loadMergedRangeLayer = function () {
                 "color": "#d00",
                 "weight": 2,
                 "opacity": 0.8,
-                "fillOpacity": 0.10
+                "fillOpacity": 0.10,
+                "clickable": false
             }
         });
         return layer;
@@ -536,6 +534,28 @@ var loadDamagedPath = function (id) {
         });
 };
 
+var costToHours = function (cost) {
+    return cost / 100000; // meters @ 100kmph,
+};
+
+var addCommas = function (number) {
+    return ("" + number).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+var formatTime = function (hours) {
+    if (hours > 120) {
+        return Math.round(hours / 24) + " days";
+    } else if (hours < 1) {
+        return Math.round(hours * 60) + " minutes";
+    } else {
+        return addCommas(Math.round(hours)) + " hours";
+    }
+};
+
+var formatDistance = function (kilometers) {
+    return kilometers > 1.0 ? addCommas(Math.round(kilometers)) + " km" : Math.round(kilometers * 1000) + " m";
+};
+
 var targetPopup = function (feature, layer) {
     if (feature.properties) {
         var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-crosshairs"></i> Critical Bridge</th></tr></thead>';
@@ -546,17 +566,13 @@ var targetPopup = function (feature, layer) {
             var prettyValue = feature.properties[key];
             if (key == 'criticality') {
                 prettyKey = 'Rerouting Cost';
-                // Format this cost in terms of hours, with nice commas and rounding
-                var hours = prettyValue / 100000;
-                prettyValue = ("" + Math.round(hours)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
+                var hours = costToHours(prettyValue);
+                prettyValue = formatTime(hours);
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
                 var array = JSON.parse(prettyValue);
-                var count = array.length;
                 // Compute the average elevation
-                prettyValue = array.reduce(function (a, b) {
-                        return a + b;
-                    }) / count;
+                prettyValue = d3_array.mean(array);
                 prettyValue += " m";
             } else if (key == 'nearestStation') {
                 var station = feature.properties['nearestStation'];
@@ -564,7 +580,7 @@ var targetPopup = function (feature, layer) {
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
                 prettyKey = `<a href="#" onclick="showAndFocus(showStations(),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
                 var distance = turf.distance(station, center);
-                prettyValue = Math.round(distance) + " km";
+                prettyValue = formatDistance(distance);
             } else if (key == 'nearestSAM') {
                 var sam = feature.properties['nearestSAM'];
                 var extent = turf.extent(turf.featurecollection([sam, center]));
@@ -577,7 +593,7 @@ var targetPopup = function (feature, layer) {
                     prettyKey += `Nearest Radar</a>`;
                 }
                 var distance = turf.distance(sam, center);
-                prettyValue = Math.round(distance) + " km";
+                prettyValue = formatDistance(distance);
             } else if (key == 'nearestAirbase') {
                 var airbase = feature.properties['nearestAirbase'];
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
@@ -585,19 +601,19 @@ var targetPopup = function (feature, layer) {
                 prettyKey = `<a href="#" onclick="showAndFocus(showAviation(),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
                 rowClass = "warning";
                 var distance = turf.distance(airbase, center);
-                prettyValue = Math.round(distance) + " km";
+                prettyValue = formatDistance(distance);
             } else if (key == 'center') {
                 prettyKey = "MGRS";
                 prettyValue = mgrs.forward(center.geometry.coordinates);
             } else if (key == 'activeSAM') {
                 continue; // We'll handle activeSAM elsewhere
             } else if (key == 'color') {
-                continue; // We'll handle activeSAM elsewhere
+                continue; // We'll handle color elsewhere
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
                 // If we still haven't made a string out of this
                 if (Number.isFinite(prettyValue)) {
-                    prettyValue = prettyValue > 1.0 ? Math.round(prettyValue) + " km" : Math.round(prettyValue * 1000) + " m";
+                    prettyValue = formatDistance(prettyValue);
                 } else if (typeof prettyValue == 'boolean') {
                     prettyValue = prettyValue ? "Yes" : "No";
                 }
@@ -708,7 +724,7 @@ var loadTargetLayer = function () {
             var div = L.DomUtil.create('div', 'info legend');
             //var grades = [minCriticality, midPoint, maxCriticality];
             var labels = grades.map(function (value) {
-                return ("" + Math.round(value / 100000)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                return formatTime(costToHours(value));
             });
 
             // loop through our density intervals and generate a label with a colored square for each interval
@@ -716,7 +732,7 @@ var loadTargetLayer = function () {
             for (var i = grades.length - 1; i >= 0; i--) {
                 div.innerHTML +=
                     '<i style="background:' + color(grades[i]) + '"></i>'
-                    + labels[i] + ' hours' + '<br>';
+                    + labels[i] + '<br>';
             }
 
             return div;
@@ -862,5 +878,4 @@ var showStations = function () {
 var toggleAimpoints = function () {
     drawAimPoints = !drawAimPoints;
     hideMapLayer('targets').then(showTargets);
-
 };
