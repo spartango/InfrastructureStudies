@@ -99,64 +99,6 @@ var annotateThreats = function (targets) {
     });
 };
 
-var plotThreats = function (targets) {
-    var criticalityData = targets.features.map(function (feature) {
-        return feature.properties.criticality;
-    });
-
-    var minCriticality = d3.min(criticalityData);
-    var midPoint = d3.mean(criticalityData);
-    var absMax = d3.max(criticalityData);
-    var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
-
-
-    console.log("Rendering SAM plot");
-    // For each feature, extract the properties
-    var data = targets.features.map(function (feature) {
-        return feature.properties;
-    });
-
-    var dataset = new Plottable.Dataset(data);
-
-    var xScale = new Plottable.Scales.Linear()//.domain([minCriticality, maxCriticality].map(costToHours));
-    var yScale = new Plottable.Scales.Linear();
-    var xAxis = new Plottable.Axes.Numeric(xScale, "bottom");
-    var yAxis = new Plottable.Axes.Numeric(yScale, "left");
-    var plot = new Plottable.Plots.Scatter();
-    var titleLabel = new Plottable.Components.TitleLabel("SAM Proximity")
-        .yAlignment("center");
-    var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)")
-        .yAlignment("center");
-    var yLabel = new Plottable.Components.AxisLabel("Nearest SAM/Radar (km)")
-        .angle(-90);
-
-
-    plot.x(function (d) {
-            return costToHours(d.criticality);
-        }, xScale)
-        .y(function (d) {
-            return d.nearestSAMDistance;
-        }, yScale)
-        .attr("fill", function (d) {
-            return d.activeSAM ? "#b00" : typeColors.radar; //  "#b00" : "#5279c7"
-        })
-        .animated(true)
-        .addDataset(dataset);
-
-    var chart = new Plottable.Components.Table([
-        [null, null, titleLabel],
-        [yLabel, yAxis, plot],
-        [null, null, xAxis],
-        [null, null, xLabel]
-    ]);
-
-    chart.renderTo("svg#sam");
-};
-
-var costSAMPlot = function () {
-    return loadTargets().then(annotateThreats).then(plotThreats);
-};
-
 var annotateBases = function (targets) {
     return loadAviation().then(function (airbases) {
         console.log("Computing airbase ranges");
@@ -170,7 +112,20 @@ var annotateBases = function (targets) {
     });
 };
 
-var plotBases = function (targets) {
+var annotateStations = function (targets) {
+    return loadStations().then(function (stations) {
+        console.log("Computing station ranges");
+        targets.features.forEach(function (feature) {
+            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
+            var nearest = turf.nearest(center, stations);
+            var distance = turf.distance(nearest, center);
+            feature.properties["nearestStationDistance"] = distance;
+        });
+        return targets;
+    });
+};
+
+var plotProximity = function (targets) {
     var criticalityData = targets.features.map(function (feature) {
         return feature.properties.criticality;
     });
@@ -180,8 +135,7 @@ var plotBases = function (targets) {
     var absMax = d3.max(criticalityData);
     var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
 
-
-    console.log("Rendering base plot");
+    console.log("Rendering plot");
     // For each feature, extract the properties
     var data = targets.features.map(function (feature) {
         return feature.properties;
@@ -189,49 +143,76 @@ var plotBases = function (targets) {
 
     var dataset = new Plottable.Dataset(data);
 
-    var xScale = new Plottable.Scales.Linear()//.domain([minCriticality, maxCriticality].map(costToHours));
-    var yScale = new Plottable.Scales.Linear();
+    var xScale = new Plottable.Scales.Linear().domain([minCriticality, maxCriticality].map(costToHours));
     var xAxis = new Plottable.Axes.Numeric(xScale, "bottom");
-    var yAxis = new Plottable.Axes.Numeric(yScale, "left");
-    var plot = new Plottable.Plots.Scatter();
-    var titleLabel = new Plottable.Components.TitleLabel("Airbase Proximity")
-        .yAlignment("center");
     var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)")
         .yAlignment("center");
-    var yLabel = new Plottable.Components.AxisLabel("Nearest Airbase (km)")
+
+    // Plot SAMs
+    var samYScale = new Plottable.Scales.Linear()//.domain([0, 100]);
+    var samYAxis = new Plottable.Axes.Numeric(samYScale, "left");
+    var samPlot = new Plottable.Plots.Scatter();
+    var samTitleLabel = new Plottable.Components.TitleLabel("SAM Proximity")
+        .yAlignment("center");
+    var samYLabel = new Plottable.Components.AxisLabel("Nearest SAM/Radar (km)")
         .angle(-90);
-
-
-    plot.x(function (d) {
+    samPlot.x(function (d) {
             return costToHours(d.criticality);
         }, xScale)
         .y(function (d) {
-            return d.nearestAirbaseDistance;
-        }, yScale)
+            return d.nearestSAMDistance;
+        }, samYScale)
         .attr("fill", function (d) {
-            return typeColors.airbase;
+            return d.activeSAM ? "#b00" : typeColors.radar; //  "#b00" : "#5279c7"
         })
         .animated(true)
         .addDataset(dataset);
 
+    // Plot Bases
+    var airbaseYScale = new Plottable.Scales.Linear()//.domain([0, 100]);
+    var airbaseYAxis = new Plottable.Axes.Numeric(airbaseYScale, "left");
+    var airbasePlot = new Plottable.Plots.Scatter();
+    var airbaseTitleLabel = new Plottable.Components.TitleLabel("Airbase Proximity")
+        .yAlignment("center");
+    var airbaseYLabel = new Plottable.Components.AxisLabel("Nearest Airbase (km)")
+        .angle(-90);
+    airbasePlot.x(function (d) {
+            return costToHours(d.criticality);
+        }, xScale)
+        .y(function (d) {
+            return d.nearestAirbaseDistance;
+        }, airbaseYScale)
+        .attr("fill", function (d) {
+            return typeColors.airbase; //  "#b00" : "#5279c7"
+        })
+        .animated(true)
+        .addDataset(dataset);
+
+    var titleLabel = new Plottable.Components.TitleLabel("Threat Proximity")
+        .yAlignment("center");
+
     var chart = new Plottable.Components.Table([
         [null, null, titleLabel],
-        [yLabel, yAxis, plot],
+        [samYLabel, samYAxis, samPlot],
+        [airbaseYLabel, airbaseYAxis, airbasePlot],
         [null, null, xAxis],
         [null, null, xLabel]
     ]);
 
-    chart.renderTo("svg#airbase");
+    chart.renderTo("svg#proximity");
 };
 
-var costBasePlot = function () {
-    return loadTargets().then(annotateBases).then(plotBases);
+var costProximityPlot = function () {
+    return loadTargets()
+        .then(annotateThreats)
+        .then(annotateBases)
+        .then(plotProximity);
 };
 
 costHistogram()
-    .then(costSAMPlot)
-    .then(costBasePlot)
+    .then(costProximityPlot)
     .catch(function (error) {
-        console.log("Failed to plot data " + error);
+        console.log("Failed to plot data ");
+        console.log(error);
     });
 

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="bower_components/Leaflet.EasyButton/src/easy-button.css"/>
     <link rel="stylesheet" href="bower_components/leaflet.loading/src/Control.Loading.css"/>
     <link rel="stylesheet" href="bower_components/intro.js/minified/introjs.min.css"/>
+    <link rel="stylesheet" href="fonts.css"/>
     <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
@@ -22,14 +23,11 @@
             <div class="navbar-header">
                 <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
                 <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a class="navbar-brand" href="stats.html"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Statistics"><i class="fa fa-bar-chart"></i></a></li>
                     <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
                            data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
-                    <li><a id="helpButton" class="navbar-brand hidden" href="#tutorial" onclick="startTutorial()"
-                           data-toggle="tooltip"
-                           data-placement="bottom" title="Help"><i class="fa fa-question-circle"></i></a></li>
-                    <li><a id="drawButton" class="navbar-brand hidden" href="#" onclick="enableDrawing()"
-                           data-toggle="tooltip"
-                           data-placement="bottom" title="Draw"><i class="fa fa-pencil"></i></a></li>
                 </ul>
             </div>
 

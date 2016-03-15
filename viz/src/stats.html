@@ -7,21 +7,79 @@
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="bower_components/plottable/plottable.css"/>
+    <link rel="stylesheet" href="fonts.css"/>
     <link rel="stylesheet" href="stats.css"/>
 </head>
 <body>
-<div class="row">
-    <div class="col-md-12">
-        <svg id="cost" width="100%" height="400px"></svg>
+<div class="navbar navbar-static-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
+                <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a class="navbar-brand" href="index.html" data-toggle="tooltip"
+                           data-placement="bottom" title="Map"><i class="fa fa-map"></i></a></li>
+                    <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
+                           data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
-<hr>
+
 <div class="row">
     <div class="col-md-6">
-        <svg id="sam" width="100%" height="400px"></svg>
+        <svg id="cost" width="100%" height="800px"></svg>
     </div>
+
     <div class="col-md-6">
-        <svg id="airbase" width="100%" height="400px"></svg>
+        <svg id="proximity" width="100%" height="800px"></svg>
+    </div>
+</div>
+
+<div class="modal fade" id="sourceModal" tabindex="-1" role="dialog" aria-labelledby="sourceModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header nav-text">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h3 class="modal-title" id="sourceModalLabel">About</h3>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Data Sources</h4>
+                        <dl>
+                            <dt>Rail Data</dt>
+                            <dd><a href="http://openstreetmap.org">OpenStreetMap</a> (2016)</dd>
+                            <dt>SAM & Aviation Data</dt>
+                            <dd><a href="http://geimint.blogspot.com">IMINT & Analysis Blog</a> (2009)</dd>
+                            <dt>Port Data</dt>
+                            <dd>
+                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">NGA
+                                    World Port Index</a> (2016)
+                            </dd>
+                            <dt>Strategic Missile Data</dt>
+                            <dd><a href="http://www.ausairpower.net/APA-PLA-Second-Artillery-Corps.html">Air Power
+                                Australia</a> (2012)
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Contributors</h4>
+                        <dl>
+                            <dd>Anand Gupta</dd>
+                            <dd>Olivia Zhu</dd>
+                            <dd>Stephen Peter Rosen</dd>
+                        </dl>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 </body>
