@@ -582,6 +582,26 @@ var hideLegend = function () {
     }
 };
 
+var minVisibleCriticality = 0;
+var filterTargets = function (minValue) {
+    if (!drawAimPoints) {
+        // Restyle the layer to hide data
+        backgroundLayers['targets'].setStyle(function (feature) {
+            return {
+                "color": feature.properties.color,
+                "weight": 6,
+                "opacity": feature.properties.criticality >= minValue ? 0.66 : 0.0,
+                "clickable": feature.properties.criticality >= minValue
+            }
+        });
+
+        // Rerender the legend
+        hideLegend();
+        minVisibleCriticality = minValue;
+        showLegend();
+    }
+};
+
 var loadTargetLayer = function () {
     return loadTargets().then(function (data) {
         // Load up the merged SAM threats
@@ -656,8 +676,9 @@ var loadTargetLayer = function () {
             // loop through our density intervals and generate a label with a colored square for each interval
             div.innerHTML += `<strong>Rerouting Delays</strong><br>`;
             for (var i = grades.length - 1; i >= 0; i--) {
+                var gradeColor = grades[i] >= minVisibleCriticality ? color(grades[i]) : "#ffffff";
                 div.innerHTML +=
-                    '<i style="background:' + color(grades[i]) + '"></i>'
+                    `<i onclick='filterTargets(` + grades[i] + `)' style="background:` + gradeColor + `"></i>`
                     + labels[i] + ' hrs' + '<br>';
             }
 
@@ -670,8 +691,7 @@ var loadTargetLayer = function () {
         var segmentLayer = L.geoJson(data, {
             onEachFeature: targetPopup,
             filter: function (feature) {
-                // Only draw segments that are longer than 1km
-                return !drawAimPoints || (feature.properties.span > 0.5);
+                return (!drawAimPoints || (feature.properties.span > 0.5));
             },
             style: function (feature) {
                 return {
@@ -716,7 +736,7 @@ var loadTargetLayer = function () {
 };
 
 function toggleLegend() {
-    if(legendShowing){
+    if (legendShowing) {
         hideLegend();
     } else {
         showLegend();
