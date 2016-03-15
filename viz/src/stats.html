@@ -91,6 +91,19 @@
 <script src="types.js"></script>
 <script src="utils.js"></script>
 <script src="data.js"></script>
+<script>
+    var mapmargin = 100;
+//    $(window).on("resize", resize);
+    function resize() {
+        $('#proximity').attr("height", ($(window).height() - mapmargin ));
+        $('#cost').attr("height", ($(window).height() - mapmargin ));
+    }
+
+    resize();
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
 <script src="stats.js"></script>
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]
