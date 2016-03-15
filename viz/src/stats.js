@@ -7,19 +7,29 @@ var histogramTargets = function (targets) {
 
     var minCriticality = d3.min(criticalityData);
     var midPoint = d3.mean(criticalityData);
-    var maxCriticality = Math.min(d3.max(criticalityData), (midPoint - minCriticality) + midPoint);
+    var absMax = d3.max(criticalityData);
+    var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
 
     var color = d3.scale.linear()
         .domain([minCriticality, midPoint, maxCriticality])
         .range(["#FFFF00", "#FF8800", "#FF0000"]);
 
     console.log("Rendering histogram");
-    // For each feature, extract the properties
+    // For each feature, extract the cose
     var data = targets.features.map(function (feature) {
         return costToHours(feature.properties.criticality);
     });
 
-    var histogram = d3.layout.histogram()(data);
+    var maxHours = costToHours(maxCriticality);
+    var histogram = d3.layout.histogram().range([minCriticality, maxHours])
+    (data);
+
+    var rest = data.filter(function (d) {
+        return d > maxHours;
+    }).length;
+
+    histogram.push({y: rest, x: maxHours, dx: (costToHours(absMax) - maxHours)});
+
     var dataset = new Plottable.Dataset(histogram);
 
     var xScale = new Plottable.Scales.Category();
@@ -41,7 +51,7 @@ var histogramTargets = function (targets) {
         }, yScale)
         .labelsEnabled(true)
         .attr("fill", function (d) {
-            var x = (d.x + (d.dx / 2));
+            var x = d.x + (d.dx / 2);
             return color(x * 100000);
         })
         .animated(true)
