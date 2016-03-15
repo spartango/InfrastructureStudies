@@ -4,8 +4,9 @@ var debug = urlHash == "#debug";
 var refreshTargets = function (interval) {
     var time = interval ? interval : 60000;
     setTimeout(function () {
-        hideMapLayer('targets')   // Unload the layer
-            .then(toggleTargets); // Reload the layer
+        hideMapLayer('targets')
+            .then(hideLegend)   // Unload the layer
+            .then(showTargets); // Reload the layer
 
         // Schedule another run in 60s
         refreshTargets();
@@ -13,5 +14,5 @@ var refreshTargets = function (interval) {
 };
 
 if (debug) {
-    refreshTargets();
+    showDefaultLayers().then(refreshTargets);
 }

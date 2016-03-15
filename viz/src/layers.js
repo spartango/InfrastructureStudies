@@ -265,7 +265,31 @@ var showReroute = function (id) {
 };
 
 var reroutePopup = function (feature, layer) {
-    var popupString = `<div><div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='hideReroute()' >`
+    var popupString = `<div>`
+        + `<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-exchange"></i> Adjusted Route</th></tr></thead>`;
+
+    for (var key in feature.properties) {
+        var prettyKey;
+        var rowClass = "";
+        var prettyValue = feature.properties[key];
+        if (key == 'cost') {
+            prettyKey = 'Travel Time';
+            prettyValue = ("" + Math.round(prettyValue / 100000)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
+        } else {
+            prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
+            // If we still haven't made a string out of this
+            if (Number.isFinite(prettyValue)) {
+                prettyValue = Math.round(prettyValue) + " km";
+            } else if (typeof prettyValue == 'boolean') {
+                prettyValue = prettyValue ? "Yes" : "No";
+            }
+        }
+
+        popupString += `<tr class="` + rowClass + `"><td><strong>` + prettyKey + "</strong></td><td>" + prettyValue + "</td></tr>";
+    }
+    popupString += "</table></div>";
+
+    popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='hideReroute()'>`
         + `<i class="fa fa-close"></i> Hide</button></div></div>`;
     layer.bindPopup(popupString);
 };
@@ -523,7 +547,7 @@ var targetPopup = function (feature, layer) {
             if (key == 'criticality') {
                 prettyKey = 'Rerouting Cost';
                 // Format this cost in terms of hours, with nice commas and rounding
-                var hours = prettyValue / 100;
+                var hours = prettyValue / 100000;
                 prettyValue = ("" + Math.round(hours)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " hours";
             } else if (key == 'elevations') {
                 prettyKey = 'Elevation';
@@ -584,12 +608,12 @@ var targetPopup = function (feature, layer) {
         popupString += "</table></div>";
 
         if (feature.properties.center) {
-            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-6" onclick='map.setView({lat:`
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
                 + feature.properties.center.geometry.coordinates[1]
                 + ", lng:"
                 + feature.properties.center.geometry.coordinates[0]
-                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button>`
-            popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button>`;
+            //popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
         }
         popupString += `</div></div>`;
 
@@ -684,7 +708,7 @@ var loadTargetLayer = function () {
             var div = L.DomUtil.create('div', 'info legend');
             //var grades = [minCriticality, midPoint, maxCriticality];
             var labels = grades.map(function (value) {
-                return ("" + Math.round(value / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                return ("" + Math.round(value / 100000)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             });
 
             // loop through our density intervals and generate a label with a colored square for each interval
@@ -692,7 +716,7 @@ var loadTargetLayer = function () {
             for (var i = grades.length - 1; i >= 0; i--) {
                 div.innerHTML +=
                     '<i style="background:' + color(grades[i]) + '"></i>'
-                    + labels[i] + ' hrs' + '<br>';
+                    + labels[i] + ' hours' + '<br>';
             }
 
             return div;
