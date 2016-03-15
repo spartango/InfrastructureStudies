@@ -1,19 +1,27 @@
 // Data loading
+var loadingControl = null;
+
 var loadGeoJSON = function (path) {
     return new Promise(function (resolve, reject) {
-        loadingControl.addLoader(path);
+        if (loadingControl) {
+            loadingControl.addLoader(path);
+        }
         var xhr = new XMLHttpRequest();
         xhr.open('GET', path, true);
         xhr.onload = function () {
             if (xhr.readyState == 4) {
                 var data = JSON.parse(xhr.responseText);
                 resolve(data);
-                loadingControl.removeLoader(path);
+                if (loadingControl) {
+                    loadingControl.removeLoader(path);
+                }
             }
         };
         xhr.onerror = function () {
             reject(this.statusText);
-            loadingControl.removeLoader(path);
+            if (loadingControl) {
+                loadingControl.removeLoader(path);
+            }
         };
         xhr.send();
     });

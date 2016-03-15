@@ -181,15 +181,14 @@ var showReroute = function (id) {
 
 var loadRerouteLayer = function (id) {
     return loadPath(id).then(function (data) {
-        var paths = L.geoJson(data, {
+        return L.geoJson(data, {
             onEachFeature: reroutePopup,
             style: {
                 "color": "#f06eaa",
-                "weight": 6,
+                "weight": 4,
                 "opacity": 0.66
             }
         });
-        return paths;
     });
 };
 

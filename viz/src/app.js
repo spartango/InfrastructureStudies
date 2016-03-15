@@ -30,7 +30,7 @@ defaultMap.addTo(map);
 backgroundMarkers.addTo(map);
 
 // Default controls
-var loadingControl = L.Control.loading({
+loadingControl = L.Control.loading({
     separate: true,
     position: 'topright'
 });

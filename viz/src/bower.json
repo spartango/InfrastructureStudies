@@ -32,7 +32,8 @@
     "milsymbol": "^0.5.5",
     "leaflet.loading": "Leaflet.loading#^0.1.18",
     "font-awesome": "fontawesome#^4.5.0",
-    "intro.js": "^2.0.0"
+    "intro.js": "^2.0.0",
+    "plottable": "^2.0.0"
   },
   "devDependencies": {
     "livereload-js": "^2.2.1"
