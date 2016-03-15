@@ -180,7 +180,7 @@ var toggleStations = function () {
 
 var bridgePopup = function (feature, layer) {
     if (feature.properties) {
-        var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-road"></i> Bridge</th></tr></thead>';
+        var popupString = '<div><div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-road"></i> Bridge</th></tr></thead>';
         for (var key in feature.properties) {
             var prettyKey;
             var rowClass = "";
@@ -249,6 +249,38 @@ var loadPathLayer = function () {
         return L.layerGroup([inner, outer]);
         //map.fitBounds(path.getBounds());
         //hash = new L.Hash(map);
+    });
+};
+
+var hideReroute = function () {
+    return hideMapLayer('reroute');
+};
+
+var showReroute = function (id) {
+    return hideReroute().then(function () {
+        return showMapLayer('reroute', function () {
+            return loadRerouteLayer(id);
+        });
+    });
+};
+
+var reroutePopup = function (feature, layer) {
+    var popupString = `<div><div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='hideReroute()' >`
+        + `<i class="fa fa-close"></i> Hide</button></div></div>`;
+    layer.bindPopup(popupString);
+};
+
+var loadRerouteLayer = function (id) {
+    return loadPath(id).then(function (data) {
+        var paths = L.geoJson(data, {
+            onEachFeature: reroutePopup,
+            style: {
+                "color": "#f06eaa",
+                "weight": 6,
+                "opacity": 0.66
+            }
+        });
+        return paths;
     });
 };
 
@@ -552,12 +584,14 @@ var targetPopup = function (feature, layer) {
         popupString += "</table></div>";
 
         if (feature.properties.center) {
-            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-6" onclick='map.setView({lat:`
                 + feature.properties.center.geometry.coordinates[1]
                 + ", lng:"
                 + feature.properties.center.geometry.coordinates[0]
-                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button>`
+            popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
         }
+        popupString += `</div></div>`;
 
         layer.bindPopup(popupString);
     }
@@ -716,7 +750,7 @@ var loadTargetLayer = function () {
 };
 
 function toggleLegend() {
-    if(legendShowing){
+    if (legendShowing) {
         hideLegend();
     } else {
         showLegend();

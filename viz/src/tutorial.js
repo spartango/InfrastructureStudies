@@ -56,9 +56,10 @@ var startTutorial = function () {
                     .then(hideLegend)
                     .then(showSources)
                     .then(showSinks)
-                    .then(showPaths).then(function () {
-                    showAnimation('baseline');
-                })
+                    .then(showPaths)
+                    .then(function () {
+                        showAnimation('baseline');
+                    })
             }
         },
         {

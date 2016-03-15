@@ -40,17 +40,7 @@ var loadStations = function () {
 };
 
 var loadPath = function (id) {
-    return loadGeoJSON(DATA_DIR + id + '_path.geojson')
-        .then(function (data) {
-            var path = L.geoJson(data, {
-                //onEachFeature: pathPopup
-                style: {
-                    "weight": 4,
-                    "opacity": 0.5
-                }
-            });
-            path.addTo(map);
-        });
+    return loadGeoJSON(DATA_DIR + id + '_damage.geojson');
 };
 
 var loadPaths = function () {
