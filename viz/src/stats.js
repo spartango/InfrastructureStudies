@@ -15,10 +15,8 @@ var histogramTargets = function (targets) {
         .range(["#FFFF00", "#FF8800", "#FF0000"]);
 
     console.log("Rendering histogram");
-    // For each feature, extract the cose
-    var data = targets.features.map(function (feature) {
-        return costToHours(feature.properties.criticality);
-    });
+    // For each feature, extract the cost
+    var data = criticalityData.map(costToHours);
 
     var maxHours = costToHours(maxCriticality);
     var histogram = d3.layout.histogram().range([minCriticality, maxHours])
@@ -54,11 +52,11 @@ var histogramTargets = function (targets) {
             var x = d.x + (d.dx / 2);
             return color(x * 100000);
         })
-        .animated(true)
+        //.animated(true)
         .addDataset(dataset);
 
     var chart = new Plottable.Components.Table([
-        [titleLabel],
+        //[titleLabel],
         [plot],
         [xAxis],
         [xLabel]
@@ -140,22 +138,23 @@ var plotProximity = function (targets) {
     var data = targets.features.map(function (feature) {
         return feature.properties;
     });
-
     var dataset = new Plottable.Dataset(data);
 
     var xScale = new Plottable.Scales.Linear().domain([minCriticality, maxCriticality].map(costToHours));
     var xAxis = new Plottable.Axes.Numeric(xScale, "bottom");
-    var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)")
-        .yAlignment("center");
+    var middleAxis = new Plottable.Axes.Numeric(xScale, "bottom");
+    var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)");
+    var middleLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)");
 
     // Plot SAMs
     var samYScale = new Plottable.Scales.Linear()//.domain([0, 100]);
     var samYAxis = new Plottable.Axes.Numeric(samYScale, "left");
     var samPlot = new Plottable.Plots.Scatter();
+
     var samTitleLabel = new Plottable.Components.TitleLabel("SAM Proximity")
-        .yAlignment("center");
     var samYLabel = new Plottable.Components.AxisLabel("Nearest SAM/Radar (km)")
         .angle(-90);
+
     samPlot.x(function (d) {
             return costToHours(d.criticality);
         }, xScale)
@@ -165,17 +164,16 @@ var plotProximity = function (targets) {
         .attr("fill", function (d) {
             return d.activeSAM ? "#b00" : typeColors.radar; //  "#b00" : "#5279c7"
         })
-        .animated(true)
+        //.animated(true)
         .addDataset(dataset);
 
     // Plot Bases
     var airbaseYScale = new Plottable.Scales.Linear()//.domain([0, 100]);
     var airbaseYAxis = new Plottable.Axes.Numeric(airbaseYScale, "left");
     var airbasePlot = new Plottable.Plots.Scatter();
+
     var airbaseTitleLabel = new Plottable.Components.TitleLabel("Airbase Proximity")
-        .yAlignment("center");
-    var airbaseYLabel = new Plottable.Components.AxisLabel("Nearest Airbase (km)")
-        .angle(-90);
+    var airbaseYLabel = new Plottable.Components.AxisLabel("Nearest Airbase (km)").angle(-90);
     airbasePlot.x(function (d) {
             return costToHours(d.criticality);
         }, xScale)
@@ -185,15 +183,16 @@ var plotProximity = function (targets) {
         .attr("fill", function (d) {
             return typeColors.airbase; //  "#b00" : "#5279c7"
         })
-        .animated(true)
+        //.animated(true)
         .addDataset(dataset);
 
     var titleLabel = new Plottable.Components.TitleLabel("Threat Proximity")
-        .yAlignment("center");
 
     var chart = new Plottable.Components.Table([
-        [null, null, titleLabel],
+        //[null, null, titleLabel],
         [samYLabel, samYAxis, samPlot],
+        [null, null, middleAxis],
+        [null, null, middleLabel],
         [airbaseYLabel, airbaseYAxis, airbasePlot],
         [null, null, xAxis],
         [null, null, xLabel]
