@@ -67,12 +67,12 @@ var targetPopup = function (feature, layer) {
         popupString += "</table></div>";
 
         if (feature.properties.center) {
-            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-6" onclick='map.setView({lat:`
                 + feature.properties.center.geometry.coordinates[1]
                 + ", lng:"
                 + feature.properties.center.geometry.coordinates[0]
                 + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button>`;
-            //popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
+            popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
         }
         popupString += `</div></div>`;
 
