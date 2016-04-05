@@ -164,18 +164,21 @@ var buildPlot = function (featureKey, targets, title, color) {
     var data = targets.features.map(function (feature) {
         return feature.properties;
     });
-    var regression = ss.linearRegression(data.map(function (d) {
-        return [costToHours(d.criticality), d[featureKey]];
-    }));
-    console.log(regression);
 
+    var regressionTarget = data.map(function (d) {
+        return [costToHours(d.criticality), d[featureKey]];
+    });
+    var regression = ss.linearRegression(regressionTarget);
     var regressionFunc = ss.linearRegressionLine(regression);
+    var rSquared = ss.rSquared(regressionTarget, regressionFunc);
+
+    console.log("Regression: " + regression.m + "x + " + regression.b + "; R^2 = " + rSquared);
+
     var regressionData = new Plottable.Dataset(xRange.map(function (x) {
         return {x: x, y: regressionFunc(x)};
     }));
     var dataset = new Plottable.Dataset(data);
 
-    console.log("Rendering plot");
     var xScale = new Plottable.Scales.Linear().domain(xRange);
     var xAxis = new Plottable.Axes.Numeric(xScale, "bottom");
     var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)");
@@ -208,19 +211,17 @@ var buildPlot = function (featureKey, targets, title, color) {
         .y(function (d) {
             return d.y;
         }, yScale)
-        .attr("stroke", function (d) {
-            if (color) {
-                return typeColors[color] ? typeColors[color] : color;
-            } else {
-                return d.activeSAM ? "#b00" : typeColors.radar; //  "#b00" : "#5279c7"
-            }
-        })
         //.animated(true)
         .addDataset(regressionData);
 
     // Plot
+    var colorScale = new Plottable.Scales.Color();
+    var legend = new Plottable.Components.Legend(colorScale);
+    colorScale.domain(["R2 = "+ Math.round(1000 * rSquared)/1000]);
+
     var plots = new Plottable.Components.Group([plot, regressionPlot]);
     var chart = new Plottable.Components.Table([
+        [null, null, legend],
         [yLabel, yAxis, plots],
         [null, null, xAxis],
         [null, null, xLabel]
