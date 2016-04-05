@@ -136,8 +136,21 @@ var annotateSources = function (targets) {
     });
 };
 
+var annotateSecondArtillery = function (targets) {
+    return loadSecondArtillery().then(function (sources) {
+        console.log("Computing 2nd Artillery ranges");
+        targets.features.forEach(function (feature) {
+            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
+            var nearest = turf.nearest(center, sources);
+            var distance = turf.distance(nearest, center);
+            feature.properties["nearest2ADistance"] = distance;
+        });
+        return targets;
+    });
+};
+
 var annotateSinks = function (targets) {
-    return loadSources().then(function (sinks) {
+    return loadSinks().then(function (sinks) {
         console.log("Computing sink ranges");
         targets.features.forEach(function (feature) {
             var center = feature.properties.center ? feature.properties.center : turf.center(feature);
@@ -147,6 +160,56 @@ var annotateSinks = function (targets) {
         });
         return targets;
     });
+};
+
+var buildDualPlot = function (xKey, yKey, targets, xTitle, yTitle) {
+    var criticalityData = targets.features.map(function (feature) {
+        return feature.properties.criticality;
+    });
+
+    var minCriticality = d3.min(criticalityData);
+    var midPoint = d3.mean(criticalityData);
+    var absMax = d3.max(criticalityData);
+    var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
+
+    var color = d3.scale.linear()
+        .domain([minCriticality, midPoint, maxCriticality])
+        .range(["#FFFF00", "#FF8800", "#FF0000"]);
+
+    // For each feature, extract the properties
+    var data = targets.features.map(function (feature) {
+        return feature.properties;
+    });
+    var dataset = new Plottable.Dataset(data);
+
+    var xScale = new Plottable.Scales.Linear();
+    var xAxis = new Plottable.Axes.Numeric(xScale, "bottom");
+    var xLabel = new Plottable.Components.AxisLabel(xTitle ? xTitle : "Proximity (km)");
+
+    var yScale = new Plottable.Scales.Linear();
+    var yAxis = new Plottable.Axes.Numeric(yScale, "left");
+    var plot = new Plottable.Plots.Scatter();
+    var yLabel = new Plottable.Components.AxisLabel(yTitle ? yTitle : "Proximity (km)").angle(-90);
+
+    plot.x(function (d) {
+            return d[xKey];
+        }, xScale)
+        .y(function (d) {
+            return d[yKey];
+        }, yScale)
+        .attr("fill", function (d) {
+            return color(d.criticality);
+        })
+        //.animated(true)
+        .addDataset(dataset);
+
+    var chart = new Plottable.Components.Table([
+        [yLabel, yAxis, plot],
+        [null, null, xAxis],
+        [null, null, xLabel]
+    ]);
+
+    return chart;
 };
 
 var buildPlot = function (featureKey, targets, title, color) {
@@ -217,7 +280,7 @@ var buildPlot = function (featureKey, targets, title, color) {
     // Plot
     var colorScale = new Plottable.Scales.Color();
     var legend = new Plottable.Components.Legend(colorScale);
-    colorScale.domain(["R2 = "+ Math.round(1000 * rSquared)/1000]);
+    colorScale.domain(["R2 = " + Math.round(1000 * rSquared) / 1000]);
 
     var plots = new Plottable.Components.Group([plot, regressionPlot]);
     var chart = new Plottable.Components.Table([
@@ -271,15 +334,43 @@ var plotSinks = function (targets) {
     return targets;
 };
 
+var plotSecondArtillery = function (targets) {
+    var chart = buildPlot("nearest2ADistance", targets, "Nearest Missile Site (km)", "nuclear");
+    chart.renderTo("svg#nuclear");
+    return targets;
+};
+
+var plotDual = function (targets) {
+    var activeTargets = {
+        features: targets.features.filter(function (target) {
+            return target.properties.activeSAM;
+        })
+    };
+
+    var chart = buildDualPlot("nearestSAMDistance",
+        "nearestAirbaseDistance",
+        activeTargets,
+        "Nearest SAM (km)",
+        "Nearest Airbase (km)");
+    chart.renderTo("svg#dual");
+    return targets;
+};
+
 var costProximityPlot = function () {
     return loadTargets()
         .then(annotateThreats)
+        .then(annotateSecondArtillery)
+        .then(annotateStations)
         .then(annotateBases)
+        .then(annotateSources)
         .then(annotateSinks)
         .then(plotBases)
         .then(plotSAMs)
         .then(plotRadars)
-        .then(plotSinks);
+        .then(plotSecondArtillery)
+        .then(plotSinks)
+        .then(plotSources)
+        .then(plotDual);
 };
 
 costHistogram()
