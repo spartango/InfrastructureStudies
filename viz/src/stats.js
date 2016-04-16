@@ -33,7 +33,7 @@ var histogramTargets = function (targets) {
     var xScale = new Plottable.Scales.Category();
     var yScale = new Plottable.Scales.Linear();
     var xAxis = new Plottable.Axes.Category(xScale, "bottom").tickLabelAngle(-90);
-    //var yAxis = new Plottable.Axes.Numeric(yScale, "left");
+    var yAxis = new Plottable.Axes.Numeric(yScale, "left");
     var titleLabel = new Plottable.Components.TitleLabel("Cost Distribution")
         .yAlignment("center");
     var xLabel = new Plottable.Components.AxisLabel("Rerouting Cost (hr)")
@@ -57,9 +57,9 @@ var histogramTargets = function (targets) {
 
     var chart = new Plottable.Components.Table([
         //[titleLabel],
-        [plot],
-        [xAxis],
-        [xLabel]
+        [yAxis, plot],
+        [null, xAxis],
+        [null, xLabel]
     ]);
 
     chart.renderTo("svg#cost");
@@ -70,15 +70,25 @@ var costHistogram = function () {
     return loadTargets().then(histogramTargets);
 };
 
+var nearestDistance = function (feature, featureSet) {
+    if (!feature.properties.center) {
+        feature.properties.center = turf.center(feature);
+    }
+    var nearest = turf.nearest(feature.properties.center, featureSet);
+    var distance = turf.distance(nearest, feature.properties.center);
+    return distance;
+};
+
 // Comparison of rerouting costs to SAM threat
 var annotateThreats = function (targets) {
     return loadMergedRangeRings().then(function (mergedRings) {
         // Mark the targets which are in range
         console.log("Computing active SAM threats");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            feature.properties.center = center;
-            if (turf.inside(center, mergedRings)) {
+            if (!feature.properties.center) {
+                feature.properties.center = turf.center(feature);
+            }
+            if (turf.inside(feature.properties.center, mergedRings)) {
                 feature.properties["activeSAM"] = true;
             }
         });
@@ -87,11 +97,9 @@ var annotateThreats = function (targets) {
         // Annotate the targets with SAM threat range
         console.log("Computing SAM ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            feature.properties.center = center;
-            var nearest = turf.nearest(center, sams);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearestSAMDistance"] = distance;
+            if (!feature.properties["nearestSAMDistance"]) {
+                feature.properties["nearestSAMDistance"] = nearestDistance(feature, sams);
+            }
         });
         return targets;
     });
@@ -101,10 +109,9 @@ var annotateBases = function (targets) {
     return loadAviation().then(function (airbases) {
         console.log("Computing airbase ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            var nearest = turf.nearest(center, airbases);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearestAirbaseDistance"] = distance;
+            if (!feature.properties["nearestAirbaseDistance"]) {
+                feature.properties["nearestAirbaseDistance"] = nearestDistance(feature, airbases);
+            }
         });
         return targets;
     });
@@ -114,10 +121,9 @@ var annotateStations = function (targets) {
     return loadStations().then(function (stations) {
         console.log("Computing station ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            var nearest = turf.nearest(center, stations);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearestStationDistance"] = distance;
+            if (!feature.properties["nearestStationDistance"]) {
+                feature.properties["nearestStationDistance"] = nearestDistance(feature, stations);
+            }
         });
         return targets;
     });
@@ -127,10 +133,9 @@ var annotateSources = function (targets) {
     return loadSources().then(function (sources) {
         console.log("Computing source ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            var nearest = turf.nearest(center, sources);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearestSourceDistance"] = distance;
+            if (!feature.properties["nearestSourceDistance"]) {
+                feature.properties["nearestSourceDistance"] = nearestDistance(feature, sources);
+            }
         });
         return targets;
     });
@@ -140,10 +145,7 @@ var annotateSecondArtillery = function (targets) {
     return loadSecondArtillery().then(function (sources) {
         console.log("Computing 2nd Artillery ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            var nearest = turf.nearest(center, sources);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearest2ADistance"] = distance;
+            feature.properties["nearest2ADistance"] = nearestDistance(feature, sources);
         });
         return targets;
     });
@@ -153,10 +155,7 @@ var annotateSinks = function (targets) {
     return loadSinks().then(function (sinks) {
         console.log("Computing sink ranges");
         targets.features.forEach(function (feature) {
-            var center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            var nearest = turf.nearest(center, sinks);
-            var distance = turf.distance(nearest, center);
-            feature.properties["nearestSinkDistance"] = distance;
+            feature.properties["nearestSinkDistance"] = nearestDistance(feature, sinks);
         });
         return targets;
     });
@@ -356,21 +355,41 @@ var plotDual = function (targets) {
     return targets;
 };
 
+var cacheTargets = function (targets) {
+    try {
+        localStorage.setItem('annotatedStatsTargets', JSON.stringify(targets));
+    } catch (e) {
+        console.log("Couldn't cache: " + e);
+    }
+    return targets;
+};
+
+var loadTargetsWithCache = function () {
+    var cached = localStorage.getItem('annotatedStatsTargets');
+    if (cached) {
+        console.log("Loaded targets from cache");
+        return Promise.resolve(JSON.parse(cached));
+    } else {
+        return loadTargets();
+    }
+};
+
 var costProximityPlot = function () {
     return loadTargets()
         .then(annotateThreats)
-        .then(annotateSecondArtillery)
-        .then(annotateStations)
-        .then(annotateBases)
-        .then(annotateSources)
-        .then(annotateSinks)
-        .then(plotBases)
         .then(plotSAMs)
         .then(plotRadars)
+        .then(annotateSecondArtillery)
         .then(plotSecondArtillery)
+        //.then(annotateStations)
+        .then(annotateBases)
+        .then(plotBases)
+        .then(plotDual)
+        .then(annotateSinks)
         .then(plotSinks)
+        .then(annotateSources)
         .then(plotSources)
-        .then(plotDual);
+        //.then(cacheTargets)
 };
 
 costHistogram()

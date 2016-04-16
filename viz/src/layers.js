@@ -441,137 +441,177 @@ var hideLegend = function () {
     }
 };
 
-var loadTargetLayer = function () {
-    return loadTargets().then(function (data) {
-        // Load up the merged SAM threats
-        return loadMergedRangeRings().then(function (mergedRings) {
-            // Mark the targets which are in range
-            console.log("Computing active SAM threats");
-            loadingControl.addLoader("SAM");
-            data.features.forEach(function (feature) {
-                var center = turf.center(feature);
-                feature.properties.center = center;
-                if (turf.inside(center, mergedRings)) {
-                    feature.properties["activeSAM"] = true;
-                }
-            });
-            loadingControl.removeLoader("SAM");
-            return data;
-        }).then(loadSAMs).then(function (sams) {
-            console.log("Computing SAM ranges");
-            loadingControl.addLoader("Range");
-            data.features.forEach(function (feature) {
-                var center = feature.properties.center;
-                var nearest = turf.nearest(center, sams);
-                feature.properties["nearestSAM"] = nearest;
-            });
-            loadingControl.removeLoader("Range");
-            return data;
-        }).then(loadAviation).then(function (airbases) {
-            console.log("Computing airbase ranges");
-            loadingControl.addLoader("Air");
-            data.features.forEach(function (feature) {
-                var center = feature.properties.center;
-                var nearest = turf.nearest(center, airbases);
-                feature.properties["nearestAirbase"] = nearest;
-            });
-            loadingControl.removeLoader("Air");
-            return data;
-        });
-    }).then(function (data) {
-        // Have a quick look through the data and figure out what the range of criticality
-        var criticalityData = data.features.map(function (feature) {
-            return feature.properties.criticality;
+var drawTargets = function (data) {
+    // Have a quick look through the data and figure out what the range of criticality
+    var criticalityData = data.features.map(function (feature) {
+        return feature.properties.criticality;
+    });
+
+    var minCriticality = d3_array.min(criticalityData);
+    var midPoint = d3_array.mean(criticalityData);
+    var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
+
+    var color = d3_scale.scaleLinear()
+        .domain([minCriticality, midPoint, maxCriticality])
+        .range(["#FFFF00", "#FF8800", "#FF0000"]);
+    //.interpolate(d3_interpolate.interpolateRgb);
+
+    data.features.forEach(function (feature) {
+        var criticality = feature.properties.criticality;
+        feature.properties.color = color(criticality);
+    });
+
+    legend.onAdd = function (map) {
+        var grades = [];
+        var interval = (maxCriticality - minCriticality) / 7;
+        for (var i = 0; i < 7; i++) {
+            grades.push(minCriticality + (interval * i));
+        }
+        var div = L.DomUtil.create('div', 'info legend');
+        //var grades = [minCriticality, midPoint, maxCriticality];
+        var labels = grades.map(function (value) {
+            return formatTime(costToHours(value));
         });
 
-        var minCriticality = d3_array.min(criticalityData);
-        var midPoint = d3_array.mean(criticalityData);
-        var maxCriticality = Math.min(d3_array.max(criticalityData), (midPoint - minCriticality) + midPoint);
+        // loop through our density intervals and generate a label with a colored square for each interval
+        div.innerHTML += `<strong>Rerouting Delays</strong><br>`;
+        for (var i = grades.length - 1; i >= 0; i--) {
+            div.innerHTML +=
+                '<i style="background:' + color(grades[i]) + '"></i>'
+                + labels[i] + '<br>';
+        }
 
-        var color = d3_scale.scaleLinear()
-            .domain([minCriticality, midPoint, maxCriticality])
-            .range(["#FFFF00", "#FF8800", "#FF0000"]);
-        //.interpolate(d3_interpolate.interpolateRgb);
+        return div;
+    };
 
-        data.features.forEach(function (feature) {
-            var criticality = feature.properties.criticality;
-            var coordinates = feature.geometry.coordinates;
-            feature.properties.span = turf.distance(turf.point(coordinates[0]), turf.point(coordinates[coordinates.length - 1]));
-            feature.properties.color = color(criticality);
-            feature.properties.type = 'bridge';
-        });
-        legend.onAdd = function (map) {
-            var grades = [];
-            var interval = (maxCriticality - minCriticality) / 7;
-            for (var i = 0; i < 7; i++) {
-                grades.push(minCriticality + (interval * i));
+    // Update the top bar count
+    $('#targetCount').text(data.features.length);
+
+    var segmentLayer = L.geoJson(data, {
+        onEachFeature: targetPopup,
+        filter: function (feature) {
+            // Only draw segments if not drawing aimpoints
+            return !drawAimPoints;
+        },
+        style: function (feature) {
+            return {
+                "color": feature.properties.color,
+                "weight": drawAimPoints ? 4 : 6,
+                "opacity": 0.66,
+                "clickable": !drawAimPoints
             }
-            var div = L.DomUtil.create('div', 'info legend');
-            //var grades = [minCriticality, midPoint, maxCriticality];
-            var labels = grades.map(function (value) {
-                return formatTime(costToHours(value));
-            });
-
-            // loop through our density intervals and generate a label with a colored square for each interval
-            div.innerHTML += `<strong>Rerouting Delays</strong><br>`;
-            for (var i = grades.length - 1; i >= 0; i--) {
-                div.innerHTML +=
-                    '<i style="background:' + color(grades[i]) + '"></i>'
-                    + labels[i] + '<br>';
-            }
-
-            return div;
-        };
-
-        // Update the top bar count
-        $('#targetCount').text(data.features.length);
-
-        var segmentLayer = L.geoJson(data, {
-            onEachFeature: targetPopup,
-            filter: function (feature) {
-                // Only draw segments that are longer than 1km
-                return !drawAimPoints || (feature.properties.span > 0.5);
-            },
-            style: function (feature) {
-                return {
-                    "color": feature.properties.color,
-                    "weight": drawAimPoints ? 4 : 6,
-                    "opacity": 0.66,
-                    "clickable": !drawAimPoints
-                }
-            }
-        });
-
-        if (drawAimPoints) {
-            var pointData = turf.featurecollection(
-                data.features.map(function (feature) {
-                    return {
-                        type: feature.type,
-                        id: feature.id,
-                        geometry: feature.properties.center.geometry,
-                        properties: feature.properties
-                    };
-                }));
-
-            var targetCluster = new L.MarkerClusterGroup({
-                iconCreateFunction: clusterIcon,
-                maxClusterRadius: 50
-            });
-            var pointLayer = L.geoJson(pointData, {
-                onEachFeature: targetPopup,
-                pointToLayer: function (feature, latlng) {
-                    var colorValue = feature.properties.color;
-                    var icon = glyphIcon(colorValue, typeChars['target']);
-                    return L.marker(latlng, {icon: icon});
-                }
-            });
-            targetCluster.addLayer(pointLayer);
-
-            return L.layerGroup([targetCluster, segmentLayer]);
-        } else {
-            return segmentLayer;
         }
     });
+
+    if (drawAimPoints) {
+        var pointData = turf.featurecollection(
+            data.features.map(function (feature) {
+                return {
+                    type: feature.type,
+                    id: feature.id,
+                    geometry: feature.properties.center.geometry,
+                    properties: feature.properties
+                };
+            }));
+
+        var targetCluster = new L.MarkerClusterGroup({
+            iconCreateFunction: clusterIcon,
+            maxClusterRadius: 50
+        });
+        var pointLayer = L.geoJson(pointData, {
+            onEachFeature: targetPopup,
+            pointToLayer: function (feature, latlng) {
+                var colorValue = feature.properties.color;
+                var icon = glyphIcon(colorValue, typeChars['target']);
+                return L.marker(latlng, {icon: icon});
+            }
+        });
+        targetCluster.addLayer(pointLayer);
+
+        return L.layerGroup([targetCluster, segmentLayer]);
+    } else {
+        return segmentLayer;
+    }
+};
+
+var annotateInfrastructure = function (data) {
+    // Load up the merged SAM threats
+    return loadMergedRangeRings().then(function (mergedRings) {
+        // Mark the targets which are in range
+        console.log("Computing active SAM threats");
+        loadingControl.addLoader("SAM");
+        data.features.forEach(function (feature) {
+            feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+            if (turf.inside(feature.properties.center, mergedRings)) {
+                feature.properties["activeSAM"] = true;
+            }
+        });
+        loadingControl.removeLoader("SAM");
+        return data;
+    }).then(loadSAMs).then(function (sams) {
+        console.log("Computing SAM ranges");
+        loadingControl.addLoader("Range");
+        data.features.forEach(function (feature) {
+            if (!feature.properties["nearestSAM"]) {
+                feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+                feature.properties["nearestSAM"] = turf.nearest(feature.properties.center, sams);
+            }
+        });
+        loadingControl.removeLoader("Range");
+        return data;
+    }).then(loadAviation).then(function (airbases) {
+        console.log("Computing airbase ranges");
+        loadingControl.addLoader("Air");
+        data.features.forEach(function (feature) {
+            if (!feature.properties["nearestAirbase"]) {
+                feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+                feature.properties["nearestAirbase"] = turf.nearest(feature.properties.center, airbases);
+            }
+        });
+        loadingControl.removeLoader("Air");
+        return data;
+    });
+};
+
+var annotateDimensions = function (data) {
+    data.features.forEach(function (feature) {
+        var coordinates = feature.geometry.coordinates;
+        if (!feature.properties.span) {
+            feature.properties.span = turf.distance(turf.point(coordinates[0]), turf.point(coordinates[coordinates.length - 1]));
+        }
+        feature.properties.type = 'bridge';
+    });
+    return data;
+};
+
+var cacheAnnotatedTargets = function (targets) {
+    try {
+        localStorage.setItem('annotatedMapTargets', JSON.stringify(targets));
+    } catch (e) {
+        console.log("Couldn't cache: " + e);
+    }
+    return targets;
+};
+
+var loadAnnotatedTargets = function () {
+    // Check for cache
+    var cached = localStorage.getItem('annotatedMapTargets');
+    if (cached) {
+        console.log("Loaded targets from cache");
+        return Promise.resolve(cached);
+    } else {
+        return loadTargets()
+            .then(annotateInfrastructure)
+            .then(annotateDimensions)
+            .then(cacheAnnotatedTargets)
+    }
+};
+
+var loadTargetLayer = function () {
+    return loadTargets()
+        .then(annotateInfrastructure)
+        .then(annotateDimensions)
+        .then(drawTargets);
 };
 
 function toggleLegend() {

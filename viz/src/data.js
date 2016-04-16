@@ -18,10 +18,10 @@ var loadGeoJSON = function (path) {
             }
         };
         xhr.onerror = function () {
-            reject(this.statusText);
             if (loadingControl) {
                 loadingControl.removeLoader(path);
             }
+            reject(this.statusText);
         };
         xhr.send();
     });
