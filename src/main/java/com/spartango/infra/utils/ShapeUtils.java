@@ -12,6 +12,12 @@ import java.util.Iterator;
  * Time: 22:21.
  */
 public class ShapeUtils {
+
+    /**
+     *
+     * @param path
+     * @return path length in meters
+     */
     public static double calculateLength(Collection<NodeStub> path) {
         final Iterator<NodeStub> iterator = path.iterator();
         double sum = 0;
@@ -28,6 +34,12 @@ public class ShapeUtils {
         return sum;
     }
 
+    /**
+     *
+     * @param current
+     * @param next
+     * @return distance in meters
+     */
     public static double calculateDistance(NodeStub current, NodeStub next) {
         return calculateDistance(current.getLatitude(),
                                  current.getLongitude(),
@@ -35,6 +47,14 @@ public class ShapeUtils {
                                  next.getLongitude());
     }
 
+    /**
+     *
+     * @param startLatitude
+     * @param startLongitude
+     * @param endLatitude
+     * @param endLongitude
+     * @return distance in meters
+     */
     public static double calculateDistance(double startLatitude,
                                            double startLongitude,
                                            double endLatitude,

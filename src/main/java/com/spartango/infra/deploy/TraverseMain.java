@@ -54,10 +54,12 @@ public class TraverseMain {
 
         // Load up the sources and sinks
         // Oil refineries
-        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "BigRefineries.csv").get();
+        System.out.println("Reading sources...");
+        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "WikiLeaksRefineries.csv").get();
         final List<NeoNode> sources = new ClosestStationLoader(new SheetLoader(refinerySheet),
                                                                railNet).loadGraphNodes();
 
+        System.out.println("Reading sinks...");
         // Naval bases
         final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLANBases.csv").get();
         final List<NeoNode> sinks = new ClosestStationLoader(new SheetLoader(navalSheet), railNet).loadGraphNodes();
