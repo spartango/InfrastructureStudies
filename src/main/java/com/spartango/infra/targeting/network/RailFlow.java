@@ -58,7 +58,6 @@ public class RailFlow {
 
     protected Map<NodeStub, List<WeightedPath>> calculatePaths() {
         return sources.stream()
-                      .peek(o -> System.out.println("Source: " + o.getOsmNode()))
                       .collect(Collectors.toMap(NeoNode::getOsmNode,
                                                 this::calculatePathsFrom));
     }
