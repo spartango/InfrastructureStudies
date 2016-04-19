@@ -226,8 +226,8 @@ var showAnimation = function (flowName) {
                         }
                         last = point;
                         return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
-                    }).reverse();
-                    durations.reverse();
+                    });
+                    //durations;
 
                     var aMarker = L.Marker.movingMarker(latlngs, durations, {
                         loop: !fastAnimation,
@@ -289,7 +289,6 @@ var loadSourceLayer = function () {
                 return L.marker(latlng, {icon: icon});
             }
         });
-        map.fitBounds(geoJsonLayer.getBounds());
         return geoJsonLayer;
     });
 };
@@ -311,6 +310,7 @@ var loadSinkLayer = function () {
                 return L.marker(latlng, {icon: icon});
             }
         });
+        map.fitBounds(geoJsonLayer.getBounds());
         return geoJsonLayer;
     });
 };

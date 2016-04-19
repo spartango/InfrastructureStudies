@@ -57,12 +57,34 @@ public class RailFlow {
     }
 
     protected Map<NodeStub, List<WeightedPath>> calculatePaths() {
-        return sources.stream()
-                      .collect(Collectors.toMap(NeoNode::getOsmNode,
-                                                this::calculatePathsFrom));
+        // Find the preferred path for each sink
+        Map<NodeStub, List<WeightedPath>> preferredPaths = new HashMap<>();
+        for (NeoNode sink : sinks) {
+            final List<WeightedPath> sinkPreferredPaths = preferredPathTo(sink);
+            preferredPaths.put(sink.getOsmNode(), sinkPreferredPaths);
+        }
+        return preferredPaths;
     }
 
-    protected List<WeightedPath> calculatePathsFrom(NeoNode station) {
+    protected List<WeightedPath> preferredPathTo(NeoNode station) {
+        return sources.parallelStream() // Try each of the sources
+                      .filter(destination -> !destination.getOsmNode().equals(station.getOsmNode())) // Remove self
+                      .map(neoDestination -> railNetwork.calculatePath(neoDestination, station, damagedNodes))
+                      .filter(path -> path != null && path.length() != 0) // Remove broken/nonexistent/self paths
+                      .sorted(Comparator.comparingDouble(WeightedPath::weight)) // Sort by cost, lowest first
+                      .limit(1) // Pick only the (1) best path
+                      .collect(Collectors.toList());
+    }
+
+    protected List<WeightedPath> pathsTo(NeoNode station) {
+        return sources.parallelStream() // Try each of the sources
+                      .filter(destination -> !destination.getOsmNode().equals(station.getOsmNode())) // Remove self
+                      .map(neoDestination -> railNetwork.calculatePath(neoDestination, station, damagedNodes))
+                      .filter(path -> path != null && path.length() != 0) // Remove broken/nonexistent/self paths
+                      .collect(Collectors.toList());
+    }
+
+    protected List<WeightedPath> pathsFrom(NeoNode station) {
         return sinks.parallelStream()
                     .filter(destination -> !destination.getOsmNode()
                                                        .equals(station.getOsmNode()))
@@ -180,7 +202,8 @@ public class RailFlow {
                                                     .map(Optional::get)
                                                     .collect(Collectors.toList());
 
-        return new RailFlow(railNetwork, affectedNodes, sinks, damagedNodes);
+        // New Rail flow, same sources, but only recalculate paths for the affected sinks
+        return new RailFlow(railNetwork, sources, affectedNodes, damagedNodes);
     }
 
     public RailFlow damage(Set<NodeStub> damagedNodes) {

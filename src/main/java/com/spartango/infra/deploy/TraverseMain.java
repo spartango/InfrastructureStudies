@@ -60,9 +60,7 @@ public class TraverseMain {
 
         // Naval bases
         final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLANBases.csv").get();
-        final SheetLoader navalLoader = new SheetLoader(navalSheet);
-        final List<NodeStub> navalNodes = navalLoader.loadNodes();
-        final List<NeoNode> sinks = new ClosestStationLoader(navalLoader, railNet).loadGraphNodes();
+        final List<NeoNode> sinks = new ClosestStationLoader(new SheetLoader(navalSheet), railNet).loadGraphNodes();
 
         System.out.println("Loaded "
                            + sources.size() + " sources and "
@@ -95,7 +93,7 @@ public class TraverseMain {
         targeter.deltaStream()
                 .peek((x) -> System.out.println("Calculated damage in " +
                                                 (currentTimeMillis() - damageStartTime) + "ms"))
-//                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
+                .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
                 .forEach(deltaFlow -> {
                     // Calculate the cost of adjustment
                     double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
