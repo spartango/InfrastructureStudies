@@ -1,12 +1,15 @@
 package com.spartango.infra.deploy;
 
+import com.irislabs.sheet.Sheet;
+import com.irislabs.sheet.SheetFactory;
 import com.spartango.infra.core.OSMGraph;
 import com.spartango.infra.core.OSMIndex;
 import com.spartango.infra.core.graph.NeoNode;
 import com.spartango.infra.io.Writer;
 import com.spartango.infra.osm.type.NodeStub;
 import com.spartango.infra.targeting.damage.HistogramTargeter;
-import com.spartango.infra.targeting.load.NodeIdLoader;
+import com.spartango.infra.targeting.load.ClosestStationLoader;
+import com.spartango.infra.targeting.load.SheetLoader;
 import com.spartango.infra.targeting.network.RailFlow;
 import com.spartango.infra.targeting.network.RailNetwork;
 import org.mapdb.DB;
@@ -16,7 +19,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import java.io.File;
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,16 +33,18 @@ import static java.lang.System.currentTimeMillis;
  * Time: 16:07.
  */
 public class TraverseMain {
-    private static final String PATH          = "data/";
-    //    private static final String TARGET_PATH   = PATH + "china-latest.osm.pbf";
+    private static final String PATH            = "data/";
+    private static final String BACKGROUND_PATH = "background/";
+
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
-    private static final String OUTPUT_PATH   = "elevation/";
-    private static final long   BRIDGE_LIMIT  = 2000;
+
+    private static final String OUTPUT_PATH  = "elevation/";
+    private static final long   BRIDGE_LIMIT = 2000;
 
     private static GraphDatabaseService graphDb;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         // Read the rail network files
         System.out.println("Loading existing data...");
         final RailNetwork railNet = loadNetwork();
@@ -48,43 +53,54 @@ public class TraverseMain {
         long startTime = currentTimeMillis();
 
         // Load up the sources and sinks
-        final List<NeoNode> sources = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(3195094191L,
-                                      2874005142L,
-                                      1681825138L,
-                                      2971189978L,
-                                      269838555L,
-                                      2051979297L,
-                                      2699872473L,
-                                      3048742262L,
-                                      3476981835L,
-                                      843052502L,
-                                      270146375L,
-                                      1658989377L,
-                                      339089288L,
-                                      582373939L,
-                                      3499304147L,
-                                      2987122176L)).loadGraphNodes();
+//        final List<NeoNode> sources = new NodeIdLoader(railNet)
+//                .addIds(Arrays.asList(3195094191L,
+//                                      2874005142L,
+//                                      1681825138L,
+//                                      2971189978L,
+//                                      269838555L,
+//                                      2051979297L,
+//                                      2699872473L,
+//                                      3048742262L,
+//                                      3476981835L,
+//                                      843052502L,
+//                                      270146375L,
+//                                      1658989377L,
+//                                      339089288L,
+//                                      582373939L,
+//                                      3499304147L,
+//                                      2987122176L)).loadGraphNodes();
 
-        final List<NeoNode> sinks = new NodeIdLoader(railNet)
-                .addIds(Arrays.asList(1582348731L,
-                                      677180563L,
-                                      2023044210L,
-                                      2333085945L,
-                                      525377519L,
-                                      843121428L,
-                                      1577895082L,
-                                      2483530943L,
-                                      2651768079L,
-                                      661025343L,
-                                      3662634093L,
-                                      1642904934L,
-                                      3019467507L,
-                                      2279127731L,
-                                      2999345286L,
-                                      1584384382L,
-                                      2451329911L,
-                                      2623140053L)).loadGraphNodes();
+//        final List<NeoNode> sinks = new NodeIdLoader(railNet)
+//                .addIds(Arrays.asList(1582348731L,
+//                                      677180563L,
+//                                      2023044210L,
+//                                      2333085945L,
+//                                      525377519L,
+//                                      843121428L,
+//                                      1577895082L,
+//                                      2483530943L,
+//                                      2651768079L,
+//                                      661025343L,
+//                                      3662634093L,
+//                                      1642904934L,
+//                                      3019467507L,
+//                                      2279127731L,
+//                                      2999345286L,
+//                                      1584384382L,
+//                                      2451329911L,
+//                                      2623140053L)).loadGraphNodes();
+
+        // Oil refineries
+        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "BigRefineries.csv").get();
+        final List<NeoNode> sources = new ClosestStationLoader(new SheetLoader(refinerySheet),
+                                                               railNet).loadGraphNodes();
+
+        // Naval bases
+        final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLANBases.csv").get();
+        final SheetLoader navalLoader = new SheetLoader(navalSheet);
+        final List<NodeStub> navalNodes = navalLoader.loadNodes();
+        final List<NeoNode> sinks = new ClosestStationLoader(navalLoader, railNet).loadGraphNodes();
 
         System.out.println("Loaded "
                            + sources.size() + " sources and "

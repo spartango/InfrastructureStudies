@@ -1,7 +1,11 @@
 package com.irislabs.sheet;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.function.*;
 
 /**
  * Author: spartango
@@ -43,7 +47,7 @@ public class SheetEntry {
         return fields.values().stream().findFirst().get();
     }
 
-    public int getPrimaryInt() {
+    public Integer getPrimaryInt() {
         return Integer.parseInt(fields.values().stream().findFirst().get());
     }
 
@@ -51,11 +55,11 @@ public class SheetEntry {
         return fields.get(key);
     }
 
-    public double getDouble(String key) throws NumberFormatException {
+    public Double getDouble(String key) throws NumberFormatException {
         return Double.parseDouble(fields.get(key));
     }
 
-    public int getInt(String key) throws NumberFormatException {
+    public Integer getInt(String key) throws NumberFormatException {
         return Integer.parseInt(fields.get(key));
     }
 
@@ -83,15 +87,23 @@ public class SheetEntry {
         m.forEach((key, value) -> fields.put(key, String.valueOf(value)));
     }
 
-    public boolean containsKey(String key) {
+    public boolean containsField(String key) {
         return fields.containsKey(key) && !fields.get(key).isEmpty();
+    }
+
+    public boolean isNumeric(String key) {
+        try {
+            return fields.containsKey(key) && !fields.get(key).isEmpty() && !Double.isNaN(getDouble(key));
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     public String getOrDefault(String key, String defaultValue) {
         return fields.getOrDefault(key, defaultValue);
     }
 
-    public double getOrDefaultDouble(String key, double defaultValue) {
+    public Double getDoubleOrDefault(String key, double defaultValue) {
         try {
             return fields.containsKey(key) ? getDouble(key) : defaultValue;
         } catch (NumberFormatException e) {
@@ -99,7 +111,7 @@ public class SheetEntry {
         }
     }
 
-    public int getOrDefaultInt(String key, int defaultValue) {
+    public Integer getIntOrDefault(String key, int defaultValue) {
         try {
             return fields.containsKey(key) ? getInt(key) : defaultValue;
         } catch (NumberFormatException e) {
@@ -107,9 +119,58 @@ public class SheetEntry {
         }
     }
 
+    public Optional<Double> getDoubleOption(String key) {
+        try {
+            return fields.containsKey(key) ? Optional.of(getDouble(key)) : Optional.empty();
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<Integer> getIntOption(String key) {
+        try {
+            return fields.containsKey(key) ? Optional.of(getInt(key)) : Optional.empty();
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
     public Set<Map.Entry<String, String>> entrySet() {
         return fields.entrySet();
     }
+
+    public SheetEntry append(SheetEntry entry) {
+        putAll(entry.fields);
+        return this;
+    }
+
+    public int getFieldCount() {
+        return fields.size();
+    }
+
+    public JsonObject toJSON() {
+        JsonObject obj = new JsonObject();
+        this.forEach(obj::addProperty);
+        return obj;
+    }
+
+    public String toJSONString() {
+        JsonObject obj = new JsonObject();
+        this.forEach(obj::addProperty);
+        return obj.toString();
+    }
+
+    @Override public String toString() {
+        return "{" + fields + '}';
+    }
+
+    @Override protected SheetEntry clone() {
+        final SheetEntry newEntry = new SheetEntry();
+        newEntry.append(this);
+        return newEntry;
+    }
+
+    // Parsing tools
 
     public static SheetEntry parseTabEntry(String line, List<String> fieldNames) {
         return parseEntry(line, "\t", fieldNames);
@@ -124,20 +185,26 @@ public class SheetEntry {
         String[] parts = line.split(delimiter);
         int i = 0;
         for (String field : fieldNames) {
-            entry.put(field, (i < parts.length ? parts[i] : ""));
+            entry.put(field, (i < parts.length ? new String(parts[i]) : ""));
             i++;
         }
 
         return entry;
     }
 
-    public void append(SheetEntry entry) {
-        putAll(entry.fields);
+    public static SheetEntry fromJSON(String jsonString) {
+        JsonParser parser = new JsonParser();
+        final JsonElement parsed = parser.parse(jsonString);
+
+        SheetEntry newEntry = new SheetEntry();
+        parsed.getAsJsonObject()
+              .entrySet()
+              .forEach(entry -> newEntry.put(entry.getKey(), entry.getValue().getAsString()));
+
+        return newEntry;
     }
 
-    public int getFieldCount() {
-        return fields.size();
-    }
+    // Mutability tools
 
     public static SheetEntry byAppending(SheetEntry entry, String key, String value) {
         SheetEntry newEntry = new SheetEntry();
@@ -147,13 +214,75 @@ public class SheetEntry {
     }
 
     public static SheetEntry merge(SheetEntry entry, SheetEntry secondEntry) {
-        SheetEntry newEntry = new SheetEntry();
-        newEntry.append(entry);
+        SheetEntry newEntry = entry.clone();
         newEntry.append(secondEntry);
         return newEntry;
     }
 
-    @Override public String toString() {
-        return "{" + fields + '}';
+    // ---- Functional utilities ----
+
+    public static Function<SheetEntry, String> getField(String key) {
+        return (entry -> entry.get(key));
+    }
+
+    public static ToIntFunction<SheetEntry> getIntField(String key) {
+        return (entry -> entry.getInt(key));
+    }
+
+    public static ToIntFunction<SheetEntry> getIntField(String key, int defaultValue) {
+        return (entry -> entry.getIntOrDefault(key, defaultValue));
+    }
+
+    public static ToDoubleFunction<SheetEntry> getDoubleField(String key) {
+        return (entry -> entry.getDouble(key));
+    }
+
+    public static ToDoubleFunction<SheetEntry> getDoubleForField(String key, double defaultValue) {
+        return (entry -> entry.getDoubleOrDefault(key, defaultValue));
+    }
+
+    public static Function<SheetEntry, Optional<Double>> getDoubleOptionForField(String key) {
+        return (entry -> entry.getDoubleOption(key));
+    }
+
+    public static Function<SheetEntry, Optional<Integer>> getIntOptionforField(String key) {
+        return (entry -> entry.getIntOption(key));
+    }
+
+    public static Predicate<SheetEntry> fieldEmpty(String key) {
+        return (entry -> !entry.containsField(key) || entry.get(key).isEmpty());
+    }
+
+    public static Predicate<SheetEntry> fieldNotEmpty(String key) {
+        return fieldEmpty(key).negate();
+    }
+
+    public static Predicate<SheetEntry> fieldEquals(String key, Object ref) {
+        return (entry -> entry.get(key).equals(ref));
+    }
+
+    public static Predicate<SheetEntry> fieldContains(String key, String value) {
+        return entry -> entry.get(key).contains(value);
+    }
+
+    public static Predicate<SheetEntry> fieldAmong(String key, Collection<Object> values) {
+        return entry -> values.contains(entry.get(key));
+    }
+
+    public static Predicate<SheetEntry> fieldAmong(String key, Object... values) {
+        return entry -> Arrays.asList(values).contains(entry.get(key));
+    }
+
+    public static Predicate<SheetEntry> fieldInRange(String key, double lowerBound, double upperBound) {
+        return entry -> lowerBound < entry.getDouble(key)
+                        && entry.getDouble(key) < upperBound;
+    }
+
+    public static Predicate<SheetEntry> fieldGreaterThan(String key, double lowerBound) {
+        return entry -> entry.getDouble(key) > lowerBound;
+    }
+
+    public static Predicate<SheetEntry> fieldLessThan(String key, double upperBound) {
+        return entry -> entry.getDouble(key) < upperBound;
     }
 }

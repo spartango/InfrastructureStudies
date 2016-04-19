@@ -32,7 +32,7 @@ public class RailFlow {
     public RailFlow(RailNetwork railNetwork,
                     Collection<NeoNode> sources,
                     Collection<NeoNode> sinks) {
-        this(railNetwork, sinks, sources, Collections.EMPTY_SET);
+        this(railNetwork, sources, sinks, Collections.EMPTY_SET);
     }
 
     public RailFlow(RailNetwork railNetwork,
@@ -58,6 +58,7 @@ public class RailFlow {
 
     protected Map<NodeStub, List<WeightedPath>> calculatePaths() {
         return sources.stream()
+                      .peek(o -> System.out.println("Source: " + o.getOsmNode()))
                       .collect(Collectors.toMap(NeoNode::getOsmNode,
                                                 this::calculatePathsFrom));
     }

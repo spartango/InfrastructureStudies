@@ -8,7 +8,10 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -22,6 +25,115 @@ import java.util.stream.DoubleStream;
 public class MultiCollectors {
     private static Set<Collector.Characteristics> characteristics = EnumSet.of(Collector.Characteristics.UNORDERED,
                                                                                Collector.Characteristics.IDENTITY_FINISH);
+
+    public static <T, K> Collector<T, ?, Map<K, Long>> toHistogram(Function<? super T, ? extends K> keyMapper) {
+        return new Collector<T, Map<K, LongAdder>, Map<K, Long>>() {
+            @Override public Supplier<Map<K, LongAdder>> supplier() {
+                return ConcurrentHashMap::new;
+            }
+
+            @Override public BiConsumer<Map<K, LongAdder>, T> accumulator() {
+                return (map, entry) -> {
+                    K key = keyMapper.apply(entry);
+                    // If the key is not there
+                    map.computeIfAbsent(key, (k -> {
+                        return new LongAdder();
+                    }));
+
+                    // If/when the key is there
+                    map.computeIfPresent(key, (k, count) -> {
+                        count.increment();
+                        return count;
+                    });
+
+                };
+            }
+
+            @Override public BinaryOperator<Map<K, LongAdder>> combiner() {
+                return (map, secondMap) -> {
+                    secondMap.forEach((key, value) -> {
+                        // If the key is not there
+                        map.computeIfAbsent(key, (k -> {
+                            final LongAdder count = new LongAdder();
+                            count.increment();
+                            return count;
+                        }));
+
+                        // If the key is there
+                        map.computeIfPresent(key, (k, count) -> {
+                            count.add(value.sum());
+                            return count;
+                        });
+                    });
+                    return map;
+                };
+            }
+
+            @Override public Function<Map<K, LongAdder>, Map<K, Long>> finisher() {
+                return (map -> map.entrySet()
+                                  .stream()
+                                  .collect(Collectors.toMap(Map.Entry::getKey,
+                                                            entry -> entry.getValue().sum())));
+
+            }
+
+            @Override public Set<Characteristics> characteristics() {
+                return EnumSet.of(Collector.Characteristics.UNORDERED, Characteristics.CONCURRENT);
+            }
+        };
+    }
+
+    public static <T, K> Collector<T, Map<K, DoubleAdder>, Map<K, Double>> toHistogram(Function<? super T, ? extends K> keyMapper,
+                                                                                       ToDoubleFunction valueMapper) {
+        return new Collector<T, Map<K, DoubleAdder>, Map<K, Double>>() {
+            @Override public Supplier<Map<K, DoubleAdder>> supplier() {
+                return ConcurrentHashMap::new;
+            }
+
+            @Override public BiConsumer<Map<K, DoubleAdder>, T> accumulator() {
+                return (map, entry) -> {
+                    K key = keyMapper.apply(entry);
+                    // If the key is not there
+                    map.computeIfAbsent(key, (k -> new DoubleAdder()));
+
+                    // If/when the key is there
+                    map.computeIfPresent(key, (k, count) -> {
+                        count.add(valueMapper.applyAsDouble(entry));
+                        return count;
+                    });
+
+                };
+            }
+
+            @Override public BinaryOperator<Map<K, DoubleAdder>> combiner() {
+                return (map, secondMap) -> {
+                    secondMap.forEach((key, value) -> {
+                        // If the key is not there
+                        map.computeIfAbsent(key, (k -> new DoubleAdder()));
+
+                        // If the key is there
+                        map.computeIfPresent(key, (k, count) -> {
+                            count.add(value.sum());
+                            return count;
+                        });
+                    });
+                    return map;
+                };
+            }
+
+            @Override public Function<Map<K, DoubleAdder>, Map<K, Double>> finisher() {
+                return (map -> map.entrySet()
+                                  .stream()
+                                  .collect(Collectors.toMap(Map.Entry::getKey,
+                                                            entry -> entry.getValue().sum())));
+
+            }
+
+            @Override public Set<Characteristics> characteristics() {
+                return EnumSet.of(Collector.Characteristics.UNORDERED, Characteristics.CONCURRENT);
+            }
+        };
+    }
 
     public static <A, D>
     Collector<SheetEntry, ?, Map<String, D>> groupingByKey(String key,
@@ -109,7 +221,7 @@ public class MultiCollectors {
             }
 
             @Override public Set<Characteristics> characteristics() {
-                return EnumSet.of(Collector.Characteristics.UNORDERED, Characteristics.CONCURRENT);
+                return EnumSet.of(Characteristics.UNORDERED, Characteristics.CONCURRENT);
             }
         };
     }
@@ -133,9 +245,16 @@ public class MultiCollectors {
             }
 
             @Override public Set<Characteristics> characteristics() {
-                return EnumSet.of(Collector.Characteristics.UNORDERED, Characteristics.CONCURRENT);
+                return EnumSet.of(Characteristics.UNORDERED, Characteristics.CONCURRENT);
             }
         };
     }
 
+    public static <K, V> Map<K, Long> toHistogram(Multimap<K, V> target) {
+        return target.asMap()
+                     .entrySet()
+                     .stream()
+                     .collect(Collectors.toMap(Map.Entry::getKey,
+                                               entry -> (long) entry.getValue().size()));
+    }
 }

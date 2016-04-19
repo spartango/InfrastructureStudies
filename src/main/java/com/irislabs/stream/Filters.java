@@ -17,10 +17,9 @@ public class Filters {
     public static Predicate<SheetEntry> containsKeys(String... keys) {
         return (entry -> Arrays.asList(keys)
                                .stream()
-                               .map(key -> entry.containsKey(key)
+                               .map(key -> entry.containsField(key)
                                            && !entry.get(key).isEmpty()
                                            && !NA_VALUES.contains(entry.get(key)))
                                .collect(MultiCollectors.andCollector()));
     }
-
 }

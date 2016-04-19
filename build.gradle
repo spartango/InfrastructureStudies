@@ -18,6 +18,19 @@ repositories {
 // External dependencies
 dependencies {
     compile group: 'com.google.guava', name: 'guava', version: '18.0'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+
+    compile group: 'org.neo4j', name: 'neo4j', version: '2.2.5'
+
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.3'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.2'
+
+    compile group: 'org.apache.poi', name: 'poi', version: '3.11-beta3'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.11-beta3'
+
+    compile group: 'net.sf.supercsv', name: 'super-csv', version: '2.2.0'
+    compile group: 'com.opencsv', name: 'opencsv', version: '3.1'
+
     compile group: 'com.aol.simplereact', name: 'cyclops-react', version: '1.0.0-RC1'
 
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.7.1'
@@ -27,10 +40,6 @@ dependencies {
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.44.1'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf2', version: '0.44.1'
 
-    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.3'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.2'
-
-    compile group: 'org.neo4j', name: 'neo4j', version: '2.2.5'
 
     // Logging
     compile fileTree(dir: 'lib/geotools-14.2', include: '*.jar')

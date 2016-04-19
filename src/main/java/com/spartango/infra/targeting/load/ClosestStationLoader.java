@@ -26,6 +26,10 @@ public class ClosestStationLoader implements NodeLoader {
         this(new ArrayList<>(), railNetwork);
     }
 
+    public ClosestStationLoader(NodeLoader loader, RailNetwork railNetwork) {
+        this(loader.loadNodes(), railNetwork);
+    }
+
     public ClosestStationLoader(List<NodeStub> points, RailNetwork railNetwork) {
         this.points = points;
         this.railNetwork = railNetwork;
@@ -49,6 +53,7 @@ public class ClosestStationLoader implements NodeLoader {
                                                .findFirst())
                      .filter(Optional::isPresent)
                      .map(Optional::get)
+                     .distinct()
                      .collect(Collectors.toList());
     }
 
@@ -61,6 +66,7 @@ public class ClosestStationLoader implements NodeLoader {
                      .map(stationOption -> stationOption.flatMap(railNetwork::getGraphNode))
                      .filter(Optional::isPresent)
                      .map(Optional::get)
+                     .distinct()
                      .collect(Collectors.toList());
     }
 }

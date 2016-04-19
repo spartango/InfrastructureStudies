@@ -46,7 +46,7 @@ public class SheetWriter implements Consumer<SheetEntry> {
     public void write(SheetEntry entry) throws IOException {
         StringBuilder builder = new StringBuilder();
         fields.forEach(field -> {
-            if (entry.containsKey(field)) {
+            if (entry.containsField(field)) {
                 builder.append(entry.get(field));
             }
             builder.append(delimiter);
