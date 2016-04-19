@@ -18,9 +18,9 @@ var histogramTargets = function (targets) {
     // For each feature, extract the cost
     var data = criticalityData.map(costToHours);
 
+    var minHours = costToHours(minCriticality);
     var maxHours = costToHours(maxCriticality);
-    var histogram = d3.layout.histogram().range([minCriticality, maxHours])
-    (data);
+    var histogram = d3.layout.histogram().range([minHours, maxHours])(data);
 
     var rest = data.filter(function (d) {
         return d > maxHours;
@@ -389,7 +389,7 @@ var costProximityPlot = function () {
         .then(plotSinks)
         .then(annotateSources)
         .then(plotSources)
-        //.then(cacheTargets)
+    //.then(cacheTargets)
 };
 
 costHistogram()
