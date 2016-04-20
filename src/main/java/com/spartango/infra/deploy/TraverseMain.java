@@ -61,7 +61,7 @@ public class TraverseMain {
 
         System.out.println("Reading sinks...");
         // Naval bases
-        final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLANBases.csv").get();
+        final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLAAFBases.csv").get();
         final List<NeoNode> sinks = new ClosestStationLoader(new SheetLoader(navalSheet), railNet).loadGraphNodes();
 
         System.out.println("Loaded "

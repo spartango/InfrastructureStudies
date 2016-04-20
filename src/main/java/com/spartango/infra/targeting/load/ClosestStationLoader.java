@@ -62,7 +62,7 @@ public class ClosestStationLoader implements NodeLoader {
                      .map(target -> railNetwork.getStations()
                                                .stream()
                                                .sorted(comparingDouble(station -> calculateDistance(target, station)))
-                                               .limit(10)
+                                               .limit(20)
                                                .map(railNetwork::getGraphNode)
                                                .filter(Optional::isPresent)
                                                .map(Optional::get)
