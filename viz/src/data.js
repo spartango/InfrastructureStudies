@@ -47,6 +47,10 @@ var loadStations = function () {
     return loadGeoJSON('background/stations.geojson');
 };
 
+var loadRefineries = function () {
+    return loadGeoJSON('background/Refineries.geojson');
+};
+
 var loadPath = function (id) {
     return loadGeoJSON(DATA_DIR + id + '_damage.geojson');
 };

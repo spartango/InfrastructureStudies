@@ -122,6 +122,14 @@ var toggleAviation = function () {
     return toggleClusterLayer('aviation', loadAviationLayer);
 };
 
+var loadRefineryLayer = function () {
+    return buildDataLayer('refinery', loadRefineries());
+};
+
+var toggleRefineries = function () {
+    return toggleClusterLayer('refinery', loadRefineryLayer);
+};
+
 var loadSecondArtilleryLayer = function () {
     return buildDataLayer('nuclear', loadSecondArtillery());
 };
@@ -694,6 +702,10 @@ var showSAMThreats = function () {
 
 var showAviation = function () {
     return showClusterLayer('aviation', loadAviationLayer);
+};
+
+var showRefineries = function () {
+    return showClusterLayer('refinery', loadRefineryLayer());
 };
 
 var showStations = function () {
