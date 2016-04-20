@@ -1,7 +1,8 @@
 var backgroundLayers = {};
 var backgroundMarkers = new L.MarkerClusterGroup({
     iconCreateFunction: clusterIcon,
-    maxClusterRadius: 50
+    maxClusterRadius: 50,
+    showCoverageOnHover: false
 });
 
 var showMapLayer = function (layerName, layerSupplier) {
@@ -524,7 +525,8 @@ var drawTargets = function (data) {
 
         var targetCluster = new L.MarkerClusterGroup({
             iconCreateFunction: clusterIcon,
-            maxClusterRadius: 50
+            maxClusterRadius: 50,
+            showCoverageOnHover: false
         });
         var pointLayer = L.geoJson(pointData, {
             onEachFeature: targetPopup,

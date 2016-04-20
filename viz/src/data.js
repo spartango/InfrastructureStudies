@@ -36,7 +36,7 @@ var loadSAMs = function () {
 };
 
 var loadAviation = function () {
-    return loadGeoJSON('background/ChineseMilitaryAviation.geojson');
+    return loadGeoJSON('background/PLAAFBases.geojson');
 };
 
 var loadSecondArtillery = function () {
