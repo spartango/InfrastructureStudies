@@ -55,7 +55,7 @@ public class TraverseMain {
         // Load up the sources and sinks
         // Oil refineries
         System.out.println("Reading sources...");
-        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "WikiLeaksRefineries.csv").get();
+        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "SurveyRefineries.csv").get();
         final List<NeoNode> sources = new ClosestStationLoader(new SheetLoader(refinerySheet),
                                                                railNet).loadGraphNodes();
 

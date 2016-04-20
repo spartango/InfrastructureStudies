@@ -1,4 +1,4 @@
-var DATA_DIR = "elevation/";
+var DATA_DIR = "testing/";
 
 var histogramTargets = function (targets) {
     var criticalityData = targets.features.map(function (feature) {

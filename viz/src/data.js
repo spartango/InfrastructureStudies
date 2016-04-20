@@ -48,7 +48,7 @@ var loadStations = function () {
 };
 
 var loadRefineries = function () {
-    return loadGeoJSON('background/Refineries.geojson');
+    return loadGeoJSON('background/SurveyRefineries.geojson');
 };
 
 var loadPath = function (id) {
