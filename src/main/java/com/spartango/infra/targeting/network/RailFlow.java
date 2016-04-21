@@ -103,14 +103,14 @@ public class RailFlow {
                          .sum();
     }
 
-    public double calculateCost(Collection<NeoNode> targetSources) {
-        return targetSources.stream()
-                            .map(NeoNode::getOsmNode)
-                            .filter(getPaths()::containsKey)
-                            .map(getPaths()::get)
-                            .flatMap(List::stream)
-                            .mapToDouble(WeightedPath::weight)
-                            .sum();
+    public double calculateCost(Collection<NeoNode> targetSinks) {
+        return targetSinks.stream()
+                          .map(NeoNode::getOsmNode)
+                          .filter(getPaths()::containsKey)
+                          .map(getPaths()::get)
+                          .flatMap(List::stream)
+                          .mapToDouble(WeightedPath::weight)
+                          .sum();
     }
 
     public Map<Set<NodeStub>, Set<NodeStub>> histogramPaths() {

@@ -98,7 +98,7 @@ public class TraverseMain {
                 .peek(deltaFlow -> writer.writeFlow(deltaFlow.getDamagedNodes().hashCode() + "_damage", deltaFlow))
                 .forEach(deltaFlow -> {
                     // Calculate the cost of adjustment
-                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSources());
+                    double baseCost = baselineFlow.calculateCost(deltaFlow.getSinks());
                     double deltaCost = deltaFlow.getTotalCost() - baseCost;
                     resilienceScores.put(deltaFlow.getDamagedNodes(), deltaCost);
 

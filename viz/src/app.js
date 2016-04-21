@@ -10,9 +10,7 @@ var layer;
 var hash;
 var drawnItems;
 
-var map = L.map('map', {
-    zoomControl: false
-}).setView([31.531634, 106.054523], 5);
+var map = L.map('map', {}).setView([31.531634, 106.054523], 5);
 
 var baseMaps = {
     "Streets": CartoDB_Positron,
