@@ -1,10 +1,151 @@
+// All layers
 var backgroundLayers = {};
+// Clusters
 var backgroundMarkers = new L.MarkerClusterGroup({
     iconCreateFunction: clusterIcon,
     maxClusterRadius: 50,
     showCoverageOnHover: false
 });
 
+// Legend
+var legendShowing = false;
+var legend = L.control({position: 'bottomright'});
+
+// Building Layers
+var buildLayerWithDataConfig = function (data, config) {
+    data.features.forEach(function (feature) {
+        feature.properties.color = config.color;
+    });
+    var icon = glyphIcon(config.color, config.character);
+    return L.geoJson(data, {
+        onEachFeature: function (feature, layer) {
+            return infrastructurePopup(feature, layer, config);
+        },
+        pointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {icon: icon});
+        }
+    })
+};
+
+
+var buildLayerFromConfig = function (config) {
+    return loadGeoJSON(config.url).then(function (data) {
+        return buildLayerWithDataConfig(data, config);
+    });
+};
+
+var buildLayer = function (name) {
+    var config = dataLayers[name];
+    if (config) {
+        return buildLayerFromConfig(config);
+    } else {
+        return Promise.reject("No config for name: " + name);
+    }
+};
+
+// Displaying layers
+var showLayer = function (name) {
+    var config = dataLayers[name];
+
+    // Check that this layer isn't already showing
+    if (backgroundLayers[name]) {
+        return Promise.resolve();
+    }
+
+    // Check that there's a config for this name
+    if (!config) {
+        return Promise.reject("No config for name: " + name);
+    }
+
+    // Build the layer
+    var layerPromise = buildLayerFromConfig(config);
+
+    if (config.layerType == 'cluster') {
+        return layerPromise.then(function (layer) {
+            // Add it to the cluster group if it needs to be clustered
+            backgroundMarkers.addLayer(layer);
+            backgroundLayers[name] = layer;
+        });
+    } else {
+        return layerPromise.then(function (layer) {
+            // Add the layer directly to the map
+            layer.addTo(map);
+            backgroundLayers[name] = layer;
+        });
+    }
+};
+
+var hideLayer = function (name) {
+    var config = dataLayers[name];
+
+    // Check that this layer isn't already hidden
+    var backgroundLayer = backgroundLayers[name];
+    if (!backgroundLayer) {
+        return Promise.resolve();
+    }
+
+    // Check that there's a config for this name
+    if (!config) {
+        return Promise.reject("No config for name: " + name);
+    }
+
+    // Check the config to see if this is a clustered layer
+    if (config.layerType == 'cluster') {
+        // Remove the layer from the cluster group
+        backgroundMarkers.removeLayer(backgroundLayer);
+    } else {
+        // Remove the layer from the map itself
+        map.removeLayer(backgroundLayer);
+    }
+
+    // Delete this layer from the registry
+    delete backgroundLayers[name];
+    return Promise.resolve();
+};
+
+var toggleLayer = function (layerName) {
+    if (!backgroundLayers[layerName]) {
+        return showLayer(layerName);
+    } else {
+        return hideLayer(layerName);
+    }
+};
+
+// Deprecated show and hide functions
+/**
+ * @deprecated
+ * @param data
+ */
+var buildLayerWithData = function (data) {
+    data.features.forEach(function (feature) {
+        feature.properties.type = type;
+    });
+    var icon = glyphIcon(type);
+    return L.geoJson(data, {
+        onEachFeature: infraPopup,
+        pointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {icon: icon});
+        }
+    })
+};
+
+/**
+ * Old way of making layers
+ * @deprecated
+ * @param type
+ * @param dataSource
+ * @returns {*|Promise.<T>}
+ */
+var buildDataLayer = function (type, dataSource) {
+    return dataSource.then(buildLayerWithData);
+};
+
+/**
+ * @deprecated
+ * @param layerName
+ * @param layerSupplier
+ * @returns {*}
+ */
 var showMapLayer = function (layerName, layerSupplier) {
     // Add the layer to the map
     if (!backgroundLayers[layerName]) {
@@ -18,6 +159,11 @@ var showMapLayer = function (layerName, layerSupplier) {
     }
 };
 
+/**
+ * @deprecated
+ * @param layerName
+ * @returns {Promise}
+ */
 var hideMapLayer = function (layerName) {
     return new Promise(function (resolve, reject) {
         if (backgroundLayers[layerName]) {
@@ -28,6 +174,12 @@ var hideMapLayer = function (layerName) {
     });
 };
 
+/**
+ * @deprecated
+ * @param layerName
+ * @param layerSupplier
+ * @returns {*}
+ */
 var toggleMapLayer = function (layerName, layerSupplier) {
     if (!backgroundLayers[layerName]) {
         return showMapLayer(layerName, layerSupplier);
@@ -36,6 +188,13 @@ var toggleMapLayer = function (layerName, layerSupplier) {
     }
 };
 
+// Deprecated functions for displaying clustered layers
+/**
+ * @deprecated
+ * @param layerName
+ * @param layerSupplier
+ * @returns {*}
+ */
 var showClusterLayer = function (layerName, layerSupplier) {
     // Add the layer to the map
     if (!backgroundLayers[layerName]) {
@@ -50,6 +209,11 @@ var showClusterLayer = function (layerName, layerSupplier) {
     }
 };
 
+/**
+ * @deprecated
+ * @param layerName
+ * @returns {Promise}
+ */
 var hideClusterLayer = function (layerName) {
     // Hide the layer(s)
     return new Promise(function (resolve, reject) {
@@ -61,6 +225,12 @@ var hideClusterLayer = function (layerName) {
     });
 };
 
+/**
+ * @deprecated
+ * @param layerName
+ * @param layerSupplier
+ * @returns {*}
+ */
 var toggleClusterLayer = function (layerName, layerSupplier) {
     if (!backgroundLayers[layerName]) {
         return showClusterLayer(layerName, layerSupplier);
@@ -69,29 +239,7 @@ var toggleClusterLayer = function (layerName, layerSupplier) {
     }
 };
 
-var buildDataLayer = function (type, dataSource) {
-    return dataSource.then(function (data) {
-        data.features.forEach(function (feature) {
-            feature.properties.type = type;
-        });
-        var icon = glyphIcon(type);
-        return L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        })
-    });
-};
-
-var loadPortLayer = function () {
-    return buildDataLayer('port', loadPorts());
-};
-
-var togglePorts = function () {
-    return toggleClusterLayer('ports', loadPortLayer);
-};
-
+// Specialized Layers
 var loadSAMLayer = function () {
     return loadSAMs().then(function (data) {
         data.features.forEach(function (feature) {
@@ -115,37 +263,6 @@ var toggleSAMs = function () {
     return toggleClusterLayer('sams', loadSAMLayer);
 };
 
-var loadAviationLayer = function () {
-    return buildDataLayer('airbase', loadAviation());
-};
-
-var toggleAviation = function () {
-    return toggleClusterLayer('aviation', loadAviationLayer);
-};
-
-var loadRefineryLayer = function () {
-    return buildDataLayer('refinery', loadRefineries());
-};
-
-var toggleRefineries = function () {
-    return toggleClusterLayer('refinery', loadRefineryLayer);
-};
-
-var loadSecondArtilleryLayer = function () {
-    return buildDataLayer('nuclear', loadSecondArtillery());
-};
-
-var toggleSecondArtillery = function () {
-    return toggleClusterLayer('missiles', loadSecondArtilleryLayer);
-};
-
-var loadStationLayer = function () {
-    return buildDataLayer('station', loadStations());
-};
-
-var toggleStations = function () {
-    return toggleClusterLayer('stations', loadStationLayer);
-};
 
 var flowCount = 1;
 var loadPathLayer = function () {
@@ -199,10 +316,6 @@ var loadRerouteLayer = function (id) {
             }
         });
     });
-};
-
-var togglePaths = function () {
-    return toggleMapLayer('paths', loadPathLayer);
 };
 
 var fastAnimation = false;
@@ -431,25 +544,6 @@ var loadDamagedPath = function (id) {
 };
 
 var drawAimPoints = false;
-
-// Legend
-var legendShowing = false;
-var legend = L.control({position: 'bottomright'});
-
-var showLegend = function () {
-    if (!legendShowing) {
-        legendShowing = true;
-        legend.addTo(map);
-    }
-};
-
-var hideLegend = function () {
-    if (legendShowing) {
-        legendShowing = false;
-        legend.removeFrom(map);
-    }
-};
-
 var drawTargets = function (data) {
     // Have a quick look through the data and figure out what the range of criticality
     var criticalityData = data.features.map(function (feature) {
@@ -594,29 +688,6 @@ var annotateDimensions = function (data) {
     return data;
 };
 
-var cacheAnnotatedTargets = function (targets) {
-    try {
-        localStorage.setItem('annotatedMapTargets', JSON.stringify(targets));
-    } catch (e) {
-        console.log("Couldn't cache: " + e);
-    }
-    return targets;
-};
-
-var loadAnnotatedTargets = function () {
-    // Check for cache
-    var cached = localStorage.getItem('annotatedMapTargets');
-    if (cached) {
-        console.log("Loaded targets from cache");
-        return Promise.resolve(cached);
-    } else {
-        return loadTargets()
-            .then(annotateInfrastructure)
-            .then(annotateDimensions)
-            .then(cacheAnnotatedTargets)
-    }
-};
-
 var loadTargetLayer = function () {
     return loadTargets()
         .then(annotateInfrastructure)
@@ -666,6 +737,20 @@ var toggleSAMThreats = function () {
         });
 };
 
+var showLegend = function () {
+    if (!legendShowing) {
+        legendShowing = true;
+        legend.addTo(map);
+    }
+};
+
+var hideLegend = function () {
+    if (legendShowing) {
+        legendShowing = false;
+        legend.removeFrom(map);
+    }
+};
+
 var showAndFocus = function (showPromise, bounds) {
     return showPromise.then(function () {
         if (bounds) { // Focus on this target
@@ -686,6 +771,12 @@ var showPaths = function () {
 var showTargets = function () {
     return showMapLayer('targets', loadTargetLayer).then(showLegend);
 };
+
+var toggleAimpoints = function () {
+    drawAimPoints = !drawAimPoints;
+    hideMapLayer('targets').then(showTargets);
+};
+
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
 };
@@ -702,19 +793,6 @@ var showSAMThreats = function () {
     return showMergedRings().then(showSAMs);
 };
 
-var showAviation = function () {
-    return showClusterLayer('aviation', loadAviationLayer);
-};
-
-var showRefineries = function () {
-    return showClusterLayer('refinery', loadRefineryLayer());
-};
-
-var showStations = function () {
-    return showClusterLayer('stations', loadStationLayer);
-};
-
-var toggleAimpoints = function () {
-    drawAimPoints = !drawAimPoints;
-    hideMapLayer('targets').then(showTargets);
+var togglePaths = function () {
+    return toggleMapLayer('paths', loadPathLayer);
 };

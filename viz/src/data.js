@@ -27,28 +27,8 @@ var loadGeoJSON = function (path) {
     });
 };
 
-var loadPorts = function () {
-    return loadGeoJSON('background/WPI.geojson');
-};
-
 var loadSAMs = function () {
     return loadGeoJSON('background/SAMs.geojson');
-};
-
-var loadAviation = function () {
-    return loadGeoJSON('background/PLAAFBases.geojson');
-};
-
-var loadSecondArtillery = function () {
-    return loadGeoJSON('background/2AOperationalSites.geojson');
-};
-
-var loadStations = function () {
-    return loadGeoJSON('background/stations.geojson');
-};
-
-var loadRefineries = function () {
-    return loadGeoJSON('background/SurveyRefineries.geojson');
 };
 
 var loadPath = function (id) {
