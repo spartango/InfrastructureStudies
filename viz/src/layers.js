@@ -468,79 +468,10 @@ var drawTargets = function (data) {
     }
 };
 
-var annotateInfrastructure = function (data) {
-    // Load up the merged SAM threats
-    return loadGeoJSON(dataLayers.rangeRings.url)
-        .then(turf.merge)
-        .then(function (mergedRings) {
-            // Mark the targets which are in range
-            console.log("Computing active SAM threats");
-            loadingControl.addLoader("SAM");
-            data.features.forEach(function (feature) {
-                feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                if (turf.inside(feature.properties.center, mergedRings)) {
-                    feature.properties["activeSAM"] = true;
-                }
-            });
-            loadingControl.removeLoader("SAM");
-            return data;
-        }).then(function () {
-            return loadGeoJSON(dataLayers.SAMs.url);
-        }).then(function (sams) {
-            console.log("Computing SAM ranges");
-            loadingControl.addLoader("Range");
-            data.features.forEach(function (feature) {
-                if (!feature.properties["nearestSAM"]) {
-                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                    feature.properties["nearestSAM"] = turf.nearest(feature.properties.center, sams);
-                }
-            });
-            loadingControl.removeLoader("Range");
-            return data;
-        }).then(function () {
-            return loadGeoJSON(dataLayers.airBases.url);
-        }).then(function (airbases) {
-            console.log("Computing airbase ranges");
-            loadingControl.addLoader("Air");
-            data.features.forEach(function (feature) {
-                if (!feature.properties["nearestAirbase"]) {
-                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                    feature.properties["nearestAirbase"] = turf.nearest(feature.properties.center, airbases);
-                }
-            });
-            loadingControl.removeLoader("Air");
-            return data;
-        }).then(function () {
-            return loadGeoJSON(dataLayers.USBases.url);
-        }).then(function (airbases) {
-            console.log("Computing US Base ranges");
-            loadingControl.addLoader("US");
-            data.features.forEach(function (feature) {
-                if (!feature.properties["nearestUSBase"]) {
-                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                    feature.properties["nearestUSBase"] = turf.nearest(feature.properties.center, airbases);
-                }
-            });
-            loadingControl.removeLoader("US");
-            return data;
-        });
-};
-
-var annotateDimensions = function (data) {
-    data.features.forEach(function (feature) {
-        var coordinates = feature.geometry.coordinates;
-        if (!feature.properties.span) {
-            feature.properties.span = turf.distance(turf.point(coordinates[0]), turf.point(coordinates[coordinates.length - 1]));
-        }
-        feature.properties.type = 'bridge';
-    });
-    return data;
-};
-
 var loadTargetLayer = function () {
     return loadTargets()
-        .then(annotateInfrastructure)
         .then(annotateDimensions)
+        .then(annotateInfrastructure)
         .then(drawTargets);
 };
 

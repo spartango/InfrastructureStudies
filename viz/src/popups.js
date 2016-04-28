@@ -41,10 +41,10 @@ var targetPopup = function (feature, layer) {
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
                 prettyKey = `<a href="#" onclick="showAndFocus(showLayer('USBases'),` + JSON.stringify(bounds) + `)"> Nearest U.S. Base</a>`;
-                rowClass = "info";
+                rowClass = "success";
                 var distance = turf.distance(airbase, center);
                 prettyValue = formatDistance(distance);
-            }  else if (key == 'nearestAirbase') {
+            } else if (key == 'nearestAirbase') {
                 var airbase = feature.properties['nearestAirbase'];
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
@@ -55,9 +55,7 @@ var targetPopup = function (feature, layer) {
             } else if (key == 'center') {
                 prettyKey = "MGRS";
                 prettyValue = mgrs.forward(center.geometry.coordinates);
-            } else if (key == 'activeSAM') {
-                continue; // We'll handle activeSAM elsewhere
-            } else if (key == 'color') {
+            } else if (key == 'activeSAM' || key == 'color' || key == 'type') {
                 continue; // We'll handle color elsewhere
             } else {
                 prettyKey = key.charAt(0).toUpperCase() + key.slice(1);
