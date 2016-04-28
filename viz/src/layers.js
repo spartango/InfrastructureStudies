@@ -510,6 +510,19 @@ var annotateInfrastructure = function (data) {
             });
             loadingControl.removeLoader("Air");
             return data;
+        }).then(function () {
+            return loadGeoJSON(dataLayers.USBases.url);
+        }).then(function (airbases) {
+            console.log("Computing US Base ranges");
+            loadingControl.addLoader("US");
+            data.features.forEach(function (feature) {
+                if (!feature.properties["nearestUSBase"]) {
+                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+                    feature.properties["nearestUSBase"] = turf.nearest(feature.properties.center, airbases);
+                }
+            });
+            loadingControl.removeLoader("US");
+            return data;
         });
 };
 

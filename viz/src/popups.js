@@ -36,7 +36,15 @@ var targetPopup = function (feature, layer) {
                 }
                 var distance = turf.distance(sam, center);
                 prettyValue = formatDistance(distance);
-            } else if (key == 'nearestAirbase') {
+            } else if (key == 'nearestUSBase') {
+                var airbase = feature.properties['nearestUSBase'];
+                var extent = turf.extent(turf.featurecollection([airbase, center]));
+                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
+                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('USBases'),` + JSON.stringify(bounds) + `)"> Nearest U.S. Base</a>`;
+                rowClass = "info";
+                var distance = turf.distance(airbase, center);
+                prettyValue = formatDistance(distance);
+            }  else if (key == 'nearestAirbase') {
                 var airbase = feature.properties['nearestAirbase'];
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
