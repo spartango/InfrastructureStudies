@@ -131,6 +131,5 @@ var dataLayers = {
 var defaultLayers = [
     'airBases',
     'refineries',
-    'ports',
     'suppliers'
 ];
