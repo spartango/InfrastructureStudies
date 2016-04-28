@@ -35,7 +35,8 @@
     "intro.js": "^2.0.0",
     "plottable": "^2.0.0",
     "simple-statistics": "^1.0.1",
-    "arc.js": "^0.1.0"
+    "arc.js": "^0.1.0",
+    "leaflet-ant-path": "dev"
   },
   "devDependencies": {
     "livereload-js": "^2.2.1"

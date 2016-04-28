@@ -1,0 +1,38 @@
+{
+  "name": "leaflet-ant-path",
+  "authors": [
+    "Rubens Pinheiro Gonçalves Cavalcante <rubenspgcavalcante@gmail.com>"
+  ],
+  "description": "Creates a leaflet polyline with a 'ant-path' animated flux",
+  "main": "dist/leaflet-ant-path.min.js",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "leaflet",
+    "plugin",
+    "map-polyline",
+    "svg-animation"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/rubenspgcavalcante/leaflet-ant-path",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "src/vendor"
+  ],
+  "devDependencies": {
+    "leaflet": "~0.7.7"
+  },
+  "_release": "13b674517b",
+  "_resolution": {
+    "type": "branch",
+    "branch": "dev",
+    "commit": "13b674517b2206bca0f99ed90852a1dbad58b862"
+  },
+  "_source": "https://github.com/rubenspgcavalcante/leaflet-ant-path.git",
+  "_target": "dev",
+  "_originalSource": "leaflet-ant-path"
+}

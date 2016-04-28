@@ -35,8 +35,8 @@ var showBackgroundLayers = function () {
 var showDefaultLayers = function () {
     return Promise.all([
         showBackgroundLayers(),
-        showPaths().then(showBaselineAnimation).then(showTargets)
-    ]);
+        showBaselineAnimation().then(showTargets)
+    ]).catch(console.log);
 };
 
 if (standardMode) {

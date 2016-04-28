@@ -60,10 +60,7 @@ var startTutorial = function () {
                     .then(function () {
                         return showLayer('consumers');
                     })
-                    .then(showPaths)
-                    .then(function () {
-                        showAnimation('baseline');
-                    })
+                    .then(showBaselineAnimation)
             }
         },
         {

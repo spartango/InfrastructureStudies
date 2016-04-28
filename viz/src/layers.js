@@ -152,35 +152,6 @@ var toggleMapLayer = function (layerName, layerSupplier) {
 };
 
 // Specialized Layers
-var flowCount = 1;
-var loadPathLayer = function () {
-    return loadPaths().then(function (data) {
-        // Update the top bar count
-        flowCount = data.features.length;
-        $('#flowCount').text(data.features.length);
-        var outer = L.geoJson(data, {
-            style: {
-                "weight": 6,
-                "color": '#FFFFFF',
-                "opacity": 1.0,
-                "clickable": false
-            }
-        });
-        var inner = L.geoJson(data, {
-            style: {
-                "weight": 4,
-                "color": '#3F3F3F',
-                "opacity": 1.0,
-                "clickable": false
-            }
-        });
-
-        return L.layerGroup([inner, outer]);
-        //map.fitBounds(path.getBounds());
-        //hash = new L.Hash(map);
-    });
-};
-
 var hideReroute = function () {
     return hideMapLayer('reroute');
 };
@@ -208,74 +179,30 @@ var loadRerouteLayer = function (id) {
 
 var fastAnimation = false;
 var clearAnimation = function () {
-    if (backgroundLayers['animation']) {
-        backgroundLayers['animation'].forEach(function (m) {
-            map.removeLayer(m);
-        });
-        delete backgroundLayers['animation'];
-    }
+    hideMapLayer('animation')
 };
 
 var showAnimation = function (flowName) {
-    if (!backgroundLayers['animation']) {
-        return loadGeoJSON(DATA_DIR + flowName + '.geojson')
-            .then(function (data) {
-                var animatedMarkers = [];
-                var completed = 0;
-
-                data.features.forEach(function (feature) {
-                    // Create a little animated disk
-                    var durations = [];
-                    var last = null;
-                    var latlngs = feature.geometry.coordinates.map(function (coord) {
-                        var point = turf.point(coord);
-                        if (last) {
-                            var distance = turf.distance(last, point); // km
-                            var time = distance * (fastAnimation ? 5 : 10); // 100 km/s
-                            durations.push(time);
-                        }
-                        last = point;
-                        return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
-                    });
-                    //durations;
-
-                    var aMarker = L.Marker.movingMarker(latlngs, durations, {
-                        loop: !fastAnimation,
-                        autostart: true,
-                        icon: new L.DivIcon({
-                            html: '<div></div>',
-                            className: 'flow-marker',
-                            iconSize: new L.Point(10, 10)
-                        })
-                    });
-                    if (fastAnimation) {
-                        aMarker.on('end', function () {
-                            //console.log("Finished " + completed);
-                            completed++;
-                            aMarker.pause();
-                            if (completed >= animatedMarkers.length) {
-                                console.log("Restarting all animations " + completed);
-                                completed = 0;
-                                animatedMarkers.forEach(function (m) {
-                                    m.start();
-                                });
-                            }
-                        });
-                    }
-                    animatedMarkers.push(aMarker);
+    return showMapLayer('animation', function () {
+        return loadGeoJSON(DATA_DIR + flowName + '.geojson').then(function (data) {
+            $('#flowCount').text(data.features.length);
+            var latlngList = data.features.map(function (feature) {
+                return feature.geometry.coordinates.map(function (coord) {
+                    return [coord[1], coord[0], (coord.length > 2 ? coord[2] : 0)];
                 });
-
-                animatedMarkers.forEach(function (m) {
-                    m.addTo(map);
-                });
-
-                backgroundLayers['animation'] = animatedMarkers;
             });
-    } else {
-        return new Promise(function (resolve, reject) {
-            resolve();
+
+            var options = {
+                color: 'black',
+                dashArray: [5, 100],
+                pulseColor: 'white',
+                delay: 800,
+                opacity: 0.9
+            };
+            var antPolyline = L.multiPolyline.multiAntPath(latlngList, options);
+            return antPolyline;
         });
-    }
+    })
 };
 
 var toggleAnimation = function (flowName) {
@@ -489,11 +416,7 @@ var toggleTargets = function () {
 var toggleFlows = function () {
     var targetsShowing = backgroundLayers['targets'] != null;
 
-    return togglePaths().then(function () {
-        if (targetsShowing) {
-            return hideMapLayer('targets');
-        }
-    }).then(function () {
+    return hideMapLayer('targets').then(function () {
         return toggleAnimation('baseline')
     }).then(function () {
         if (targetsShowing) {
@@ -542,9 +465,6 @@ var showArc = function (start, end, distance) {
     });
 };
 
-var showPaths = function () {
-    return showMapLayer('paths', loadPathLayer);
-};
 var showTargets = function () {
     return showMapLayer('targets', loadTargetLayer).then(showLegend);
 };
@@ -556,8 +476,4 @@ var toggleAimpoints = function () {
 
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
-};
-
-var togglePaths = function () {
-    return toggleMapLayer('paths', loadPathLayer);
 };
