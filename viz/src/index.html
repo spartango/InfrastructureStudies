@@ -32,10 +32,12 @@
             </div>
 
             <ul class="nav navbar-nav navbar-right nav-text">
-                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleLayer('suppliers')" data-toggle="tooltip"
+                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleLayer('suppliers')"
+                       data-toggle="tooltip"
                        data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span
                         id="sourceCount"></span></a></li>
-                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleLayer('consumers')" data-toggle="tooltip"
+                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleLayer('consumers')"
+                       data-toggle="tooltip"
                        data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span
                         id="sinkCount"></span></a></li>
                 <li><a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
@@ -53,7 +55,8 @@
                                 SAMs & Radars</a>
                         </li>
                         <li>
-                            <a id="rangeToggle" href="#" onclick="toggleLayer('rangeRings')"><i class="fa fa-bullseye"></i>
+                            <a id="rangeToggle" href="#" onclick="toggleLayer('rangeRings')"><i
+                                    class="fa fa-bullseye"></i>
                                 SAM Range Rings</a>
                         </li>
                         <li>
@@ -65,15 +68,28 @@
                                 Naval Bases</a>
                         </li>
                         <li>
-                            <a id="nuclearToggle" href="#" onclick="toggleLayer('missileBases')"><i class="fa fa-bomb"></i>
+                            <a id="nuclearToggle" href="#" onclick="toggleLayer('missileBases')"><i
+                                    class="fa fa-bomb"></i>
                                 Strategic Missiles</a>
                         </li>
                         <li>
-                            <a id="refineryToggle" href="#" onclick="toggleLayer('refineries')"><i class="fa fa-database"></i>
+                            <a id="refineryToggle" href="#" onclick="toggleLayer('refineries')"><i
+                                    class="fa fa-database"></i>
                                 Refineries</a>
                         </li>
                         <li>
-                            <a id="portToggle" href="#" onclick="toggleLayer('ports')"><i class="fa fa-anchor"></i> Ports</a>
+                            <a id="mineToggle" href="#" onclick="toggleLayer('mines')"><i
+                                    class="fa fa-cube"></i>
+                                Mines</a>
+                        </li>
+                        <li>
+                            <a id="powerToggle" href="#" onclick="toggleLayer('powerplants')"><i
+                                    class="fa fa-power-off"></i>
+                                Power Plants</a>
+                        </li>
+                        <li>
+                            <a id="portToggle" href="#" onclick="toggleLayer('ports')"><i class="fa fa-anchor"></i>
+                                Ports</a>
                         </li>
                         <li>
                             <a id="bridgeToggle" href="#" onclick="toggleSegments()"><i class="fa fa-road"></i> Rail
@@ -81,7 +97,7 @@
                         </li>
                         <li>
                             <a id="stationToggle" href="#" onclick="toggleLayer('stations')"><i class="fa fa-train"></i>
-                               Train Stations</a>
+                                Train Stations</a>
                         </li>
                         <li>
                             <a id="usToggle" href="#" onclick="toggleLayer('USBases')"><i class="fa fa-flag"></i>
@@ -127,6 +143,14 @@
                             <dd>
                                 <a href="https://worldmap.harvard.edu/data/geonode:_crude_oil_refineries_retrieved_from__bff">
                                     Oil & Gas Journal Worldwide Refining</a> (2006)
+                            </dd>
+                            <dt>Mining Data</dt>
+                            <dd>
+                                <a href="http://mrdata.usgs.gov/mineral-operations/">USGS Mineral Operations Outside the
+                                    US</a> (2014)
+                            </dd>
+                            <dt>Power Plant Data</dt>
+                            <dd><a href="https://en.wikipedia.org/wiki/List_of_power_stations_in_China">Wikipedia</a>
                             </dd>
                         </dl>
                     </div>

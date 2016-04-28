@@ -37,7 +37,7 @@ var showDefaultLayers = function () {
         showBackgroundLayers(),
         //showSinks(),
         //showSources(),
-        showPaths().then(showBaselineAnimation).then(showTargets)
+        //showPaths().then(showBaselineAnimation).then(showTargets)
     ]);
 };
 

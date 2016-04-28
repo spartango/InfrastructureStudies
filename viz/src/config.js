@@ -125,11 +125,33 @@ var dataLayers = {
         },
         layerType: 'polygon',
         handleData: turf.merge
+    },
+    mines: {
+        description: 'Mining Operations',
+        displayType: 'Mine',
+        url: 'background/CoalMines.geojson',
+        color: '#242829',
+        icon: 'cube',
+        character: '&#xf1b2',
+        layerType: 'cluster',
+        popup: 'infrastructure'
+    },
+    powerplants: {
+        description: 'Coal Power Plants',
+        displayType: 'Power Plant',
+        url: 'background/CoalPower.geojson',
+        color: '#EBD913',
+        icon: 'power-off',
+        character: '&#xf011',
+        layerType: 'cluster',
+        popup: 'infrastructure'
     }
 };
 
 var defaultLayers = [
-    'airBases',
+    //'airBases',
     'refineries',
-    'suppliers'
+    'mines',
+    'powerplants'
+    //'suppliers'
 ];
