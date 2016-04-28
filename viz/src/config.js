@@ -150,8 +150,9 @@ var dataLayers = {
 
 var defaultLayers = [
     //'airBases',
-    'refineries',
+    //'refineries',
     'mines',
-    'powerplants'
-    //'suppliers'
+    'powerplants',
+    'suppliers',
+    'consumers'
 ];

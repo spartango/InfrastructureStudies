@@ -35,9 +35,7 @@ var showBackgroundLayers = function () {
 var showDefaultLayers = function () {
     return Promise.all([
         showBackgroundLayers(),
-        //showSinks(),
-        //showSources(),
-        //showPaths().then(showBaselineAnimation).then(showTargets)
+        showPaths().then(showBaselineAnimation).then(showTargets)
     ]);
 };
 
