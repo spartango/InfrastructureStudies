@@ -106,6 +106,18 @@ var annotateThreats = function (targets) {
         });
 };
 
+var annotateUSBases = function (targets) {
+    return loadGeoJSON(dataLayers.USBases.url).then(function (airbases) {
+        console.log("Computing US Bases ranges");
+        targets.features.forEach(function (feature) {
+            if (!feature.properties["nearestUSBaseDistance"]) {
+                feature.properties["nearestUSBaseDistance"] = nearestDistance(feature, airbases);
+            }
+        });
+        return targets;
+    });
+};
+
 var annotateBases = function (targets) {
     return loadGeoJSON(dataLayers.airBases.url).then(function (airbases) {
         console.log("Computing airbase ranges");
@@ -338,37 +350,38 @@ var plotSecondArtillery = function (targets) {
     return targets;
 };
 
+var plotUSBases = function (targets) {
+    var chart = buildPlot("nearestUSBaseDistance", targets, "Nearest US Base (km)", dataLayers.USBases.color);
+    chart.renderTo("svg#usbases");
+    return targets;
+};
+
 var plotDual = function (targets) {
-    var activeTargets = {
-        features: targets.features.filter(function (target) {
-            return target.properties.activeSAM;
-        })
-    };
+    //var activeTargets = {
+    //    features: targets.features.filter(function (target) {
+    //        return target.properties.activeSAM;
+    //    })
+    //};
 
     var chart = buildDualPlot("nearestSAMDistance",
-        "nearestAirbaseDistance",
-        activeTargets,
+        "nearestUSBaseDistance",
+        targets,
         "Nearest SAM (km)",
-        "Nearest Airbase (km)");
+        "Nearest US Base (km)");
     chart.renderTo("svg#dual");
     return targets;
 };
 
 var costProximityPlot = function () {
     return loadTargets()
-        .then(annotateThreats)
-        .then(plotSAMs)
-        .then(plotRadars)
-        .then(annotateSecondArtillery)
-        .then(plotSecondArtillery)
+        .then(annotateThreats).then(plotSAMs).then(plotRadars)
+        .then(annotateUSBases).then(plotUSBases)
+        //.then(annotateSecondArtillery)
+        //.then(plotSecondArtillery)
         //.then(annotateStations)
-        .then(annotateBases)
-        .then(plotBases)
-        .then(plotDual)
-        .then(annotateSinks)
-        .then(plotSinks)
-        .then(annotateSources)
-        .then(plotSources)
+        .then(annotateBases).then(plotBases).then(plotDual)
+        .then(annotateSinks).then(plotSinks)
+        .then(annotateSources).then(plotSources)
     //.then(cacheTargets)
 };
 
