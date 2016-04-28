@@ -16,41 +16,37 @@ var targetPopup = function (feature, layer) {
                 // Compute the average elevation
                 prettyValue = d3_array.mean(array);
                 prettyValue += " m";
-            } else if (key == 'nearestStation') {
-                var station = feature.properties['nearestStation'];
-                var extent = turf.extent(turf.featurecollection([station, center]));
-                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('stations'),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
-                var distance = turf.distance(station, center);
-                prettyValue = formatDistance(distance);
             } else if (key == 'nearestSAM') {
                 var sam = feature.properties['nearestSAM'];
-                var extent = turf.extent(turf.featurecollection([sam, center]));
-                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('SAMs'),` + JSON.stringify(bounds) + `)">`;
+                var distance = turf.distance(sam, center);
+                prettyKey = `<a href="#" onclick="showLayerAndArc(showLayer('SAMs'),`
+                    + JSON.stringify(sam.geometry.coordinates) + `,`
+                    + JSON.stringify(center.geometry.coordinates)
+                    + `,` + distance + `)">`;
                 if (feature.properties.activeSAM) {
                     prettyKey += `SAM Threat</a>`;
                     rowClass = "danger"
                 } else {
                     prettyKey += `Nearest Radar</a>`;
                 }
-                var distance = turf.distance(sam, center);
                 prettyValue = formatDistance(distance);
             } else if (key == 'nearestUSBase') {
                 var airbase = feature.properties['nearestUSBase'];
-                var extent = turf.extent(turf.featurecollection([airbase, center]));
-                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('USBases'),` + JSON.stringify(bounds) + `)"> Nearest U.S. Base</a>`;
-                rowClass = "success";
                 var distance = turf.distance(airbase, center);
+                prettyKey = `<a href="#" onclick="showLayerAndArc(showLayer('USBases'),`
+                    + JSON.stringify(airbase.geometry.coordinates) + `,`
+                    + JSON.stringify(center.geometry.coordinates)
+                    + `,` + distance + `)"> Nearest U.S. Base</a>`;
+                rowClass = "success";
                 prettyValue = formatDistance(distance);
             } else if (key == 'nearestAirbase') {
                 var airbase = feature.properties['nearestAirbase'];
-                var extent = turf.extent(turf.featurecollection([airbase, center]));
-                var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('airBases'),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
-                rowClass = "warning";
                 var distance = turf.distance(airbase, center);
+                prettyKey = `<a href="#" onclick="showLayerAndArc(showLayer('airBases'),`
+                    + JSON.stringify(airbase.geometry.coordinates) + `,`
+                    + JSON.stringify(center.geometry.coordinates)
+                    + `,` + distance + `)"> Nearest Airbase</a>`;
+                rowClass = "warning";
                 prettyValue = formatDistance(distance);
             } else if (key == 'center') {
                 prettyKey = "MGRS";
@@ -191,4 +187,11 @@ var reroutePopup = function (feature, layer) {
     popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='hideReroute()'>`
         + `<i class="fa fa-close"></i> Hide</button></div></div>`;
     layer.bindPopup(popupString);
+};
+
+var arcPopup = function (distance) {
+    return `<div><div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-arrows-h"></i> Fight Path</th></tr></thead>`
+        + `<tr><td><strong>Distance </strong></td><td>` + formatDistance(distance) + "</td></tr></table></div>"
+        + `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='hideMapLayer("arc")'>`
+        + `<i class="fa fa-close"></i> Hide</button></div></div>`;
 };

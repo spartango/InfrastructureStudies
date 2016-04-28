@@ -154,5 +154,5 @@ var defaultLayers = [
     'mines',
     'powerplants',
     'suppliers',
-    'consumers'
+    //'consumers'
 ];

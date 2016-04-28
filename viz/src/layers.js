@@ -524,6 +524,24 @@ var showAndFocus = function (showPromise, bounds) {
     });
 };
 
+var showLayerAndArc = function (showPromise, start, end, distance) {
+    return showPromise.then(function () {
+        // Focus the map
+        map.fitBounds([[start[1], start[0]], [end[1], end[0]]]);
+        // Show the arc
+        return showArc(start, end, distance);
+    });
+};
+
+var showArc = function (start, end, distance) {
+    hideMapLayer('arc');
+    var arc = L.Polyline.Arc([start[1], start[0]], [end[1], end[0]]);
+    arc.bindPopup(arcPopup(distance));
+    return showMapLayer('arc', function () {
+        return Promise.resolve(arc)
+    });
+};
+
 var showPaths = function () {
     return showMapLayer('paths', loadPathLayer);
 };
