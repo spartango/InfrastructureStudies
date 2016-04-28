@@ -20,14 +20,14 @@ var targetPopup = function (feature, layer) {
                 var station = feature.properties['nearestStation'];
                 var extent = turf.extent(turf.featurecollection([station, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showStations(),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('stations'),` + JSON.stringify(bounds) + `)"> Nearest Station</a>`;
                 var distance = turf.distance(station, center);
                 prettyValue = formatDistance(distance);
             } else if (key == 'nearestSAM') {
                 var sam = feature.properties['nearestSAM'];
                 var extent = turf.extent(turf.featurecollection([sam, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showSAMThreats(),` + JSON.stringify(bounds) + `)">`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('SAMs'),` + JSON.stringify(bounds) + `)">`;
                 if (feature.properties.activeSAM) {
                     prettyKey += `SAM Threat</a>`;
                     rowClass = "danger"
@@ -40,7 +40,7 @@ var targetPopup = function (feature, layer) {
                 var airbase = feature.properties['nearestAirbase'];
                 var extent = turf.extent(turf.featurecollection([airbase, center]));
                 var bounds = [[extent[1], extent[0]], [extent[3], extent[2]]];
-                prettyKey = `<a href="#" onclick="showAndFocus(showAviation(),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
+                prettyKey = `<a href="#" onclick="showAndFocus(showLayer('airBases'),` + JSON.stringify(bounds) + `)"> Nearest Airbase</a>`;
                 rowClass = "warning";
                 var distance = turf.distance(airbase, center);
                 prettyValue = formatDistance(distance);
@@ -114,52 +114,6 @@ var infrastructurePopup = function (feature, layer, config) {
         layer.bindPopup(popupString);
     }
 };
-
-/**
- * @deprecated
- * @param feature
- * @param layer
- */
-var infraPopup = function (feature, layer) {
-    if (feature.properties) {
-        var popupString = `<div><div class="row" style='max-height:250px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;
-        if (feature.properties.type) {
-            var type = feature.properties.type;
-            var niceType = type.charAt(0).toUpperCase() + type.slice(1);
-            var iconString = typeIcons[type] ? `<i class="fa fa-` + typeIcons[type] + `"></i>` : "";
-            popupString += `<thead><tr><th>` + iconString + ` ` + niceType + `</th></tr></thead>`;
-        }
-
-        for (key in feature.properties) {
-            var niceKey = key.charAt(0).toUpperCase() + key.slice(1);
-            var niceValue = feature.properties[key];
-            if (key == 'elevation') {
-                niceValue += " m";
-            } else if (key == 'type') {
-                continue;
-            }
-            popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + niceValue + "</td></tr>";
-        }
-
-        if (feature.geometry) {
-            popupString += "<tr><td><strong>MGRS</strong></td><td>"
-                + mgrs.forward(feature.geometry.coordinates)
-                + "</td></tr>";
-        }
-
-        popupString += "</table></div>";
-
-        if (feature.geometry) {
-            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
-                + feature.geometry.coordinates[1]
-                + ", lng:"
-                + feature.geometry.coordinates[0]
-                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
-        }
-        layer.bindPopup(popupString);
-    }
-};
-
 
 var bridgePopup = function (feature, layer) {
     if (feature.properties) {

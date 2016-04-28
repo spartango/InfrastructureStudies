@@ -136,13 +136,11 @@ var showMapLayer = function (layerName, layerSupplier) {
 };
 
 var hideMapLayer = function (layerName) {
-    return new Promise(function (resolve, reject) {
-        if (backgroundLayers[layerName]) {
-            map.removeLayer(backgroundLayers[layerName]);
-            delete backgroundLayers[layerName];
-        }
-        resolve();
-    });
+    if (backgroundLayers[layerName]) {
+        map.removeLayer(backgroundLayers[layerName]);
+        delete backgroundLayers[layerName];
+    }
+    return Promise.resolve();
 };
 
 var toggleMapLayer = function (layerName, layerSupplier) {
