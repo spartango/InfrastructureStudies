@@ -1,5 +1,3 @@
-var DATA_DIR = "testing/";
-
 var histogramTargets = function (targets) {
     var criticalityData = targets.features.map(function (feature) {
         return feature.properties.criticality;
