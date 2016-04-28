@@ -197,6 +197,7 @@ var showAnimation = function (flowName) {
                 dashArray: [5, 100],
                 pulseColor: 'white',
                 delay: 800,
+                weight: 4,
                 opacity: 0.9
             };
             var antPolyline = L.multiPolyline.multiAntPath(latlngList, options);
