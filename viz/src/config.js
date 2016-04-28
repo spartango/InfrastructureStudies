@@ -1,4 +1,34 @@
+var DATA_DIR = "testing/";
+
 var dataLayers = {
+    suppliers: {
+        description: 'Resource Suppliers',
+        displayType: 'Loading Point',
+        url: DATA_DIR + 'sources.geojson',
+        color: '#0868ac',
+        icon: 'upload',
+        character: '&#xf093',
+        layerType: 'marker',
+        popup: 'infrastructure',
+        handleData: function (data) {
+            $('#sourceCount').text(data.features.length);
+            return data;
+        }
+    },
+    consumers: {
+        description: 'Resource Consumers',
+        displayType: 'Offload Point',
+        url: DATA_DIR + 'sinks.geojson',
+        color: '#d01c8b',
+        icon: 'download',
+        character: '&#xf019',
+        layerType: 'marker',
+        popup: 'infrastructure',
+        handleData: function (data) {
+            $('#sinkCount').text(data.features.length);
+            return data;
+        }
+    },
     airBases: {
         description: 'PLAAF Bases',
         displayType: 'Air Base',
@@ -6,16 +36,18 @@ var dataLayers = {
         color: '#006837',
         icon: 'plane',
         character: '&#xf072',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     refineries: {
         description: 'Oil Refineries',
         displayType: 'Refinery',
-        url: 'background/PLAAFBases.geojson',
+        url: 'background/SurveyRefineries.geojson',
         color: '#DB4A04',
         icon: 'database',
         character: '&#xf1c0',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     ports: {
         description: 'Ports',
@@ -24,7 +56,8 @@ var dataLayers = {
         color: '#253494',
         icon: 'anchor',
         character: '&#xf13d',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     navalBases: {
         description: 'PLAN bases',
@@ -33,7 +66,8 @@ var dataLayers = {
         color: '#176FAD',
         icon: 'ship',
         character: '&#xf21a',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     missileBases: {
         description: 'PLRF bases',
@@ -42,7 +76,8 @@ var dataLayers = {
         color: '#993404',
         icon: 'bomb',
         character: '&#xf1e2',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     stations: {
         description: 'Train Stations',
@@ -51,7 +86,8 @@ var dataLayers = {
         color: '#4eb3d3',
         icon: 'train',
         character: '&#xf238',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
     },
     USBases: {
         description: 'US Bases',
@@ -60,24 +96,41 @@ var dataLayers = {
         color: '#909599',
         icon: 'flag',
         character: '&#xf024',
-        layerType: 'cluster'
+        layerType: 'cluster',
+        popup: 'infrastructure'
+    },
+    SAMs: {
+        description: 'SAM Sites',
+        displayType: 'SAM',
+        url: 'background/SAMs.geojson',
+        color: '#31a354',
+        icon: 'rocket',
+        character: '&#xf135',
+        layerType: 'cluster',
+        popup: 'infrastructure'
+    },
+    rangeRings: {
+        description: 'SAM Range Rings',
+        displayType: 'Range Ring',
+        url: 'background/RangeRingsP.geojson',
+        color: '#31a354',
+        icon: 'rocket',
+        character: '&#xf135',
+        style: {
+            "color": "#d00",
+            "weight": 2,
+            "opacity": 0.8,
+            "fillOpacity": 0.10,
+            "clickable": false
+        },
+        layerType: 'polygon',
+        handleData: turf.merge
     }
 };
 
-var tileLayers = {
-    "Streets": CartoDB_Positron,
-    "Dark": CartoDB_DarkMatter,
-    "Physical": mapboxLayer,
-    "Topo": topoMapboxLayer,
-    "Satellite": hybridMapboxLayer,
-    "Latest Imagery": satelliteDigitalGlobeLayer
-};
-
-var overlayLayers = {};
-
 var defaultLayers = [
     'airBases',
-    'navalBases',
     'refineries',
-    'USBases',
+    'ports',
+    'suppliers'
 ];

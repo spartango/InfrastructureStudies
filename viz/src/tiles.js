@@ -87,3 +87,14 @@ var OpenWeatherMap_Temperature = L.tileLayer('http://{s}.tile.openweathermap.org
     attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
     opacity: 0.5
 });
+
+var tileLayers = {
+    "Streets": CartoDB_Positron,
+    "Dark": CartoDB_DarkMatter,
+    "Physical": mapboxLayer,
+    "Topo": topoMapboxLayer,
+    "Satellite": hybridMapboxLayer,
+    "Latest Imagery": satelliteDigitalGlobeLayer
+};
+
+var overlayLayers = {};

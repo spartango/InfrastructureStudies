@@ -1,6 +1,5 @@
 var urlHash = window.location.hash;
 
-var DATA_DIR = "testing/";
 var standardMode = !urlHash || urlHash == "#" || urlHash == "";
 
 // Setup Map
@@ -27,15 +26,18 @@ var layerControl = L.control.layers(tileLayers, overlayLayers, {position: 'botto
 layerControl.addTo(map);
 
 var showBackgroundLayers = function () {
-    return Promise.all(defaultLayers.map(showLayer));
+    return Promise.all(defaultLayers.map(showLayer))
+        .catch(function (e) {
+            console.log(e);
+        });
 };
 
 var showDefaultLayers = function () {
     return Promise.all([
-        showBackgroundLayers()
+        showBackgroundLayers(),
         //showSinks(),
         //showSources(),
-        //showPaths().then(showBaselineAnimation).then(showTargets)
+        showPaths().then(showBaselineAnimation).then(showTargets)
     ]);
 };
 

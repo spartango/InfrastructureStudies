@@ -82,8 +82,8 @@ var targetPopup = function (feature, layer) {
 
 var infrastructurePopup = function (feature, layer, config) {
     if (feature.properties) {
-        var popupString = `<div><div class="row" style='max-height:250px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;
-        popupString += `<thead><tr><th><i class="fa fa-` + config.icon + `"></i>` + ` ` + config.displayType + `</th></tr></thead>`;
+        var popupString = `<div><div class="row" style='max-height:250px; max-width: 250px;overflow:auto;'><table class="table table-condensed">`;
+        popupString += `<thead><tr><th>` + config.displayType + `</th></tr></thead>`;
 
         for (var key in feature.properties) {
             var niceKey = key.charAt(0).toUpperCase() + key.slice(1);

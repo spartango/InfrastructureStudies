@@ -32,10 +32,10 @@
             </div>
 
             <ul class="nav navbar-nav navbar-right nav-text">
-                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" data-toggle="tooltip"
+                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleLayer('suppliers')" data-toggle="tooltip"
                        data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span
                         id="sourceCount"></span></a></li>
-                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip"
+                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleLayer('consumers')" data-toggle="tooltip"
                        data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span
                         id="sinkCount"></span></a></li>
                 <li><a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
@@ -53,31 +53,39 @@
                                 Bridges</a>
                         </li>
                         <li>
-                            <a id="samToggle" href="#" onclick="toggleSAMThreats()"><i class="fa fa-rocket"></i>
+                            <a id="samToggle" href="#" onclick="toggleLayer('SAMs')"><i class="fa fa-rocket"></i>
                                 SAMs & Radars</a>
                         </li>
                         <li>
-                            <a id="airToggle" href="#" onclick="toggleAviation()"><i class="fa fa-plane"></i>
+                            <a id="rangeToggle" href="#" onclick="toggleLayer('rangeRings')"><i class="fa fa-bullseye"></i>
+                                SAM Range Rings</a>
+                        </li>
+                        <li>
+                            <a id="airToggle" href="#" onclick="toggleLayer('airBases')"><i class="fa fa-plane"></i>
                                 Airbases</a>
                         </li>
                         <li>
-                            <a id="nuclearToggle" href="#" onclick="toggleSecondArtillery()"><i class="fa fa-bomb"></i>
+                            <a id="navalToggle" href="#" onclick="toggleLayer('navalBases')"><i class="fa fa-ship"></i>
+                                Naval Bases</a>
+                        </li>
+                        <li>
+                            <a id="nuclearToggle" href="#" onclick="toggleLayer('missileBases')"><i class="fa fa-bomb"></i>
                                 Strategic Missiles</a>
                         </li>
                         <li>
-                            <a id="refineryToggle" href="#" onclick="toggleRefineries()"><i class="fa fa-database"></i>
+                            <a id="refineryToggle" href="#" onclick="toggleLayer('refineries')"><i class="fa fa-database"></i>
                                 Refineries</a>
                         </li>
                         <li>
-                            <a id="portToggle" href="#" onclick="togglePorts()"><i class="fa fa-anchor"></i> Ports</a>
+                            <a id="portToggle" href="#" onclick="toggleLayer('ports')"><i class="fa fa-anchor"></i> Ports</a>
                         </li>
                         <li>
-                            <a id="stationToggle" href="#" onclick="toggleStations()"><i class="fa fa-train"></i>
-                                Stations</a>
+                            <a id="stationToggle" href="#" onclick="toggleLayer('stations')"><i class="fa fa-train"></i>
+                               Train Stations</a>
                         </li>
                         <li>
-                            <a id="aimpointToggle" href="#" onclick="toggleAimpoints()"><i class="fa fa-bullseye"></i>
-                                Aimpoints</a>
+                            <a id="usToggle" href="#" onclick="toggleLayer('USBases')"><i class="fa fa-flag"></i>
+                                U.S. Bases</a>
                         </li>
                     </ul>
                 </li>
@@ -159,7 +167,6 @@
 <script src="https://d3js.org/d3-interpolate.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-scale.v0.6.min.js"></script>
 <script src="bower_components/intro.js/intro.js"></script>
-<script src="types.js"></script>
 <script src="utils.js"></script>
 <script src="tiles.js"></script>
 <script src="icons.js"></script>

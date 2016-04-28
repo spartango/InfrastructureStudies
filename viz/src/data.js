@@ -27,32 +27,12 @@ var loadGeoJSON = function (path) {
     });
 };
 
-var loadSAMs = function () {
-    return loadGeoJSON('background/SAMs.geojson');
-};
-
 var loadPath = function (id) {
     return loadGeoJSON(DATA_DIR + id + '_damage.geojson');
 };
 
 var loadPaths = function () {
     return loadGeoJSON(DATA_DIR + 'baseline.geojson');
-};
-
-var loadSources = function () {
-    return loadGeoJSON(DATA_DIR + 'sources.geojson');
-};
-
-var loadSinks = function () {
-    return loadGeoJSON(DATA_DIR + 'sinks.geojson');
-};
-
-var loadRangeRings = function () {
-    return loadGeoJSON('background/RangeRingsP.geojson');
-};
-
-var loadMergedRangeRings = function () {
-    return loadGeoJSON('background/RangeRingsP.geojson').then(turf.merge)
 };
 
 var loadBridges = function () {

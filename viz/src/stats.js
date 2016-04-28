@@ -8,7 +8,7 @@ var histogramTargets = function (targets) {
     var minCriticality = d3.min(criticalityData);
     var midPoint = d3.mean(criticalityData);
     var absMax = d3.max(criticalityData);
-    var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
+    var maxCriticality = absMax;//Math.min(absMax, (midPoint - minCriticality) + midPoint);
 
     var color = d3.scale.linear()
         .domain([minCriticality, midPoint, maxCriticality])
@@ -81,32 +81,35 @@ var nearestDistance = function (feature, featureSet) {
 
 // Comparison of rerouting costs to SAM threat
 var annotateThreats = function (targets) {
-    return loadMergedRangeRings().then(function (mergedRings) {
-        // Mark the targets which are in range
-        console.log("Computing active SAM threats");
-        targets.features.forEach(function (feature) {
-            if (!feature.properties.center) {
-                feature.properties.center = turf.center(feature);
-            }
-            if (turf.inside(feature.properties.center, mergedRings)) {
-                feature.properties["activeSAM"] = true;
-            }
+    return loadGeoJSON(dataLayers.rangeRings.url).then(turf.merge)
+        .then(function (mergedRings) {
+            // Mark the targets which are in range
+            console.log("Computing active SAM threats");
+            targets.features.forEach(function (feature) {
+                if (!feature.properties.center) {
+                    feature.properties.center = turf.center(feature);
+                }
+                if (turf.inside(feature.properties.center, mergedRings)) {
+                    feature.properties["activeSAM"] = true;
+                }
+            });
+            return targets;
+        }).then(function () {
+            return loadGeoJSON(dataLayers.SAMs.url);
+        }).then(function (sams) {
+            // Annotate the targets with SAM threat range
+            console.log("Computing SAM ranges");
+            targets.features.forEach(function (feature) {
+                if (!feature.properties["nearestSAMDistance"]) {
+                    feature.properties["nearestSAMDistance"] = nearestDistance(feature, sams);
+                }
+            });
+            return targets;
         });
-        return targets;
-    }).then(loadSAMs).then(function (sams) {
-        // Annotate the targets with SAM threat range
-        console.log("Computing SAM ranges");
-        targets.features.forEach(function (feature) {
-            if (!feature.properties["nearestSAMDistance"]) {
-                feature.properties["nearestSAMDistance"] = nearestDistance(feature, sams);
-            }
-        });
-        return targets;
-    });
 };
 
 var annotateBases = function (targets) {
-    return loadAviation().then(function (airbases) {
+    return loadGeoJSON(dataLayers.airBases.url).then(function (airbases) {
         console.log("Computing airbase ranges");
         targets.features.forEach(function (feature) {
             if (!feature.properties["nearestAirbaseDistance"]) {
@@ -118,7 +121,7 @@ var annotateBases = function (targets) {
 };
 
 var annotateStations = function (targets) {
-    return loadStations().then(function (stations) {
+    return loadGeoJSON(dataLayers.stations.url).then(function (stations) {
         console.log("Computing station ranges");
         targets.features.forEach(function (feature) {
             if (!feature.properties["nearestStationDistance"]) {
@@ -130,7 +133,7 @@ var annotateStations = function (targets) {
 };
 
 var annotateSources = function (targets) {
-    return loadSources().then(function (sources) {
+    return loadGeoJSON(dataLayers.suppliers.url).then(function (sources) {
         console.log("Computing source ranges");
         targets.features.forEach(function (feature) {
             if (!feature.properties["nearestSourceDistance"]) {
@@ -142,7 +145,7 @@ var annotateSources = function (targets) {
 };
 
 var annotateSecondArtillery = function (targets) {
-    return loadSecondArtillery().then(function (sources) {
+    return loadGeoJSON(dataLayers.missileBases.url).then(function (sources) {
         console.log("Computing 2nd Artillery ranges");
         targets.features.forEach(function (feature) {
             feature.properties["nearest2ADistance"] = nearestDistance(feature, sources);
@@ -152,7 +155,7 @@ var annotateSecondArtillery = function (targets) {
 };
 
 var annotateSinks = function (targets) {
-    return loadSinks().then(function (sinks) {
+    return loadGeoJSON(dataLayers.consumers.url).then(function (sinks) {
         console.log("Computing sink ranges");
         targets.features.forEach(function (feature) {
             feature.properties["nearestSinkDistance"] = nearestDistance(feature, sinks);
@@ -219,7 +222,7 @@ var buildPlot = function (featureKey, targets, title, color) {
     var minCriticality = d3.min(criticalityData);
     var midPoint = d3.mean(criticalityData);
     var absMax = d3.max(criticalityData);
-    var maxCriticality = Math.min(absMax, (midPoint - minCriticality) + midPoint);
+    var maxCriticality = absMax;//Math.min(absMax, (midPoint - minCriticality) + midPoint);
     var xRange = [minCriticality, maxCriticality].map(costToHours);
 
     // For each feature, extract the properties
@@ -259,9 +262,7 @@ var buildPlot = function (featureKey, targets, title, color) {
         }, yScale)
         .attr("fill", function (d) {
             if (color) {
-                return typeColors[color] ? typeColors[color] : color;
-            } else {
-                return d.activeSAM ? "#b00" : typeColors.radar; //  "#b00" : "#5279c7"
+                return color;
             }
         })
         //.animated(true)
@@ -293,7 +294,7 @@ var buildPlot = function (featureKey, targets, title, color) {
 };
 
 var plotRadars = function (targets) {
-    var chart = buildPlot("nearestSAMDistance", targets, "Nearest Radar (km)", "radar");
+    var chart = buildPlot("nearestSAMDistance", targets, "Nearest Radar (km)", "#78c679");
     chart.renderTo("svg#radars");
     return targets;
 };
@@ -304,37 +305,37 @@ var plotSAMs = function (targets) {
             return target.properties.activeSAM;
         })
     };
-    var chart = buildPlot("nearestSAMDistance", activeTargets, "Nearest SAM (km)", "#b00");
+    var chart = buildPlot("nearestSAMDistance", activeTargets, "Nearest SAM (km)", dataLayers.SAMs.color);
     chart.renderTo("svg#sams");
     return targets;
 };
 
 var plotBases = function (targets) {
-    var chart = buildPlot("nearestAirbaseDistance", targets, "Nearest Airbase (km)", "airbase");
+    var chart = buildPlot("nearestAirbaseDistance", targets, "Nearest Airbase (km)", dataLayers.airBases.color);
     chart.renderTo("svg#bases");
     return targets;
 };
 
 var plotStations = function (targets) {
-    var chart = buildPlot("nearestStationDistance", targets, "Nearest Station (km)", "station");
+    var chart = buildPlot("nearestStationDistance", targets, "Nearest Station (km)", dataLayers.stations.color);
     chart.renderTo("svg#stations");
     return targets;
 };
 
 var plotSources = function (targets) {
-    var chart = buildPlot("nearestSourceDistance", targets, "Nearest Supplier (km)", "supplier");
+    var chart = buildPlot("nearestSourceDistance", targets, "Nearest Supplier (km)", dataLayers.suppliers.color);
     chart.renderTo("svg#sources");
     return targets;
 };
 
 var plotSinks = function (targets) {
-    var chart = buildPlot("nearestSinkDistance", targets, "Nearest Consumer (km)", "consumer");
+    var chart = buildPlot("nearestSinkDistance", targets, "Nearest Consumer (km)", dataLayers.consumers.color);
     chart.renderTo("svg#sinks");
     return targets;
 };
 
 var plotSecondArtillery = function (targets) {
-    var chart = buildPlot("nearest2ADistance", targets, "Nearest Missile Site (km)", "nuclear");
+    var chart = buildPlot("nearest2ADistance", targets, "Nearest Missile Site (km)", dataLayers.missileBases.color);
     chart.renderTo("svg#nuclear");
     return targets;
 };
@@ -353,25 +354,6 @@ var plotDual = function (targets) {
         "Nearest Airbase (km)");
     chart.renderTo("svg#dual");
     return targets;
-};
-
-var cacheTargets = function (targets) {
-    try {
-        localStorage.setItem('annotatedStatsTargets', JSON.stringify(targets));
-    } catch (e) {
-        console.log("Couldn't cache: " + e);
-    }
-    return targets;
-};
-
-var loadTargetsWithCache = function () {
-    var cached = localStorage.getItem('annotatedStatsTargets');
-    if (cached) {
-        console.log("Loaded targets from cache");
-        return Promise.resolve(JSON.parse(cached));
-    } else {
-        return loadTargets();
-    }
 };
 
 var costProximityPlot = function () {

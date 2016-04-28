@@ -13,23 +13,33 @@ var legend = L.control({position: 'bottomright'});
 
 // Building Layers
 var buildLayerWithDataConfig = function (data, config) {
-    data.features.forEach(function (feature) {
-        feature.properties.color = config.color;
-    });
     var icon = glyphIcon(config.color, config.character);
-    return L.geoJson(data, {
-        onEachFeature: function (feature, layer) {
-            return infrastructurePopup(feature, layer, config);
-        },
-        pointToLayer: function (feature, latlng) {
+    var options = {};
+    if (config.style) {
+        options.style = config.style
+    }
+    if (config.popup == 'infrastructure') {
+        options.onEachFeature = function (feature, layer) {
+            infrastructurePopup(feature, layer, config);
+        }
+    }
+    if (config.layerType == 'cluster' || config.layerType == 'marker') {
+        data.features.forEach(function (feature) {
+            feature.properties.color = config.color;
+        });
+        options.pointToLayer = function (feature, latlng) {
             return L.marker(latlng, {icon: icon});
         }
-    })
+    }
+    return L.geoJson(data, options)
 };
 
-
 var buildLayerFromConfig = function (config) {
-    return loadGeoJSON(config.url).then(function (data) {
+    var geojson = loadGeoJSON(config.url);
+    if (config.handleData) {
+        geojson = geojson.then(config.handleData);
+    }
+    return geojson.then(function (data) {
         return buildLayerWithDataConfig(data, config);
     });
 };
@@ -111,41 +121,7 @@ var toggleLayer = function (layerName) {
     }
 };
 
-// Deprecated show and hide functions
-/**
- * @deprecated
- * @param data
- */
-var buildLayerWithData = function (data) {
-    data.features.forEach(function (feature) {
-        feature.properties.type = type;
-    });
-    var icon = glyphIcon(type);
-    return L.geoJson(data, {
-        onEachFeature: infraPopup,
-        pointToLayer: function (feature, latlng) {
-            return L.marker(latlng, {icon: icon});
-        }
-    })
-};
-
-/**
- * Old way of making layers
- * @deprecated
- * @param type
- * @param dataSource
- * @returns {*|Promise.<T>}
- */
-var buildDataLayer = function (type, dataSource) {
-    return dataSource.then(buildLayerWithData);
-};
-
-/**
- * @deprecated
- * @param layerName
- * @param layerSupplier
- * @returns {*}
- */
+// Show and hide functions for special layers
 var showMapLayer = function (layerName, layerSupplier) {
     // Add the layer to the map
     if (!backgroundLayers[layerName]) {
@@ -159,11 +135,6 @@ var showMapLayer = function (layerName, layerSupplier) {
     }
 };
 
-/**
- * @deprecated
- * @param layerName
- * @returns {Promise}
- */
 var hideMapLayer = function (layerName) {
     return new Promise(function (resolve, reject) {
         if (backgroundLayers[layerName]) {
@@ -174,12 +145,6 @@ var hideMapLayer = function (layerName) {
     });
 };
 
-/**
- * @deprecated
- * @param layerName
- * @param layerSupplier
- * @returns {*}
- */
 var toggleMapLayer = function (layerName, layerSupplier) {
     if (!backgroundLayers[layerName]) {
         return showMapLayer(layerName, layerSupplier);
@@ -188,82 +153,7 @@ var toggleMapLayer = function (layerName, layerSupplier) {
     }
 };
 
-// Deprecated functions for displaying clustered layers
-/**
- * @deprecated
- * @param layerName
- * @param layerSupplier
- * @returns {*}
- */
-var showClusterLayer = function (layerName, layerSupplier) {
-    // Add the layer to the map
-    if (!backgroundLayers[layerName]) {
-        var layerPromise = layerSupplier();
-        return layerPromise.then(function (layer) {
-            backgroundMarkers.addLayer(layer);
-            backgroundLayers[layerName] = layer;
-
-        });
-    } else {
-        return Promise.resolve();
-    }
-};
-
-/**
- * @deprecated
- * @param layerName
- * @returns {Promise}
- */
-var hideClusterLayer = function (layerName) {
-    // Hide the layer(s)
-    return new Promise(function (resolve, reject) {
-        if (backgroundLayers[layerName]) {
-            backgroundMarkers.removeLayer(backgroundLayers[layerName]);
-            delete backgroundLayers[layerName];
-        }
-        resolve();
-    });
-};
-
-/**
- * @deprecated
- * @param layerName
- * @param layerSupplier
- * @returns {*}
- */
-var toggleClusterLayer = function (layerName, layerSupplier) {
-    if (!backgroundLayers[layerName]) {
-        return showClusterLayer(layerName, layerSupplier);
-    } else {
-        return hideClusterLayer(layerName);
-    }
-};
-
 // Specialized Layers
-var loadSAMLayer = function () {
-    return loadSAMs().then(function (data) {
-        data.features.forEach(function (feature) {
-            feature.properties.type = (feature.properties.name && feature.properties.name.indexOf("EW") != -1) ?
-                'radar' : 'SAM';
-        });
-        var radarIcon = glyphIcon('radar');
-        var samIcon = glyphIcon('SAM');
-
-        return L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                var icon = feature.properties.type == 'radar' ? radarIcon : samIcon;
-                return L.marker(latlng, {icon: icon});
-            }
-        })
-    });
-};
-
-var toggleSAMs = function () {
-    return toggleClusterLayer('sams', loadSAMLayer);
-};
-
-
 var flowCount = 1;
 var loadPathLayer = function () {
     return loadPaths().then(function (data) {
@@ -396,64 +286,6 @@ var toggleAnimation = function (flowName) {
     } else {
         clearAnimation();
     }
-};
-
-var loadSourceLayer = function () {
-    return loadSources().then(function (data) {
-        var icon = glyphIcon("supplier"); // L.MakiMarkers.icon({icon: "rail", color: "#4dac26", size: "m"});
-        $('#sourceCount').text(data.features.length);
-        data.features.forEach(function (feature) {
-            feature.properties.type = "supplier";
-        });
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        return geoJsonLayer;
-    });
-};
-
-var toggleSources = function () {
-    return toggleMapLayer('sources', loadSourceLayer);
-};
-
-var loadSinkLayer = function () {
-    return loadSinks().then(function (data) {
-        var icon = glyphIcon("consumer"); //L.MakiMarkers.icon({icon: "rail", color: "#d01c8b", size: "m"});
-        $('#sinkCount').text(data.features.length);
-        data.features.forEach(function (feature) {
-            feature.properties.type = "consumer";
-        });
-        var geoJsonLayer = L.geoJson(data, {
-            onEachFeature: infraPopup,
-            pointToLayer: function (feature, latlng) {
-                return L.marker(latlng, {icon: icon});
-            }
-        });
-        map.fitBounds(geoJsonLayer.getBounds());
-        return geoJsonLayer;
-    });
-};
-
-var toggleSinks = function () {
-    return toggleMapLayer('sinks', loadSinkLayer);
-};
-
-var loadMergedRangeLayer = function () {
-    return loadMergedRangeRings().then(function (merged) {
-        var layer = L.geoJson(merged, {
-            style: {
-                "color": "#d00",
-                "weight": 2,
-                "opacity": 0.8,
-                "fillOpacity": 0.10,
-                "clickable": false
-            }
-        });
-        return layer;
-    });
 };
 
 var toggleRangeRings = function () {
@@ -640,41 +472,47 @@ var drawTargets = function (data) {
 
 var annotateInfrastructure = function (data) {
     // Load up the merged SAM threats
-    return loadMergedRangeRings().then(function (mergedRings) {
-        // Mark the targets which are in range
-        console.log("Computing active SAM threats");
-        loadingControl.addLoader("SAM");
-        data.features.forEach(function (feature) {
-            feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-            if (turf.inside(feature.properties.center, mergedRings)) {
-                feature.properties["activeSAM"] = true;
-            }
-        });
-        loadingControl.removeLoader("SAM");
-        return data;
-    }).then(loadSAMs).then(function (sams) {
-        console.log("Computing SAM ranges");
-        loadingControl.addLoader("Range");
-        data.features.forEach(function (feature) {
-            if (!feature.properties["nearestSAM"]) {
+    return loadGeoJSON(dataLayers.rangeRings.url)
+        .then(turf.merge)
+        .then(function (mergedRings) {
+            // Mark the targets which are in range
+            console.log("Computing active SAM threats");
+            loadingControl.addLoader("SAM");
+            data.features.forEach(function (feature) {
                 feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                feature.properties["nearestSAM"] = turf.nearest(feature.properties.center, sams);
-            }
+                if (turf.inside(feature.properties.center, mergedRings)) {
+                    feature.properties["activeSAM"] = true;
+                }
+            });
+            loadingControl.removeLoader("SAM");
+            return data;
+        }).then(function () {
+            return loadGeoJSON(dataLayers.SAMs.url);
+        }).then(function (sams) {
+            console.log("Computing SAM ranges");
+            loadingControl.addLoader("Range");
+            data.features.forEach(function (feature) {
+                if (!feature.properties["nearestSAM"]) {
+                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+                    feature.properties["nearestSAM"] = turf.nearest(feature.properties.center, sams);
+                }
+            });
+            loadingControl.removeLoader("Range");
+            return data;
+        }).then(function () {
+            return loadGeoJSON(dataLayers.airBases.url);
+        }).then(function (airbases) {
+            console.log("Computing airbase ranges");
+            loadingControl.addLoader("Air");
+            data.features.forEach(function (feature) {
+                if (!feature.properties["nearestAirbase"]) {
+                    feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
+                    feature.properties["nearestAirbase"] = turf.nearest(feature.properties.center, airbases);
+                }
+            });
+            loadingControl.removeLoader("Air");
+            return data;
         });
-        loadingControl.removeLoader("Range");
-        return data;
-    }).then(loadAviation).then(function (airbases) {
-        console.log("Computing airbase ranges");
-        loadingControl.addLoader("Air");
-        data.features.forEach(function (feature) {
-            if (!feature.properties["nearestAirbase"]) {
-                feature.properties.center = feature.properties.center ? feature.properties.center : turf.center(feature);
-                feature.properties["nearestAirbase"] = turf.nearest(feature.properties.center, airbases);
-            }
-        });
-        loadingControl.removeLoader("Air");
-        return data;
-    });
 };
 
 var annotateDimensions = function (data) {
@@ -722,21 +560,6 @@ var toggleFlows = function () {
     });
 };
 
-var toggleSAMThreats = function () {
-    var targetsShowing = backgroundLayers['targets'] != null;
-    return toggleRangeRings().then(function () {
-            if (targetsShowing) {
-                return hideMapLayer('targets');
-            }
-        })
-        .then(toggleSAMs)
-        .then(function () {
-            if (targetsShowing) {
-                return showTargets();
-            }
-        });
-};
-
 var showLegend = function () {
     if (!legendShowing) {
         legendShowing = true;
@@ -759,12 +582,6 @@ var showAndFocus = function (showPromise, bounds) {
     });
 };
 
-var showSinks = function () {
-    return showMapLayer('sinks', loadSinkLayer);
-};
-var showSources = function () {
-    return showMapLayer('sources', loadSourceLayer);
-};
 var showPaths = function () {
     return showMapLayer('paths', loadPathLayer);
 };
@@ -779,18 +596,6 @@ var toggleAimpoints = function () {
 
 var showBaselineAnimation = function () {
     return showAnimation('baseline');
-};
-
-var showMergedRings = function () {
-    return showMapLayer('rings', loadMergedRangeLayer);
-};
-
-var showSAMs = function () {
-    return showClusterLayer('sams', loadSAMLayer);
-};
-
-var showSAMThreats = function () {
-    return showMergedRings().then(showSAMs);
 };
 
 var togglePaths = function () {
