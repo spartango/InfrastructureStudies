@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stats</title>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="bower_components/plottable/plottable.css"/>
+    <link rel="stylesheet" href="fonts.css"/>
+    <link rel="stylesheet" href="stats.css"/>
+</head>
+<body>
+<div class="navbar navbar-static-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
+                <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a class="navbar-brand" href="index.html" data-toggle="tooltip"
+                           data-placement="bottom" title="Map"><i class="fa fa-map"></i></a></li>
+                    <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
+                           data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <svg id="cost" width="100%" height="700px"></svg>
+        <svg id="dual" width="100%" height="350px"></svg>
+    </div>
+    <div class="col-md-4">
+        <svg id="sams" width="100%" height="350px"></svg>
+        <svg id="bases" width="100%" height="350px"></svg>
+        <svg id="sinks" width="100%" height="350px"></svg>
+    </div>
+    <div class="col-md-4">
+        <svg id="radars" width="100%" height="350px"></svg>
+        <svg id="nuclear" width="100%" height="350px"></svg>
+        <svg id="sources" width="100%" height="350px"></svg>
+    </div>
+</div>
+
+<div class="modal fade" id="sourceModal" tabindex="-1" role="dialog" aria-labelledby="sourceModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header nav-text">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h3 class="modal-title" id="sourceModalLabel">About</h3>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Data Sources</h4>
+                        <dl>
+                            <dt>Rail Data</dt>
+                            <dd><a href="http://openstreetmap.org">OpenStreetMap</a> (2016)</dd>
+                            <dt>SAM & Aviation Data</dt>
+                            <dd><a href="http://geimint.blogspot.com">IMINT & Analysis Blog</a> (2009)</dd>
+                            <dt>Port Data</dt>
+                            <dd>
+                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">NGA
+                                    World Port Index</a> (2016)
+                            </dd>
+                            <dt>Strategic Missile Data</dt>
+                            <dd><a href="http://www.ausairpower.net/APA-PLA-Second-Artillery-Corps.html">Air Power
+                                Australia</a> (2012)
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="bower_components/d3/d3.min.js"></script>
+<script src="bower_components/plottable/plottable.min.js"></script>
+<script src="bower_components/turf/turf.min.js"></script>
+<script src="bower_components/simple-statistics/dist/simple_statistics.min.js"></script>
+<script src="utils.js"></script>
+<script src="tiles.js"></script>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+    var mapmargin = 100;
+//    $(window).on("resize", resize);
+    function resize() {
+        $('#proximity').attr("height", ($(window).height() - mapmargin ));
+        $('#cost').attr("height", ($(window).height() - mapmargin ));
+    }
+
+    resize();
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
+<script src="stats.js"></script>
+<script>document.write('<script src="http://'
+        + (location.host || 'localhost').split(':')[0]
+        + ':35729/livereload.js"></'
+        + 'script>')
+</script>
+</html>

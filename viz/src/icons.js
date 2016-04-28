@@ -5,9 +5,7 @@ var clusterIcon = function (cluster) {
     var childCount = cluster.getChildCount();
 
     cluster.getAllChildMarkers().forEach(function (el) {
-        var type = el.feature.properties.type;
-        var color = typeColors[type] ? typeColors[type] :
-            el.feature.properties.color ? JSON.stringify(el.feature.properties.color) : defaultColor;
+        var color = el.feature.properties.color ? JSON.stringify(el.feature.properties.color) : defaultColor;
         if (colorCount.hasOwnProperty(color))
             colorCount[color]++;
         else
@@ -51,8 +49,8 @@ var clusterIcon = function (cluster) {
 
 var glyphSvg = function (type, icon) {
     var radius = 36;
-    var color = typeColors[type] ? typeColors[type] : type;
-    var iconChar = typeChars[type] ? typeChars[type] : icon;
+    var color = type;
+    var iconChar = icon;
     var textOpacity = 1;
 
     var svgHtml = `<svg class="glyph-icon-` + type + `" width="100%" height="100%" viewbox="0 0 100 100"> \

@@ -3,9 +3,9 @@ package com.irislabs.sheet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -15,12 +15,16 @@ import java.util.stream.Stream;
  */
 public class FileSheet implements Sheet {
 
-    private File         file;
-    private List<String> fields;
-    private String       delimiter;
+    protected File         file;
+    protected List<String> fields;
+    protected String       delimiter;
 
     public FileSheet(String path) throws IOException {
         this(new File(path), "\t");
+    }
+
+    public FileSheet(String file, String delimiter) throws IOException {
+        this(new File(file), delimiter);
     }
 
     public FileSheet(File file, String delimiter) throws IOException {
@@ -39,15 +43,26 @@ public class FileSheet implements Sheet {
         }
     }
 
-    private void parseFields() throws IOException {
-        Files.lines(file.toPath()).findFirst().ifPresent(line -> fields = Arrays.asList(line.split(delimiter)));
+    protected void parseFields() throws IOException {
+        Files.lines(file.toPath())
+             .findFirst()
+             .ifPresent(line -> fields = Stream.of(line.split(delimiter))
+                                               .map(String::new)
+                                               .collect(Collectors.toList()));
     }
 
-    private Stream<SheetEntry> parseLines() throws IOException {
-        return Files.lines(file.toPath()).skip(1).map(line -> SheetEntry.parseEntry(line, delimiter, fields));
+    protected Stream<SheetEntry> parseLines() throws IOException {
+        return Files.lines(file.toPath())
+                .skip(1) // Skip the header
+                .map(line -> SheetEntry.parseEntry(line, delimiter, fields));
     }
 
     @Override public List<String> fields() {
         return fields;
     }
+
+    public CollectionSheet toCollectionSheet() {
+        return new CollectionSheet(stream().collect(Collectors.toList()), fields());
+    }
+
 }

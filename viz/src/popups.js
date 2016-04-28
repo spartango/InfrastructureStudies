@@ -1,4 +1,3 @@
-
 var targetPopup = function (feature, layer) {
     if (feature.properties) {
         var popupString = '<div class="row"><table class="table table-condensed"><thead><tr><th><i class="fa fa-crosshairs"></i> Critical Bridge</th></tr></thead>';
@@ -67,12 +66,12 @@ var targetPopup = function (feature, layer) {
         popupString += "</table></div>";
 
         if (feature.properties.center) {
-            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-6" onclick='map.setView({lat:`
                 + feature.properties.center.geometry.coordinates[1]
                 + ", lng:"
                 + feature.properties.center.geometry.coordinates[0]
                 + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button>`;
-            //popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
+            popupString += `<button class="btn btn-danger btn-xs col-xs-6" onclick='showReroute(` + feature.id + `)'><i class="fa fa-fire"></i> Reroute</button>`;
         }
         popupString += `</div></div>`;
 
@@ -81,6 +80,46 @@ var targetPopup = function (feature, layer) {
 };
 
 
+var infrastructurePopup = function (feature, layer, config) {
+    if (feature.properties) {
+        var popupString = `<div><div class="row" style='max-height:250px; max-width: 250px;overflow:auto;'><table class="table table-condensed">`;
+        popupString += `<thead><tr><th>` + config.displayType + `</th></tr></thead>`;
+
+        for (var key in feature.properties) {
+            var niceKey = key.charAt(0).toUpperCase() + key.slice(1);
+            var niceValue = feature.properties[key];
+            if (key == 'elevation') {
+                niceValue += " m";
+            } else if (key == 'color') {
+                continue;
+            }
+            popupString += "<tr><td><strong>" + niceKey + "</strong></td><td>" + niceValue + "</td></tr>";
+        }
+
+        if (feature.geometry) {
+            popupString += "<tr><td><strong>MGRS</strong></td><td>"
+                + mgrs.forward(feature.geometry.coordinates)
+                + "</td></tr>";
+        }
+
+        popupString += "</table></div>";
+
+        if (feature.geometry) {
+            popupString += `<div class="row"><button class="btn btn-default btn-xs col-xs-12" onclick='map.setView({lat:`
+                + feature.geometry.coordinates[1]
+                + ", lng:"
+                + feature.geometry.coordinates[0]
+                + `}, 16)' ><i class="fa fa-search-plus"></i> Zoom</button></div></div>`
+        }
+        layer.bindPopup(popupString);
+    }
+};
+
+/**
+ * @deprecated
+ * @param feature
+ * @param layer
+ */
 var infraPopup = function (feature, layer) {
     if (feature.properties) {
         var popupString = `<div><div class="row" style='max-height:250px; max-width: 200px;overflow:auto;'><table class="table table-condensed">`;

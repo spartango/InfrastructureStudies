@@ -37,7 +37,8 @@ public class HistogramTargeter {
     }
 
     public Stream<RailFlow> deltaStream() {
-        return sortedStream().map(entry -> baseFlow.damageDelta(entry.getKey(), entry.getValue()));
+        return sortedStream() // Sorted bridge : affected sinks
+                .map(entry -> baseFlow.damageDelta(entry.getKey(), entry.getValue())); // Damage this bridge, affecting sinks only
     }
 
     private Stream<Map.Entry<Set<NodeStub>, Set<NodeStub>>> sortedStream() {

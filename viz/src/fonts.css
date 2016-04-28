@@ -1,0 +1,27 @@
+@font-face {
+    font-family: 'Liberator-Heavy';
+    src: url('fonts/Liberator-Heavy.ttf');
+}
+
+@font-face {
+    font-family: 'Liberator-Medium';
+    src: url('fonts/Liberator-Medium.ttf');
+}
+
+@font-face {
+    font-family: 'Liberator-Light';
+    src: url('fonts/Liberator-Light.ttf');
+}
+
+.brand-text {
+    font-family: "Liberator-Heavy", sans-serif;
+    font-size: 24px;
+}
+
+.nav-text {
+    font-family: Liberator-Light, sans-serif;
+}
+
+.icon-text {
+    font-family: FontAwesome;
+}

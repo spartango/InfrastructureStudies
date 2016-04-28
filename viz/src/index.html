@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="bower_components/Leaflet.EasyButton/src/easy-button.css"/>
     <link rel="stylesheet" href="bower_components/leaflet.loading/src/Control.Loading.css"/>
     <link rel="stylesheet" href="bower_components/intro.js/minified/introjs.min.css"/>
+    <link rel="stylesheet" href="fonts.css"/>
     <link rel="stylesheet" href="app.css"/>
 </head>
 <body>
@@ -22,22 +23,19 @@
             <div class="navbar-header">
                 <a class="navbar-brand brand-text" href="#">Rail Resilience</a>
                 <ul class="nav navbar-nav navbar-left nav-text">
+                    <li><a class="navbar-brand" href="stats.html"
+                           data-toggle="tooltip"
+                           data-placement="bottom" title="Statistics"><i class="fa fa-bar-chart"></i></a></li>
                     <li><a id="infoButton" class="navbar-brand" href="#" data-toggle="modal"
                            data-target="#sourceModal"><i class="fa fa-info-circle"></i></a></li>
-                    <li><a id="helpButton" class="navbar-brand hidden" href="#tutorial" onclick="startTutorial()"
-                           data-toggle="tooltip"
-                           data-placement="bottom" title="Help"><i class="fa fa-question-circle"></i></a></li>
-                    <li><a id="drawButton" class="navbar-brand hidden" href="#" onclick="enableDrawing()"
-                           data-toggle="tooltip"
-                           data-placement="bottom" title="Draw"><i class="fa fa-pencil"></i></a></li>
                 </ul>
             </div>
 
             <ul class="nav navbar-nav navbar-right nav-text">
-                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleSources()" data-toggle="tooltip"
+                <li><a id="sourceToggle" class="navbar-brand" href="#" onclick="toggleLayer('suppliers')" data-toggle="tooltip"
                        data-placement="bottom" title="Suppliers"><i class="fa fa-upload"></i> <span
                         id="sourceCount"></span></a></li>
-                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleSinks()" data-toggle="tooltip"
+                <li><a id="sinkToggle" class="navbar-brand" href="#" onclick="toggleLayer('consumers')" data-toggle="tooltip"
                        data-placement="bottom" title="Consumers"><i class="fa fa-download"></i> <span
                         id="sinkCount"></span></a></li>
                 <li><a id="flowToggle" class="navbar-brand" href="#" onclick="toggleFlows()" data-toggle="tooltip"
@@ -51,31 +49,43 @@
                        role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-bars"></i></a>
                     <ul class="dropdown-menu">
                         <li>
+                            <a id="samToggle" href="#" onclick="toggleLayer('SAMs')"><i class="fa fa-rocket"></i>
+                                SAMs & Radars</a>
+                        </li>
+                        <li>
+                            <a id="rangeToggle" href="#" onclick="toggleLayer('rangeRings')"><i class="fa fa-bullseye"></i>
+                                SAM Range Rings</a>
+                        </li>
+                        <li>
+                            <a id="airToggle" href="#" onclick="toggleLayer('airBases')"><i class="fa fa-plane"></i>
+                                Airbases</a>
+                        </li>
+                        <li>
+                            <a id="navalToggle" href="#" onclick="toggleLayer('navalBases')"><i class="fa fa-ship"></i>
+                                Naval Bases</a>
+                        </li>
+                        <li>
+                            <a id="nuclearToggle" href="#" onclick="toggleLayer('missileBases')"><i class="fa fa-bomb"></i>
+                                Strategic Missiles</a>
+                        </li>
+                        <li>
+                            <a id="refineryToggle" href="#" onclick="toggleLayer('refineries')"><i class="fa fa-database"></i>
+                                Refineries</a>
+                        </li>
+                        <li>
+                            <a id="portToggle" href="#" onclick="toggleLayer('ports')"><i class="fa fa-anchor"></i> Ports</a>
+                        </li>
+                        <li>
                             <a id="bridgeToggle" href="#" onclick="toggleSegments()"><i class="fa fa-road"></i> Rail
                                 Bridges</a>
                         </li>
                         <li>
-                            <a id="samToggle" href="#" onclick="toggleSAMThreats()"><i class="fa fa-rocket"></i>
-                                SAMs & Radars</a>
+                            <a id="stationToggle" href="#" onclick="toggleLayer('stations')"><i class="fa fa-train"></i>
+                               Train Stations</a>
                         </li>
                         <li>
-                            <a id="airToggle" href="#" onclick="toggleAviation()"><i class="fa fa-plane"></i>
-                                Airbases</a>
-                        </li>
-                        <li>
-                            <a id="nuclearToggle" href="#" onclick="toggleSecondArtillery()"><i class="fa fa-bomb"></i>
-                                Strategic Missiles</a>
-                        </li>
-                        <li>
-                            <a id="portToggle" href="#" onclick="togglePorts()"><i class="fa fa-anchor"></i> Ports</a>
-                        </li>
-                        <li>
-                            <a id="stationToggle" href="#" onclick="toggleStations()"><i class="fa fa-train"></i>
-                                Stations</a>
-                        </li>
-                        <li>
-                            <a id="aimpointToggle" href="#" onclick="toggleAimpoints()"><i class="fa fa-bullseye"></i>
-                                Targets</a>
+                            <a id="usToggle" href="#" onclick="toggleLayer('USBases')"><i class="fa fa-flag"></i>
+                                U.S. Bases</a>
                         </li>
                     </ul>
                 </li>
@@ -97,7 +107,7 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <h4>Data Sources</h4>
                         <dl>
                             <dt>Rail Data</dt>
@@ -106,22 +116,21 @@
                             <dd><a href="http://geimint.blogspot.com">IMINT & Analysis Blog</a> (2009)</dd>
                             <dt>Port Data</dt>
                             <dd>
-                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">NGA
-                                    World Port Index</a> (2016)
+                                <a href="http://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015">
+                                    NGA World Port Index</a> (2016)
                             </dd>
                             <dt>Strategic Missile Data</dt>
                             <dd><a href="http://www.ausairpower.net/APA-PLA-Second-Artillery-Corps.html">Air Power
                                 Australia</a> (2012)
                             </dd>
+                            <dt>Refinery Data</dt>
+                            <dd>
+                                <a href="https://worldmap.harvard.edu/data/geonode:_crude_oil_refineries_retrieved_from__bff">
+                                    Oil & Gas Journal Worldwide Refining</a> (2006)
+                            </dd>
                         </dl>
                     </div>
                     <div class="col-md-6">
-                        <h4>Contributors</h4>
-                        <dl>
-                            <dd>Anand Gupta</dd>
-                            <dd>Olivia Zhu</dd>
-                            <dd>Stephen Peter Rosen</dd>
-                        </dl>
                     </div>
                 </div>
 
@@ -158,10 +167,10 @@
 <script src="https://d3js.org/d3-interpolate.v0.5.min.js"></script>
 <script src="https://d3js.org/d3-scale.v0.6.min.js"></script>
 <script src="bower_components/intro.js/intro.js"></script>
-<script src="types.js"></script>
 <script src="utils.js"></script>
 <script src="tiles.js"></script>
 <script src="icons.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
 <script src="popups.js"></script>
 <script src="layers.js"></script>
@@ -182,7 +191,6 @@
 <script src="app.js"></script>
 <script src="tutorial.js"></script>
 <script src="refresh.js"></script>
-<script src="buttons.js"></script>
 <script>document.write('<script src="http://'
         + (location.host || 'localhost').split(':')[0]
         + ':35729/livereload.js"></'

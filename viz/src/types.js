@@ -8,7 +8,8 @@ var typeColors = {
     "station": "#4eb3d3",
     "nuclear": "#993404",
     "supplier": "#0868ac",
-    "consumer": "#d01c8b"
+    "consumer": "#d01c8b",
+    "refinery": "#DB4A04"
 };
 
 var typeIcons = {
@@ -23,7 +24,8 @@ var typeIcons = {
     "nuclear": "bomb",
     "supplier": "upload",
     "consumer": "download",
-    "target": "crosshairs"
+    "target": "crosshairs",
+    "refinery": "database"
 };
 
 var typeChars = {
@@ -36,5 +38,6 @@ var typeChars = {
     "supplier": '&#xf093',
     "bridge": '&#xf018',
     "target": '&#xf05b',
-    "consumer": '&#xf019'
+    "consumer": '&#xf019',
+    "refinery": '&#xf1c0'
 };
