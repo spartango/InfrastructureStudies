@@ -39,8 +39,8 @@ public class TraverseMain {
     private static final String DB_PATH       = PATH + "rail.db";
     private static final String GRAPH_DB_PATH = PATH + "graph.db";
 
-    private static final String OUTPUT_PATH  = "elevation/";
-    private static final long   BRIDGE_LIMIT = 2000;
+    private static final String OUTPUT_PATH  = "testing/";
+    private static final long   BRIDGE_LIMIT = 10000;
 
     private static GraphDatabaseService graphDb;
 
@@ -55,13 +55,13 @@ public class TraverseMain {
         // Load up the sources and sinks
         // Oil refineries
         System.out.println("Reading sources...");
-        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "SurveyRefineries.csv").get();
+        final Sheet refinerySheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "CoalMines.csv").get();
         final List<NeoNode> sources = new ClosestStationLoader(new SheetLoader(refinerySheet),
                                                                railNet).loadGraphNodes();
 
         System.out.println("Reading sinks...");
         // Naval bases
-        final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "PLAAFBases.csv").get();
+        final Sheet navalSheet = SheetFactory.buildFromFile(PATH + BACKGROUND_PATH + "CoalPower.csv").get();
         final List<NeoNode> sinks = new ClosestStationLoader(new SheetLoader(navalSheet), railNet).loadGraphNodes();
 
         System.out.println("Loaded "
