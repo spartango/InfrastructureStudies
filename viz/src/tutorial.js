@@ -76,7 +76,6 @@ var startTutorial = function () {
                         return hideLayer('rangeRings');
                     })
                     .then(showTargets)
-                    .then(clearAnimation);
             }
         },
         {
